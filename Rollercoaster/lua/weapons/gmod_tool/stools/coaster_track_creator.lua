@@ -38,6 +38,7 @@ function TOOL:LeftClick(trace)
 			trace.Entity:SetChains( Chains==1 )
 			trace.Entity:SetRelativeRoll( RelRoll==1 )
 			trace.Entity:SetRoll( Bank )
+			trace.Entity:Invalidate( true )
 			
 		else //If we didn't click on an existing node, create a new one		
 			//If the coaster is looped, unloop it

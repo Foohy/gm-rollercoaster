@@ -201,10 +201,11 @@ function ENT:PhysicsUpdate(physobj)
 end
 
 //Invalidate the node on the client
-function ENT:Invalidate()
+function ENT:Invalidate(minimal)
 	umsg.Start("Coaster_nodeinvalidate")
 		umsg.Entity( self:GetController() )
 		umsg.Entity( self )
+		umsg.Bool( minimal )
 	umsg.End()
 end
 

@@ -100,7 +100,7 @@ usermessage.Hook("Coaster_AddNode", function( um )
 		self.Nodes[ #self.Nodes + 1] = node 
 	end*/
 	if !self.IsController then return end //Shared functions don't exist yet.
-	
+
 	if (self:IsController()) then
 		//self:SetupTrack()
 		self:RefreshClientSpline()
@@ -129,26 +129,57 @@ end )
 usermessage.Hook("Coaster_nodeinvalidate", function( um )
 	local controller = um:ReadEntity()
 	local node	 = um:ReadEntity()
-
+	local inval_minimal = um:ReadBool() //Should we only invalidate the node before this one?
 
 	if !IsValid( controller ) or !IsValid( node ) then return end
 	if #controller.Nodes < 1 then return end
 
 	for k, v in pairs( controller.Nodes ) do
 		if v == node then
-			v.Invalidated = true
+			if inval_minimal then
+				v.Invalidated = true
 
-			if IsValid( controller.Nodes[ k - 1 ] ) then
-				controller.Nodes[ k - 1 ].Invalidated = true
+				if IsValid( controller.Nodes[ k - 1 ] ) then
+					controller.Nodes[ k - 1 ].Invalidated = true
+				end
+			else
+				//Close your eyes, move down your scroll wheel 15 times and open them again
+				local lastnode = controller.Nodes[#controller.Nodes-1]
+				local secondlastnode = controller.Nodes[#controller.Nodes-2]
+				local thirdlastnode = controller.Nodes[#controller.Nodes-2]
+				local fourthlastnode = controller.Nodes[#controller.Nodes-3]
+				local firstnode = controller.Nodes[2]
+				local secondnode = controller.Nodes[3]
+
+				v.Invalidated = true
+
+				if IsValid( controller.Nodes[ k - 1 ] ) && k != 2 then
+					controller.Nodes[ k - 1 ].Invalidated = true
+				elseif controller:Looped() then
+					fourthlastnode.Invalidated = true
+				end
+
+				if IsValid( controller.Nodes[ k - 2 ] ) && k != 3 then
+					controller.Nodes[ k - 2 ].Invalidated = true
+				elseif controller:Looped() then
+					thirdlastnode.Invalidated = true
+				end
+
+				if IsValid( controller.Nodes[ k + 1 ] ) && k != #controller.Nodes-2 then
+					controller.Nodes[ k + 1 ].Invalidated = true
+				elseif controller:Looped() then
+					firstnode.Invalidated = true
+				end
+
+				if controller:Looped() && k == #controller.Nodes - 1 then
+					firstnode.Invalidated = true
+					secondnode.Invalidated = true
+				end
+
 			end
-			if IsValid( controller.Nodes[ k - 2 ] ) then
-				controller.Nodes[ k - 2 ].Invalidated = true
-			end
-			if IsValid( controller.Nodes[ k + 1 ] ) then
-				controller.Nodes[ k + 1 ].Invalidated = true
-			end
+
+			return
 		end
-
 	end
 
 end )
