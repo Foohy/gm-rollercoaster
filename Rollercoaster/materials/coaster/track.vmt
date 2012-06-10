@@ -1,0 +1,6 @@
+"VertexLitGeneric"
+{
+	"$basetexture" "coaster/track"
+	"$translucent" 1
+	"$nocull"      1
+}

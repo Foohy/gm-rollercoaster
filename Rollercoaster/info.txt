@@ -1,0 +1,9 @@
+"AddonInfo"
+{
+	"name"			"Rollercoaster"
+	"version"		"0.00000001"
+	"author_name"		"Foohy"
+	"author_url"		"foohy.net"
+	"info"			"A working rollercoaster for GMod"
+	"override"		"0"
+}

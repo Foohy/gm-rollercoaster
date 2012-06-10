@@ -1,0 +1,14 @@
+"VertexlitGeneric"
+{
+	"$basetexture" "models/sunabouzu/coaster_pole_start"
+	"$phong" "1"
+	"$phongexponent" "25"
+	"$phongboost" "6"	
+//	"$lightwarptexture" "models\lightwarps\weapon_lightwarp"
+	"$phongfresnelranges"	"[.25 .5 1]"
+	"$basemapalphaphongmask" "1"
+
+	"$rimlight" "1"
+	"$rimlightexponent" "2"	
+	"$rimlightboost" ".5"	
+}
