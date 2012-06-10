@@ -128,6 +128,10 @@ end
 
 function TOOL:Holster()
 	 coaster_track_creator_HoverEnt = nil
+
+	 if IsValid( self.GhostEntity ) && ( SERVER || !SinglePlayer() ) then 
+		self.GhostEntity:SetNoDraw( true )
+	end
 end
 
 function TOOL:Think()

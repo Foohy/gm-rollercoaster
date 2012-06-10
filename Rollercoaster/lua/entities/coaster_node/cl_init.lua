@@ -800,12 +800,14 @@ end
 function ENT:DrawSupports()
 	if LocalPlayer():GetInfoNum("coaster_supports") == 0 then return end
 
+	local controller = nil
 	for k, v in pairs( self.Nodes ) do
 		local cont = true
-
+		if IsValid( v ) && v:IsController() then controller = v end
 		if IsValid( v ) then
 			if v:IsController() || k == #self.Nodes then cont = false end //Don't draw the controller or the very last (unconnected) node
 			if math.NormalizeAngle(v:GetRoll()) > 90 || math.NormalizeAngle(v:GetRoll()) < -90 then cont = false end //If a track is upside down, don't draw the supports
+			if IsValid( controller ) && controller:Looped() && k == 2 then cont = false end
 		else
 	 		cont = false 
 		end
