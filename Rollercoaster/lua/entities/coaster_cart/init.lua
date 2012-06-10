@@ -2,15 +2,14 @@ AddCSLuaFile( "cl_init.lua" )
 AddCSLuaFile( "shared.lua" )
 include( "shared.lua" )
 
-ENT.CoasterID 	= -1
-ENT.NumCarts 	= 1
-ENT.Powered 	= false
-ENT.CoasterID 	= -1
-ENT.Controller 	= nil
-ENT.OnChains 	= false
-ENT.IsOffDaRailz  = false
+ENT.CoasterID 	= -1 //Unique ID of the coaster this cart is attached to
+ENT.NumCarts 	= 1 //Length of the train of carts
+ENT.Powered 	= false //If powered, never slow beyond a certain speed. Basically silent always-on chains
+ENT.Controller 	= nil //Controller
+ENT.OnChains 	= false //Currently on a track node with chains?
+ENT.IsOffDaRailz  = false 
 
-ENT.WheelFriction = 0.04 //Coeffecient for mechanical friction (NOT drag) (no idea what the actual mew is for a rollercoaster)
+ENT.WheelFriction = 0.04 //Coeffecient for mechanical friction (NOT drag) (no idea what the actual mew is for a rollercoaster, ~wild guesses~)
 ENT.Velocity = 4 //Starting velocity
 ENT.Multiplier = 1 //Multiplier to set the same speed per node segment
 
@@ -34,11 +33,15 @@ function ENT:Initialize()
 	self:SetSolid(SOLID_VPHYSICS)
 	self:SetCollisionGroup(COLLISION_GROUP_PROJECTILE)
 	
+	//Spawn at the beginning second node, where the curve starts
 	self.CurSegment = 2
 	self.Percent = 0
 	
+	//Start simulating our own physics
 	self:StartMotionController()
 	
+	//Tell the client of our owner
+	//Currently has no use
 	timer.Simple( 0, function()
 		umsg.Start("coaster_train_fullupdate")
 			umsg.Entity( self )
@@ -46,6 +49,7 @@ function ENT:Initialize()
 		umsg.End()
 	end )
 	
+	//more random guesses
 	if IsValid( self:GetPhysicsObject() ) then
 		self:GetPhysicsObject():SetMass( 150 )
 		self:GetPhysicsObject():Wake()
@@ -53,6 +57,7 @@ function ENT:Initialize()
 
 end
 
+//Pop
 function ENT:OffDaRailz()
 	self.IsOffDaRailz = true
 	
@@ -64,10 +69,10 @@ function ENT:OffDaRailz()
 	self:SetCollisionGroup(COLLISION_GROUP_NONE)
 end
 
+//Calculate our movement along the curve
 function ENT:PhysicsSimulate(phys, deltatime)
 	if self.IsOffDaRailz then return SIM_NOTHING end
 
-	--if self.Entity:IsPlayerHolding() then return SIM_NOTHING end
 	local CurPos  = self:GetPos()
 	local CurNode = self.Controller.Nodes[self.CurSegment]
 	local NextNode = self.Controller.Nodes[ self.CurSegment + 1]
@@ -189,6 +194,8 @@ function ENT:PhysicsSimulate(phys, deltatime)
 	return phys:ComputeShadowControl(self.PhysShadowControl)
 end
 
+//Calculate the frictional force experienced on the cart's wheels
+//this uses PHYSICS
 function ENT:CalcFrictionalForce(i, perc, dt)
 	local Force = 0
 	local Velocity = 0
@@ -196,8 +203,6 @@ function ENT:CalcFrictionalForce(i, perc, dt)
 	local mass = self:GetPhysicsObject():GetMass()
 
 	local Ang = self:AngleAt( i, perc )
-	//Ang.p = math.NormalizeAngle( Ang.p )
-	//Ang.p = math.abs( Ang.p )
 
 	Force = self.WheelFriction * ( math.cos( math.rad(Ang.p) ) * mass * 9.8 ) //frictional force = mew*normal of weight
 	Velocity = (Force / mass) * dt // F = MA and your every day best friend DVA
@@ -238,6 +243,7 @@ function ENT:GetMultiplier(i, perc)
 	return 1 / Dist 
 end
 
+//Get the current spline we are on from a percent along a specific segment
 function ENT:GetCurrentSpline(i, perc)
 	local STEPS = 10//(self.Controller.CatmullRom.STEPS
 	
@@ -246,18 +252,22 @@ function ENT:GetCurrentSpline(i, perc)
 	return math.Clamp( math.floor(spline), 1, #self.Controller.CatmullRom.Spline)
 end
 
+//This sounds like something we might want
 function ENT:UpdateTransmitState()
 	return TRANSMIT_ALWAYS
 end
 
+//Remove the velocity if the player grabs it with the physgun
+//TODO: be able to move/fling cart with the physgun
 function ENT:PhysicsUpdate(physobj)
 	if self:IsPlayerHolding() then
 		self.Velocity = 0
 	end
 end
 
+//Explode if they are off the rails
 function ENT:PhysicsCollide(data, physobj)
-	if data.Speed > 40 && self.IsOffDaRailz && ( (IsValid(data.HitEntity) && data.HitEntity:GetClass() != "coaster_cart" ) || !IsValid( data.HitEntity )) then
+	if data.Speed > 60 && self.IsOffDaRailz && ( (IsValid(data.HitEntity) && data.HitEntity:GetClass() != "coaster_cart" ) || !IsValid( data.HitEntity )) then
 	
 		local explosion = ents.Create ("env_explosion")
 		explosion:SetPos(self:GetPos())
@@ -277,7 +287,7 @@ function ENT:PhysicsCollide(data, physobj)
 end
 
 function ENT:Think()
-	//self:SetPos( self.PhysShadowControl.pos )
+
 end
 
 function ENT:OnRemove()

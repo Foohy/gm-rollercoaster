@@ -3,6 +3,8 @@
 	and it returns the vertices in triangles to be put into a mesh manually.
 
 	This is just to make creating meshes easier
+
+	NOTE: This is not meant to run real-time. It returns the vertices for use with an IMesh
 */
 
 Cylinder = {}
@@ -28,6 +30,7 @@ function Cylinder.AddBeam( Pos1, Ang1, Pos2, Ang2, Radius )
 		return
 	end
 	Cylinder.Radius = Radius or Cylinder.Radius
+
 	//Calculate the positions of the current Vertices
 	for i=1, Cylinder.Count do
 		local ang = Angle(Ang1.p,Ang1.y,Ang1.r) //Create a new instance of the angle so we don't modify the original (Is there a better way to do this?)

@@ -1,14 +1,12 @@
 include( "shared.lua" )
 include( "mesh_beams.lua")
 
-CoasterBlur = 0.00003 //Blur multiplier
-ENT.TrackMatrix = Matrix()
 ENT.Spacing = 30 //How many units away each wood track is
 ENT.TrackModel = Model("models/props_debris/wood_board06a.mdl")
 ENT.PoleHeight = 512 //How tall, in source units, the coaster support poles are
 ENT.BaseHeight = 38 //How tall, in source units, the coaster base is
-ENT.BuildingMesh = false 
-ENT.TrackMeshes = {}
+ENT.BuildingMesh = false //Are we currently building a mesh? if so, don't draw them
+ENT.TrackMeshes = {} //Store generated track meshes to render
 
 ENT.SupportModel 		= nil
 ENT.SupportModelStart 	= nil
@@ -126,6 +124,7 @@ usermessage.Hook("Coaster_AddNode", function( um )
 	end
 end )
 
+//Invalidates nearby nodes, either due to roll changing or position changing. Means clientside mesh is out of date and needs to be rebuilt
 usermessage.Hook("Coaster_nodeinvalidate", function( um )
 	local controller = um:ReadEntity()
 	local node	 = um:ReadEntity()
@@ -184,11 +183,14 @@ usermessage.Hook("Coaster_nodeinvalidate", function( um )
 
 end )
 
+//Refresh the client spline for track previews and mesh generation
 function ENT:RefreshClientSpline()
+	//Empty all current splines and nodes
 	self.CatmullRom:Reset()
 	table.Empty( self.Nodes )
 	
-	self.CatmullRom:AddPointAngle( 1, self:GetPos(), self:GetAngles(), 1.0 ) //Set ourselves as the first node as we're used to calculate the track's spline
+	//Set ourselves as the first node as we're used to calculate the track's spline
+	self.CatmullRom:AddPointAngle( 1, self:GetPos(), self:GetAngles(), 1.0 ) 
 	table.insert( self.Nodes, self )
 	local firstNode = self:GetFirstNode()
 
@@ -199,6 +201,7 @@ function ENT:RefreshClientSpline()
 	local node = firstNode:GetNextNode()
 	if !IsValid(node) then return end
 
+	//Recurse through all the nodes, adding them, until they are no longer valid
 	local amt = 3
 	local End = false
 	repeat
@@ -216,19 +219,15 @@ function ENT:RefreshClientSpline()
 			End = true
 		end
 	until (!IsValid(node) || node == firstNode || End)
-	
-	/*for i=1, #self.Nodes do
-		if IsValid( self.Nodes[i] ) then
-			self.CatmullRom:AddPointAngle( i, self.Nodes[i]:GetPos(), self.Nodes[i]:GetAngles(), 1.0 )
-		end
-	end*/
 
+	//If there are enough nodes (4 for catmull-rom), calculate the curve
 	if #self.CatmullRom.PointsList > 3 then
 		self.CatmullRom:CalcEntireSpline()
 	end
-	//print(#self.CatmullRom.PointsList)
 end
 
+//Update the client spline, less perfomance heavy than above function
+//Use only when nodes have moved position.
 function ENT:UpdateClientSpline()
 	if #self.CatmullRom.PointsList < 4 then return end
 	
@@ -247,6 +246,7 @@ function ENT:UpdateClientSpline()
 	self.CatmullRom:CalcEntireSpline()
 end
 
+//Build all coaster's clientside mesh
 concommand.Add("update_mesh", function()
 	for _, v in pairs( ents.FindByClass("coaster_node") ) do
 		if IsValid( v ) && v:IsController() then 
@@ -258,6 +258,7 @@ concommand.Add("update_mesh", function()
 end )
 
 //Give spline index, return percent of a node
+//Util function
 function ENT:PercAlongNode(spline, qf)
 	while spline >= self.CatmullRom.STEPS do
 		spline = spline - self.CatmullRom.STEPS
@@ -266,15 +267,16 @@ function ENT:PercAlongNode(spline, qf)
 	return spline / self.CatmullRom.STEPS
 end
 
-
+//This baby is what builds the clientside mesh. It's really complicated.
+//It should really be recoded
 function ENT:UpdateClientMesh()
 	print("Building clientside mesh...")
 	local StrutOffset = 2 //Space between coaster struts
-	local Offset = 20
-	local RailOffset = 25
-	local Radius = 10
-	local PointCount = 7
-	local modelCount = 1
+	local Offset = 20  //Downwards offset of large center beam
+	local RailOffset = 25 //Distance track beams away from eachother
+	local Radius = 10 	//radius of the circular track beams
+	local PointCount = 7 //how many points make the cylinder of the track mesh
+	local modelCount = 1 //how many models the mesh has been split into
 
 	if #self.CatmullRom.PointsList > 3 then
 		self.BuildingMesh = true //Tell the mesh to stop drawing because we're gonna rebuild it
@@ -452,13 +454,12 @@ function ENT:AngleAt(i, perc )
 
 	local AngVec = Vector(0,0,0)
 
-
 	AngVec = Vec1 - Vec2
 
 	return AngVec:Normalize():Angle()
 end
 
-//Set invalid nodes to valid (for when the mesh is first built
+//Set invalid nodes to valid (for when the mesh is first built)
 function ENT:ValidateNodes()
 	if self.Nodes != nil && #self.Nodes > 0 then
 		for _, v in pairs( self.Nodes ) do
@@ -467,7 +468,7 @@ function ENT:ValidateNodes()
 	end
 end
 
-//Get the multiplier for the current spline (to make things smooth )
+//Get the multiplier for the current spline (to make things smooth along the track)
 function ENT:GetMultiplier(i, perc)
 	local Dist = 1
 	local Vec1 = self.CatmullRom:Point( i, perc )
@@ -479,6 +480,7 @@ function ENT:GetMultiplier(i, perc)
 end
 
 //I can't retrieve the triangles from a compiled model, SO LET'S MAKE OUR OWN
+//These are the triangular struts of the metal beam mesh track
 function ENT:CreateStrutsMesh(pos, ang)
 	local width = 5
 	local Offset = 15
@@ -671,7 +673,8 @@ function ENT:CreateStrutsMesh(pos, ang)
 	return Vertices
 end
 
-function ENT:GetTrackDistance() //Gets the distance along the track
+//Gets the distance along the track
+function ENT:GetTrackDistance()
 	if #self.Nodes < 2 then return 0 end
 	
 	local dist = 0
@@ -684,26 +687,15 @@ function ENT:GetTrackDistance() //Gets the distance along the track
 	return dist
 end
 
-function ENT:FarthestNodeDist()
-	local LargestDist = 0
-	local Ent = nil
-	for k, v in pairs( self.Nodes ) do
-		local dist = self:GetPos():Distance( v:GetPos() )
-		if dist > LargestDist then
-			LargestDist = dist
-			Ent = v
-		end
-	end
-	if IsValid( Ent ) then return Ent:GetPos() end
-	return nil
-end
-
+//Given a spline number, return the segment it's on
 function ENT:GetSplineSegment(spline) //Get the segment of the given spline
 	local STEPS = self.CatmullRom.STEPS
 	
 	return math.floor( spline / STEPS ) + 2
 end
 
+//Main function for all track rendering
+//Draws track supports, track preview beams, track mesh
 function ENT:DrawTrack()
 	if self.CatmullRom == nil then return end //Shit
 
@@ -759,9 +751,10 @@ function ENT:DrawTrack()
 
 end
 
+//Draw invalid nodes, otherwise known as track preview
 function ENT:DrawInvalidNodes()
 	if self.Nodes == nil then return end
-	
+	if LocalPlayer():GetInfoNum("coaster_previews") == 0 then return end
 	for k, v in pairs( self.Nodes ) do
 		if v.Invalidated && k + 1 < #self.Nodes then //Don't draw the last node
 			self:DrawSideRail( k, -15 )
@@ -771,6 +764,7 @@ function ENT:DrawInvalidNodes()
 
 end
 
+//Draw a single segment's curve
 function ENT:DrawSegment(segment)
 	if not (segment > 1 && (#self.CatmullRom.PointsList > segment )) then return end
 	if self.CatmullRom.Spline == nil or #self.CatmullRom.Spline < 1 then return end
@@ -797,6 +791,8 @@ function ENT:DrawSegment(segment)
 
 end
 
+//Draw the track supports.
+//This includes the base, and the variable length support cylinder
 function ENT:DrawSupports()
 	if LocalPlayer():GetInfoNum("coaster_supports") == 0 then return end
 
@@ -874,7 +870,7 @@ function ENT:DrawSupports()
 	
 end
 
-
+//Draw a rail of a segment with a given offset
 function ENT:DrawSideRail( segment, offset )
 	if not (segment > 1 && (#self.CatmullRom.PointsList > segment )) then return end
 	if not self.CatmullRom then return end
@@ -924,7 +920,8 @@ function ENT:DrawSideRail( segment, offset )
 	//local pos = self.CatmullRom.Spline[i] + AngVec:Angle():Right() * -nOffset
 end
 
-
+//Draw the pre-generated rail mesh
+//I can't easily set the color :( )
 function ENT:DrawRailMesh()
 	//Set their colors
 	local r, g, b = self:GetTrackColor()
@@ -941,6 +938,9 @@ function ENT:DrawRailMesh()
 	
 end
 
+//Draw a rail along the entirety of the track
+//This was what was use before track meshes
+//It also got really laggy
 function ENT:DrawRail(offset)
 	local nOffset = offset
 	render.StartBeam(#self.CatmullRom.Spline)
@@ -974,6 +974,9 @@ function ENT:DrawRail(offset)
 	render.EndBeam()
 end
 
+//Get the controller entity of this node
+//I should make a shared function to do this
+//This is bad
 function ENT:GetController()
 	if self:IsController() then return self end
 
@@ -991,12 +994,14 @@ function ENT:GetController()
 
 end
 
+//Draw the node
 function ENT:Draw()
 	if !LocalPlayer():InVehicle() then
 		self:DrawModel()
 	end
 end
 
+//Update the node's spline if our velocity (and thus position) changes
 function ENT:Think()
 	if !self:IsController() then return end
 	
@@ -1014,15 +1019,6 @@ function ENT:OnRemove()
 		self:UpdateClientSpline()
 	end
 end
-
-local function GetMotionBlurValues( x, y, fwd, spin )
-	if IsValid(LocalPlayer():GetVehicle()) && IsValid(LocalPlayer():GetVehicle():GetParent()) then
-		return x, y, LocalPlayer():GetVehicle():GetParent():GetVelocity():Length() * CoasterBlur, spin //HOLY SHIT
-	else
-		return x, y, fwd, spin
-	end
-end
-hook.Add( "GetMotionBlurValues", "Coaster_motionblur", GetMotionBlurValues )
 
 
 

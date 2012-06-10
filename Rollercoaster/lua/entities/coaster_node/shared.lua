@@ -1,8 +1,8 @@
-ENT.Type 		= "anim"
-ENT.Base 		= "base_anim"
+ENT.Type 			= "anim"
+ENT.Base 			= "base_anim"
 ENT.PrintName		= "Roller coaster Node"
-ENT.Author		= "Foohy"
-ENT.Information		= "Spawns a node for a rollercoaster"
+ENT.Author			= "Foohy"
+ENT.Information		= "A node for a rollercoaster"
 ENT.Category		= "Foohy"
 
 ENT.Spawnable		= false
@@ -70,11 +70,11 @@ function ENT:GetNextNode()
 	return Entity(self.dt.NextNode)
 end
 
-function ENT:SetRoll(roll) //Not to be confused with CLuaParticle's SetRoll()
+function ENT:SetRoll(roll) //Not to be confused with CLuaParticle.SetRoll()
 	self.dt.Roll = roll
 end
 
-function ENT:GetRoll() //Not to be confused with CLuaParticle's GetRoll()
+function ENT:GetRoll() //Not to be confused with CLuaParticle.GetRoll()
 	return self.dt.Roll or 0
 end
 

@@ -6,10 +6,10 @@ ENT.Mass = 80
 
 ENT.Velocity = 10 //Starting velocity
 ENT.Multiplier = 1 //Multiplier to set the same speed per node segment
-ENT.Controller = nil
-ENT.CoastSound = nil
-ENT.ChainSound = nil
-ENT.WindSound  = nil
+ENT.Controller = nil //Controller entity. Useless
+ENT.CoastSound = nil //Sound of just moving
+ENT.ChainSound = nil //Sound of chains (Move to serverside?)
+ENT.WindSound  = nil //Sound of wind
 
 usermessage.Hook("Coaster_OffDaRailz", function( um )
 	local ent = um:ReadEntity()
@@ -20,6 +20,7 @@ usermessage.Hook("Coaster_OffDaRailz", function( um )
 
 end )
 
+//Update with the controller node. Currently has no use
 usermessage.Hook("coaster_train_fullupdate", function(um)
 	local self = um:ReadEntity()
 	local controller = um:ReadEntity()
@@ -28,6 +29,7 @@ usermessage.Hook("coaster_train_fullupdate", function(um)
 
 end )
 
+//Start on a segment with a chain
 usermessage.Hook("ChainStart", function(um)
 	local ent = um:ReadEntity()
 	
@@ -37,6 +39,7 @@ usermessage.Hook("ChainStart", function(um)
 
 end )
 
+//Get off a segment with a chain
 usermessage.Hook("ChainStop", function(um)
 	local ent = um:ReadEntity()
 	
@@ -46,6 +49,7 @@ usermessage.Hook("ChainStop", function(um)
 
 end )
 
+//Create the sounds
 function ENT:Initialize()
 	self.CoastSound = CreateSound( self, "coaster_ride.wav" )
 	self.CoastSound:PlayEx(0.5, 100)
@@ -59,70 +63,9 @@ end
 function ENT:Draw()
 	self:DrawModel()	
 end
-/*
-function ENT:AngleAt(i, perc )
-	local AngVec = Vector(0,0,0)
-	local curSpline = self:GetCurrentSpline( i, perc )
-
-	if #self.Controller.CatmullRom.Spline > curSpline + 1 then
-
-		AngVec = self.Controller.CatmullRom.Spline[curSpline] - self.Controller.CatmullRom.Spline[curSpline + 1]
-		AngVec:Normalize()
-	end
-	return AngVec:Angle()
-end
-
-function ENT:GetCurrentSpline(i, perc)
-	local STEPS = 10//(self.Controller.CatmullRom.STEPS
-	
-	local spline = (i - 2 ) * STEPS + (STEPS * perc)
-	//print(math.floor(spline))
-	return math.Clamp( math.floor(spline), 1, #self.Controller.CatmullRom.Spline)
-end
-
-function ENT:GetMultiplier(i, perc)
-	local Dist = 1
-	local curSpline = self:GetCurrentSpline( i, perc )
-
-	if #self.Controller.CatmullRom.Spline > curSpline + 1 then
-		Dist = self.Controller.CatmullRom.Spline[curSpline]:Distance( self.Controller.CatmullRom.Spline[curSpline + 1] )
-	end
-
-	
-	return 1 / Dist 
-end
-
-function ENT:PhysThink()
-	self.Velocity = self.Velocity + ((math.NormalizeAngle(self:GetAngles().p )) / -self.Mass ) * FrameTime() * 100
-	self.CoastSound:ChangePitch(math.Clamp( math.abs(self.Velocity), 1, 240 ) )
-end
 
 function ENT:Think()
-	if IsValid( self.Controller ) then		
-		self.Multiplier = self:GetMultiplier(self.CurSegment, self.Percent)
-		self:SetPos( self.Controller.CatmullRom:Point(self.CurSegment, self.Percent) )
-		//self:SetAngles( self.Controller.CatmullRom:Angle(self.CurSegment, self.CurTime) )
-		self:SetAngles( self:AngleAt(self.CurSegment, self.Percent) )
-		
-		if self.Percent > 1 then
-			self.CurSegment = self.CurSegment + 1
-			if self.CurSegment > #self.Controller.Nodes - 2 then self.CurSegment = 2 end
-
-			self.Percent = 0
-		elseif self.Percent < 0 then
-			self.CurSegment = self.CurSegment - 1
-			if self.CurSegment < 2 then self.CurSegment = #self.Controller.Nodes end
-			self.Percent = 1
-		end
-		
-		self.Percent = self.Percent + (FrameTime() * self.Multiplier * self.Velocity )
-	end
-	
-	self:PhysThink()
-end
-*/
-
-function ENT:Think()
+	//Change sound pitch and volume depending on speed
 	if self.OffDaRailz then
 		if self.CoastSound != nil then self.CoastSound:Stop() end
 	else
@@ -142,13 +85,14 @@ function ENT:Think()
 		end
 	end
 	
-	//Manage shaking
+	//Manage shaking TODO: screenshake doesn't lower amplitude as distance from center becomes higher. Come up with alternative shake?
 	local amp = math.Clamp( self:GetVelocity():Length() / 2000, 0, 32 )
 	amp = math.Clamp( amp - LocalPlayer():GetPos():Distance( self:GetPos() ), 0, 2000 )
 	util.ScreenShake( self:GetPos(), amp, 300, .5, 300 )
 
 end
 
+//Remove sounds
 function ENT:OnRemove()
 	if self.CoastSound != nil then
 		self.CoastSound:Stop()
@@ -168,6 +112,7 @@ end
 
 
 //Debris effect
+//TODO: It kinda sucks for this. Make something better
 local EFFECT = {};
 	
 function EFFECT:Init( data )
@@ -197,9 +142,9 @@ function EFFECT:Init( data )
 			debris:SetCollisionBounds( Vector( -6, -6, -6 ), Vector( 6, 6, 6 ) )
 
 			if math.random( 1, 3 ) == 1 then
-				debris:SetColor( 255, 125, 0, 255 )
+				debris:SetColor( Color( 255, 125, 0, 255 ) )
 			else
-				debris:SetColor( 215, 0, 0, 255 )
+				debris:SetColor( Color( 215, 0, 0, 255 ) )
 			end
 
 			local phys = debris:GetPhysicsObject()
