@@ -30,6 +30,25 @@ if SERVER then
 		
 	end )
 
+	function CoasterManager.CreateNodeSimple( id, pos, ang ) //For use with spawning coasters from a file. Less automagic bs
+		local node = ents.Create("coaster_node")		
+		node.CoasterID = id
+		node:SetPos( pos )
+		node:SetAngles( ang )
+		node:Spawn()
+		node:Activate()
+
+		if !IsValid( Rollercoasters[id] ) then
+
+			Rollercoasters[id] = node
+			Rollercoasters[id]:SetController(true)
+			Rollercoasters[id]:SetModel( "models/props_junk/PopCan01a.mdl" )
+		end
+		
+		Rollercoasters[id]:AddNodeSimple( node )
+		return node
+	end
+
 	function CoasterManager.CreateNode( id, pos, ang, chains )
 		local node = ents.Create("coaster_node")		
 		node.CoasterID = id

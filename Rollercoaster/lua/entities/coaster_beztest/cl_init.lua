@@ -1,5 +1,4 @@
 include( "shared.lua" )
-include( "mesh_beams.lua")
 
 CoasterBlur = 0.00003 //Blur multiplier
 ENT.TrackMatrix = Matrix()
@@ -27,6 +26,7 @@ function ENT:Initialize()
 	//Default to being invalidated
 	self.Invalidated = true
 
+
 	if !self:IsController() then return end //Don't continue executing -- the rest of this stuff is for only the controller
 
 	//Create the client side models
@@ -44,9 +44,9 @@ function ENT:Initialize()
 	
 	//Material table, to vary the base skin depending on the type of ground it's on
 	self.MatSkins = {
-		[MAT_DIRT] 		= 0,
-        [MAT_CONCRETE] 	= 1,
-		[MAT_SAND] 		= 2,
+		[MAT_DIRT] 		= Material("models/sunabouzu/coaster_base"),
+        [MAT_CONCRETE] 	= Material("models/sunabouzu/coaster_base2"),
+		[MAT_SAND] 		= Material("models/sunabouzu/coaster_base3"),
 	}
 	
 	//Track material
@@ -65,29 +65,12 @@ function ENT:Initialize()
 
 	//And create the clientside spline controller to govern drawing the spline
 	self.CatmullRom = {}
-	self.CatmullRom = CoasterManager.Controller:New( self )
-	//self.CatmullRom.STEPS = 20
+	self.CatmullRom = CoasterManager.BezierController:New( self )
 	self.CatmullRom:Reset()
 
 end
 
-usermessage.Hook("Coaster_RefreshTrack", function( um )
-	self = um:ReadEntity()
-	
-	if self:IsController() then
-		//self:SetupTrack()
-		self:RefreshClientSpline()
-		//self:UpdateClientMesh()
-	end	
-
-end )
-
-usermessage.Hook("Coaster_CartFailed", function( um )
-	local needed = um:ReadChar() or 0
-	GAMEMODE:AddNotify("Need " .. needed .. " more nodes to create track!", NOTIFY_ERROR, 3 )
-end )
-
-usermessage.Hook("Coaster_AddNode", function( um )
+usermessage.Hook("Bezier_AddNode", function( um )
 	local self = Entity(um:ReadShort())
 	/*local node = Entity(um:ReadShort())
 
@@ -99,56 +82,30 @@ usermessage.Hook("Coaster_AddNode", function( um )
 	else
 		self.Nodes[ #self.Nodes + 1] = node 
 	end*/
-	if !self.IsController then return end //Shared functions don't exist yet.
-	
+
 	if (self:IsController()) then
 		//self:SetupTrack()
 		self:RefreshClientSpline()
 		//self:UpdateClientMesh()
-		
-		//Invalidate nearby nodes
-		if self.Nodes != nil then
-			last = #self.Nodes
-
-			if IsValid( self.Nodes[ last ] ) then
-				self.Nodes[ last ].Invalidated = true
-			end
-			if IsValid( self.Nodes[ last - 1 ] ) then
-				self.Nodes[ last - 1 ].Invalidated = true
-			end
-			if IsValid( self.Nodes[ last - 2 ] ) then
-				self.Nodes[ last - 2 ].Invalidated = true
-			end
-			if IsValid( self.Nodes[ last - 3 ] ) then
-				self.Nodes[ last - 3 ].Invalidated = true
-			end
-		end
 	end
+
+	local ct1, ct2 =  self:GetControls()
+
+	self.Control1 = ct1
+	self.Control2 = ct2
 end )
 
-usermessage.Hook("Coaster_nodeinvalidate", function( um )
-	local controller = um:ReadEntity()
-	local node	 = um:ReadEntity()
+usermessage.Hook("Coaster_editnode", function( um  )
+	local self = um:ReadEntity()
+	local ctrl1 = um:ReadEntity()
+	local ctrl2 = um:ReadEntity()
+	local index = um:ReadShort()
 
-
-	if !IsValid( controller ) or !IsValid( node ) then return end
-	if #controller.Nodes < 1 then return end
-
-	for k, v in pairs( controller.Nodes ) do
-		if v == node then
-			v.Invalidated = true
-
-			if IsValid( controller.Nodes[ k - 1 ] ) then
-				controller.Nodes[ k - 1 ].Invalidated = true
-			end
-			if IsValid( controller.Nodes[ k - 2 ] ) then
-				controller.Nodes[ k - 2 ].Invalidated = true
-			end
-			if IsValid( controller.Nodes[ k + 1 ] ) then
-				controller.Nodes[ k + 1 ].Invalidated = true
-			end
-		end
-
+	if IsValid( self ) && self:IsController() && IsValid( ctrl1 ) && IsValid( ctrl2 ) then
+		self.Editing = true
+		self.EditIndex = index
+		self.Control1 = ctrl1
+		self.Control2 = ctrl2
 	end
 
 end )
@@ -157,13 +114,13 @@ function ENT:RefreshClientSpline()
 	self.CatmullRom:Reset()
 	table.Empty( self.Nodes )
 	
-	self.CatmullRom:AddPointAngle( 1, self:GetPos(), self:GetAngles(), 1.0 ) //Set ourselves as the first node as we're used to calculate the track's spline
+	self.CatmullRom:AddPointAngle( 1, self:GetPos() ) //Set ourselves as the first node as we're used to calculate the track's spline
 	table.insert( self.Nodes, self )
 	local firstNode = self:GetFirstNode()
 
 	if !IsValid(firstNode) then return end
 	
-	self.CatmullRom:AddPointAngle( 2, firstNode:GetPos(), firstNode:GetAngles(), 1.0 )
+	self.CatmullRom:AddPointAngle( 2, firstNode:GetPos() )
 	table.insert( self.Nodes, firstNode )
 	local node = firstNode:GetNextNode()
 	if !IsValid(node) then return end
@@ -171,9 +128,9 @@ function ENT:RefreshClientSpline()
 	local amt = 3
 	local End = false
 	repeat
-		if node:GetClass() == "coaster_node" && node:EntIndex() != 0 then
+		if node:GetClass() == "coaster_beztest" && node:EntIndex() != 0 then
 
-			self.CatmullRom:AddPointAngle( amt, node:GetPos(), node:GetAngles(), 1.0 )
+			self.CatmullRom:AddPointAngle( amt, node:GetPos() )
 			table.insert( self.Nodes, node )
 			//print("ADDED POINT: " .. tostring(node) .. ", " .. tostring(amt) .. ", Index: " .. node:EntIndex() .. "\n")
 			node = node:GetNextNode()
@@ -193,7 +150,8 @@ function ENT:RefreshClientSpline()
 	if #self.CatmullRom.PointsList > 3 then
 		self.CatmullRom:CalcEntireSpline()
 	end
-	//print(#self.CatmullRom.PointsList)
+	print(#self.CatmullRom.PointsList)
+	PrintTable(self.CatmullRom.Spline )
 end
 
 function ENT:UpdateClientSpline()
@@ -206,6 +164,9 @@ function ENT:UpdateClientSpline()
 			
 			//Manually change the settings
 			self.CatmullRom.PointsList[i] = self.Nodes[i]:GetPos()
+			//self.CatmullRom.ControlList[i].Control1 = self.Nodes[i]:GetPos() - Vector(1000, 0, 0) 
+			//self.CatmullRom.ControlList[i].Control2 = self.Nodes[i]:GetPos() + Vector( 1000, 0, 0 ) 
+
 			self.CatmullRom.FacingsList[i]   = ang:Forward()
 			self.CatmullRom.RotationsList[i] = ang.r
 		end
@@ -224,18 +185,7 @@ concommand.Add("update_mesh", function()
 	end
 end )
 
-//Give spline index, return percent of a node
-function ENT:PercAlongNode(spline, qf)
-	while spline >= self.CatmullRom.STEPS do
-		spline = spline - self.CatmullRom.STEPS
-	end
-	if qf && spline == 0 then return 1 end
-	return spline / self.CatmullRom.STEPS
-end
-
-
 function ENT:UpdateClientMesh()
-	print("Building clientside mesh...")
 	local StrutOffset = 2 //Space between coaster struts
 	local Offset = 20
 	local RailOffset = 25
@@ -288,26 +238,15 @@ function ENT:UpdateClientMesh()
 			local ang2 = AngVec2:Angle()
 			if IsValid( ThisSegment ) && IsValid( NextSegment ) then
 				//Get the percent along this node
-				//local perc = (i % self.CatmullRom.STEPS) / self.CatmullRom.STEPS
-				local perc = self:PercAlongNode( i )
-
+				local perc = (i % self.CatmullRom.STEPS) / 10
 				//local Roll = Lerp( perc, ThisSegment:GetAngles().r,NextSegment:GetAngles().r )	
 				local Roll = Lerp( perc, ThisSegment:GetRoll(),NextSegment:GetRoll())	
-				if ThisSegment:RelativeRoll() then
-					//Roll = Roll + ang.p
-					Roll = Roll - ( ang.p - 180 )
-				end
-				//print(Roll .. " at:" .. i)
 				ang:RotateAroundAxis( AngVec, Roll ) //Segment:GetAngles().r
 
 				//For shits and giggles get it for this one too
-				local perc2 = self:PercAlongNode( i + 1, true )
-				//perc2 = (((i + 1) % self.CatmullRom.STEPS) / self.CatmullRom.STEPS )
-				//if ((i + 1) % 10 ) == 0 then perc2 = 1 end //quick fix
+				perc2 = (((i + 1) % self.CatmullRom.STEPS) / 10 )
+				if ((i + 1) % 10 ) == 0 then perc2 = 1 end //quick fix
 				local Roll2 = Lerp( perc2, ThisSegment:GetRoll(), NextSegment:GetRoll() )
-				if ThisSegment:RelativeRoll() then
-					Roll2 = Roll2 - ( ang2.p - 180 )
-				end
 				ang2:RotateAroundAxis( AngVec2, Roll2 )
 			end
 
@@ -672,17 +611,17 @@ function ENT:GetSplineSegment(spline) //Get the segment of the given spline
 end
 
 function ENT:DrawTrack()
-	if self.CatmullRom == nil then return end //Shit
+	if !self.CatmullRom then return end //Shit
+	if !self.CatmullRom.PointsList then return end
 
 	if #self.CatmullRom.PointsList > 3 then
 		local CTime = CurTime()
-		
-		for i = 2, (#self.CatmullRom.PointsList - 2) do
-			if IsValid( self.Nodes[i] ) && self.Nodes[i]:HasChains() then
-				render.SetMaterial( mat_chain ) //mat_chain
-				self:DrawSegment( i, CTime )
-			end 
-		end
+		//for i = 2, (#self.CatmullRom.PointsList - 2) do
+		//	if IsValid( self.Nodes[i] ) && self.Nodes[i]:HasChains() then
+		//		render.SetMaterial( mat_chain ) //mat_chain
+		//		self:DrawSegment( i, CTime )
+		//	end 
+		//end
 		
 		/*
 		render.StartBeam(#self.CatmullRom.Spline)
@@ -709,10 +648,12 @@ function ENT:DrawTrack()
 		//Draw the actual tracks
 
 
-
+		render.SetMaterial( MatLaser )
+		self:GenericDraw()
 		//self:DrawRail( 25 )
 		//self:DrawRail( -25 )
 
+		/*
 		render.SetMaterial( mat_debug )
 		self:DrawRailMesh()
 
@@ -721,7 +662,7 @@ function ENT:DrawTrack()
 
 		//Draw the supports
 		self:DrawSupports()
-
+		*/
 	end
 
 end
@@ -736,6 +677,16 @@ function ENT:DrawInvalidNodes()
 		end
 	end
 
+end
+
+function ENT:GenericDraw()
+
+	render.StartBeam( #self.CatmullRom.Spline )
+
+	for i=1, #self.CatmullRom.Spline do
+		render.AddBeam(self.CatmullRom.Spline[i], 32, 10, color_white) //time or 1
+	end
+	render.EndBeam()
 end
 
 function ENT:DrawSegment(segment)
@@ -793,14 +744,14 @@ function ENT:DrawSupports()
 				
 			local Distance = v:GetPos():Distance( trace.HitPos + Vector( 0, 0, self.BaseHeight) )
 			//Set their colors
-			local color = v:GetColor()
+			local r, g, b = v:GetColor()
 			
 			if v.Invalidated then
-				color.r = 255
-				color.g = 0
-				color.b = 0
+				r = 255
+				g = 0
+				b = 0
 			end
-			render.SetColorModulation( color.r / 255, color.g / 255, color.b / 255)
+			render.SetColorModulation( r / 255, g / 255, b / 255)
 
 			//Draw the first pole
 			self.SupportModelStart:SetRenderOrigin( trace.HitPos + Vector( 0, 0, self.BaseHeight ) ) //Add 64 units so it's right on top of the base
@@ -821,10 +772,10 @@ function ENT:DrawSupports()
 			end
 				
 			local skin = self.MatSkins[trace.MatType]
-			//render.SetMaterial( skin or table.GetFirstValue(self.MatSkins) )
 
+			render.SetMaterial( skin or table.GetFirstValue(self.MatSkins) )
 			render.SetColorModulation( 1, 1, 1 )
-			self.SupportModelBase:SetSkin( skin or 1 )
+			self.SupportModelBase:SetSkin( skin or 0 )
 			self.SupportModelBase:SetRenderOrigin( trace.HitPos )
 			self.SupportModelBase:SetAngles( Angle( 0, v:GetAngles().y, 0 ) )
 			self.SupportModelBase:SetupBones()
@@ -868,7 +819,7 @@ function ENT:DrawSideRail( segment, offset )
 
 			if IsValid( ThisSegment ) && IsValid( NextSegment ) then
 				//Get the percent along this node
-				perc = (i % self.CatmullRom.STEPS) / self.CatmullRom.STEPS
+				perc = (i % self.CatmullRom.STEPS) / 10
 				//local Roll = Lerp( perc, ThisSegment:GetAngles().r,NextSegment:GetAngles().r )	
 				local Roll = Lerp( perc, ThisSegment:GetRoll(),NextSegment:GetRoll())	
 				ang:RotateAroundAxis( AngVec, Roll ) //Segment:GetAngles().r
@@ -924,7 +875,7 @@ function ENT:DrawRail(offset)
 		
 		if IsValid( ThisSegment ) && IsValid( NextSegment ) then
 			//Get the percent along this node
-			perc = (i % self.CatmullRom.STEPS) / self.CatmullRom.STEPS
+			perc = (i % self.CatmullRom.STEPS) / 10
 			//local Roll = Lerp( perc, ThisSegment:GetAngles().r,NextSegment:GetAngles().r )	
 			local Roll = Lerp( perc, ThisSegment:GetRoll(),NextSegment:GetRoll())	
 			ang:RotateAroundAxis( AngVec, Roll ) //Segment:GetAngles().r
@@ -937,32 +888,32 @@ function ENT:DrawRail(offset)
 	render.EndBeam()
 end
 
-function ENT:GetController()
-	if self:IsController() then return self end
-
-	for _, v in pairs( ents.FindByClass( self:GetClass() )) do
-		if v:IsController() then
-			if v.Nodes && #v.Nodes > 0 then
-				for _, node in pairs( v.Nodes ) do
-					if node == self then
-						return v
-					end
-				end
-			end
-		end
-	end
-
-end
-
 function ENT:Draw()
 	if !LocalPlayer():InVehicle() then
+		if self.Editing then
+			render.SetColorModulation( 0, 1, 0 )
+		end
 		self:DrawModel()
 	end
+
+	self:DrawTrack()
 end
 
 function ENT:Think()
 	if !self:IsController() then return end
-	
+
+	if self.Editing && IsValid( self.Control1 ) && IsValid( self.Control2 ) then
+		//self.Nodes[self.EditIndex]
+
+		//Manually change the settings
+		self.CatmullRom.ControlList[self.EditIndex].Control1 = self.Control1:GetPos()
+		self.CatmullRom.ControlList[self.EditIndex].Control2 = self.Control2:GetPos() 
+
+		self:UpdateClientSpline()
+
+	else
+		self.Editing = false
+	end
 	for k, v in pairs( self.Nodes ) do	
 		if IsValid( v ) && v:GetVelocity():Length() > 0 then
 			self:UpdateClientSpline() //So we can see the beams move while me move a node
@@ -977,45 +928,3 @@ function ENT:OnRemove()
 		self:UpdateClientSpline()
 	end
 end
-
-local function GetMotionBlurValues( x, y, fwd, spin )
-	if IsValid(LocalPlayer():GetVehicle()) && IsValid(LocalPlayer():GetVehicle():GetParent()) then
-		return x, y, LocalPlayer():GetVehicle():GetParent():GetVelocity():Length() * CoasterBlur, spin //HOLY SHIT
-	else
-		return x, y, fwd, spin
-	end
-end
-hook.Add( "GetMotionBlurValues", "Coaster_motionblur", GetMotionBlurValues )
-
-
-
-
-
-
-
-//FUCKYOU DEBUG
-/*
-local pos,material,white = Vector(0,0,0), Material( "sprites/splodesprite" ),Color(255,255,255,255) --Define this sort of stuff outside of loops to make more efficient code.
-hook.Add( "HUDPaint", "paintsprites", function()
-	cam.Start3D(EyePos(),EyeAngles()) -- Start the 3D function so we can draw onto the screen.
-		render.SetMaterial( material ) -- Tell render what material we want, in this case the flash from the gravgun
-		for k, v in pairs( ents.FindByClass("coaster_node")) do
-			if v.Verts && #v.Verts > 0 then
-
-				if v.Verts.TimeChange == nil then v.Verts.TimeChange = CurTime() + 1 end
-				if v.Verts.CurVert == nil then v.Verts.CurVert = 1 end
-
-				if v.Verts.TimeChange < CurTime() then
-					v.Verts.CurVert = v.Verts.CurVert + 1
-					if v.Verts.CurVert > #v.Verts then
-						v.Verts.CurVert = 1
-					end
-					print( v.Verts.CurVert )
-					v.Verts.TimeChange = CurTime() + 1
-				end
-				render.DrawSprite(v.Verts[v.Verts.CurVert].pos, 16, 16, white) 
-			end
-		end
-	cam.End3D()
-end )
-*/

@@ -9,6 +9,7 @@ TOOL.ClientConVar["elevation"] = "500"
 TOOL.ClientConVar["bank"] = "0"
 
 TOOL.ClientConVar["trackchains"] = "0"
+TOOL.ClientConVar["relativeroll"] = "0"
 
 TOOL.GhostModel = Model("models/Combine_Helicopter/helicopter_bomb01.mdl")
 TOOL.WaitTime	= 0 //Time to wait to make sure the dtvars are updated
@@ -26,6 +27,7 @@ function TOOL:LeftClick(trace)
 	local Bank	 	= self:GetClientNumber("bank")
 	local ID 		= self:GetClientNumber("id")
 	local Chains	= self:GetClientNumber("trackchains")
+	local RelRoll 	= self:GetClientNumber("relativeroll")
 	local plyAng	= self:GetOwner():GetAngles()
 			
 	local newPos = trace.HitPos + Vector( 0, 0, Elevation )
@@ -34,13 +36,14 @@ function TOOL:LeftClick(trace)
 	if SERVER then
 		if IsValid( trace.Entity ) && trace.Entity:GetClass() == "coaster_node" then //Update an existing node's settings
 			trace.Entity:SetChains( Chains==1 )
+			trace.Entity:SetRelativeRoll( RelRoll==1 )
 			trace.Entity:SetRoll( Bank )
 			
 		else //If we didn't click on an existing node, create a new one		
 			//If the coaster is looped, unloop it
 			local controller = Rollercoasters[ID]
 			
-			if IsValid( controller ) && controller.Looped then
+			if IsValid( controller ) && controller:Looped() then
 			
 				local LastNode = controller.Nodes[ #controller.Nodes - 1 ]
 				local VeryLastNode = controller.Nodes[ #controller.Nodes ]
@@ -48,18 +51,22 @@ function TOOL:LeftClick(trace)
 					LastNode:SetPos( newPos )
 					LastNode:SetAngles( newAng )
 					LastNode:SetChains( Chains==1 )
+					LastNode:SetRelativeRoll( RelRoll==1 )
 					
 					VeryLastNode:SetPos( newPos )
 					VeryLastNode:SetAngles( newAng )
 					VeryLastNode:SetChains( Chains==1 )
+					VeryLastNode:SetRelativeRoll( RelRoll==1 )
 					
 					VeryLastNode.FinalNode = false
 				end
 				
-				controller.Looped = false
+				//controller.Looped = false
+				controller:SetLooped( false )
 			else
 				local node = CoasterManager.CreateNode( ID, newPos, newAng, Chains==1 )
 				node:SetRoll( Bank )
+				node:SetRelativeRoll( RelRoll==1 )
 			end
 
 		end
@@ -100,8 +107,9 @@ function TOOL:RightClick(trace)
 				Controller:SetPos( SecondToLast:GetPos() )
 				Controller:SetAngles( SecondToLast:GetAngles() )
 
-				newNode.FinalNode = true
-				Controller.Looped = true
+				newNode.FinalNode = true //TODO: Remove the need for this variable
+				Controller:SetLooped( true )
+				//Controller.Looped = true
 				
 				print("Looped rollercoaster!")
 			end
@@ -164,6 +172,7 @@ function TOOL.BuildCPanel(panel)
 	panel:AddControl("Slider",   {Label = "Elevation: ",    Description = "The height of the track node",       Type = "Float", Min = "0.00", Max = "5000", Command = "coaster_track_creator_elevation"})
 	panel:AddControl("Slider",   {Label = "Bank: ",    Description = "How far to bank at that node",       Type = "Float", Min = "-180.0", Max = "180.0", Command = "coaster_track_creator_bank"})
 	panel:AddControl("CheckBox", {Label = "Chains: ", Description = "Should the track have chains to push the cart up the hill?", Command = "coaster_track_creator_trackchains"})
+	panel:AddControl("CheckBox", {Label = "Relative Roll: ", Description = "Roll of the cart is relative to the tracks angle (LOOPDY LOOP HEAVEN)", Command = "coaster_track_creator_relativeroll"})
 	panel:AddControl("Button",	 {Label = "BUILD COASTER (CAUTION WEEOOO)", Description = "Build the current rollercoaster with a pretty mesh track. WARNING FREEZES FOR A FEW SECONDS.", Command = "update_mesh"})
 
 	panel:AddControl( "Header", { Text = "#Tool_coaster_track_creator_name", Description = "#Tool_track_creator_desc" }  )

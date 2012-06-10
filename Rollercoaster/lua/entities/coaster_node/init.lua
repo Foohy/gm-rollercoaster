@@ -42,13 +42,27 @@ function ENT:Initialize()
 	self.CatmullRom = CoasterManager.Controller:New( self )
 	self.CatmullRom:Reset()
 
-	//self:SetNWBool("IsCoasterController", self:IsController() )
-
+	self:SetLooped( false ) //Default to false
 
 end
 
 function ENT:GetNumNodes()
 	return #self.Nodes or 0
+end
+
+function ENT:AddNodeSimple( ent ) //For use when being spawned by a file
+	if IsValid( ent ) && ent:GetClass() == self:GetClass() then
+		local index = table.insert( self.Nodes, ent )
+
+		if IsValid( self.Nodes[ index - 1] ) then
+			self.Nodes[index - 1]:SetNextNode( ent )
+		end
+
+		// First node is the node after the controller
+		if !IsValid(self:GetFirstNode()) and !ent:IsController() then
+			self:SetFirstNode(ent)
+		end
+	end
 end
 
 function ENT:AddTrackNode( ent )
@@ -154,7 +168,7 @@ function ENT:PhysicsUpdate(physobj)
 		end
 		
 		//This is a bit nasty... it sets the appropriate nodes to their proper position to keep a looped track looped
-		if self.Looped || Rollercoasters[ self.CoasterID ].Looped then
+		if self:Looped() || Rollercoasters[ self.CoasterID ]:Looped() then
 			local controller = Rollercoasters[ self.CoasterID ]
 			
 			if controller.Nodes[ #controller.Nodes - 2] == self then

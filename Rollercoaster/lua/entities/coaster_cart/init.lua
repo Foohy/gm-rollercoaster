@@ -50,6 +50,7 @@ function ENT:Initialize()
 		self:GetPhysicsObject():SetMass( 150 )
 		self:GetPhysicsObject():Wake()
 	end
+
 end
 
 function ENT:OffDaRailz()
@@ -110,7 +111,7 @@ function ENT:PhysicsSimulate(phys, deltatime)
 		
 			//If the track isn't looped, it's OFF DA RAILZ
 			if IsValid( Rollercoasters[ self.CoasterID ] ) then
-				if !Rollercoasters[ self.CoasterID ].Looped then
+				if !Rollercoasters[ self.CoasterID ]:Looped() then
 					self:OffDaRailz()
 					return
 				end
@@ -129,7 +130,7 @@ function ENT:PhysicsSimulate(phys, deltatime)
 		
 			//If the track isn't looped, it's OFF DA RAILZ
 			if IsValid( Rollercoasters[ self.CoasterID ] ) then
-				if !Rollercoasters[ self.CoasterID ].Looped then
+				if !Rollercoasters[ self.CoasterID ]:Looped() then
 					self:OffDaRailz()
 					return
 				end

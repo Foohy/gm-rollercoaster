@@ -1,25 +1,25 @@
 ENT.Type 		= "anim"
 ENT.Base 		= "base_anim"
-ENT.PrintName		= "Roller coaster Node"
+ENT.PrintName		= "BEZIER TEST"
 ENT.Author		= "Foohy"
 ENT.Information		= "Spawns a node for a rollercoaster"
 ENT.Category		= "Foohy"
 
 ENT.Spawnable		= false
-ENT.AdminSpawnable	= false
+ENT.AdminSpawnable	= true
 
 ENT.Model			= Model( "models/Combine_Helicopter/helicopter_bomb01.mdl" )
 
 function ENT:SetupDataTables()
 	self:DTVar("Bool", 0, "IsController")
 	self:DTVar("Bool", 1, "Chained")
-	self:DTVar("Bool", 2, "RelativeRoll")
-	self:DTVar("Bool", 3, "Looped")
 	self:DTVar("Int", 0, "FirstNode")
 	self:DTVar("Int", 1, "NextNode")
 	self:DTVar("Float", 0, "Roll")
 	self:DTVar("Vector", 0, "TrackColor")
 	self:DTVar("Vector", 1, "SupportColor")
+	self:DTVar("Vector", 2, "Control1")
+	self:DTVar("Vector", 3, "Control2")
 end
 
 function ENT:SetController(bController)
@@ -36,22 +36,6 @@ end
 
 function ENT:HasChains()
 	return self.dt.Chained or false
-end
-
-function ENT:SetRelativeRoll(bRelRoll)
-	self.dt.RelativeRoll = bRelRoll
-end
-
-function ENT:RelativeRoll()
-	return self.dt.RelativeRoll or false
-end
-
-function ENT:SetLooped(looped)
-	self.dt.Looped = looped
-end
-
-function ENT:Looped()
-	return self.dt.Looped or false
 end
 
 function ENT:SetFirstNode(node)
@@ -78,18 +62,11 @@ function ENT:GetRoll() //Not to be confused with CLuaParticle's GetRoll()
 	return self.dt.Roll or 0
 end
 
-function ENT:SetTrackColor(r,g,b) 
-	self.dt.TrackColor = Vector( r, g, b )
+function ENT:SetControls( vec1, vec2 )
+	self.dt.Control1 = vec1
+	self.dt.Control2 = vec2
 end
 
-function ENT:GetTrackColor() 
-	return self.dt.TrackColor.x, self.dt.TrackColor.y, self.dt.TrackColor.z 
-end
-
-function ENT:SetSupportColor(r,g,b) 
-	self.dt.SupportColor = Vector( r, g, b )
-end
-
-function ENT:GetSupportColor() 
-	return self.dt.SupportColor.x, self.dt.SupportColor.y, self.dt.SupportColor.z 
+function ENT:GetControls()
+	return self.dt.Control1 or Vector( 0, 0, 0 ), self.dt.Control2 or Vector( 0, 0, 0)
 end

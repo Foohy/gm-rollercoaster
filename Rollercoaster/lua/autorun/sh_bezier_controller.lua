@@ -1,10 +1,9 @@
---[[
-	Planetfall Catmull-Rom Spline Controller
-	
-	Obviously this one has been customized for the cameras but you should be able to
-	adapt it to whatever is needed.
---]]
-AddCSLuaFile("autorun/sh_catmullrom_spline_controller.lua")
+/************
+	Bezier curve controller by foohy with references from
+	the planetfall catmull rom spline script.
+	holy fuck how am i going to do this
+***********/
+AddCSLuaFile("autorun/sh_bezier_controller.lua")
 
 local Controller = {}
 Controller.STEPS = 20
@@ -15,12 +14,8 @@ function Controller:New(host_ent)
 	obj.__index = Controller
 	setmetatable(obj, obj)
 	
-	obj.Perc = 0
-	
-	obj.CurSegment          = 2
-	obj.CurSegmentTimestamp = 0
-	
 	obj.PointsList = {}
+	obj.ControlList = {}
 	
 	obj.FacingsList   = {}
 	obj.RotationsList = {}
@@ -40,13 +35,9 @@ function Controller:New(host_ent)
 end
 
 function Controller:Reset()
-	self.CurSegment = 2
-	self.CurSegmentTimestamp = CurTime()
 	self.PointsList = {}
-	
-	if self.DurationList[2] then
-		self.CurSegmentTimestamp = self.CurSegmentTimestamp + self.DurationList[2]
-	end
+
+	self.ControlList = {}
 end
 
 function Controller:AddPoint(index, vec, duration)
@@ -61,17 +52,11 @@ function Controller:AddAngle(index, ang, duration)
 	self.DurationList[index] = duration or 2
 end
 
-function Controller:AddPointAngle(index, vec, ang, duration)
+function Controller:AddPointAngle(index, vec, ctrl1, ctrl2)
 	self.PointsList[index] = vec
-	
-	self.FacingsList[index]   = ang:Forward()
-	self.RotationsList[index] = ang.r
-	
-	self.DurationList[index] = duration or 2
-end
-
-function Controller:AddZoomPoint(index, zoom)
-	self.ZoomList[index] = zoom or 75
+	self.ControlList[index] = {}
+	self.ControlList[index].Control1 = ctrl1 or ( vec - Vector(100, 0, 0) )
+	self.ControlList[index].Control2 = ctrl2 or ( vec + Vector( 100, 0, 0 ) )
 end
 
 function Controller:CalcPerc()
@@ -125,9 +110,29 @@ function Controller:EndSegment()
 	return self.Perc
 end
 
+/****
+	explanataion for this
+	a = Vector of the first point (starting destination)
+	b = Vector of the 2nd node (Control point of the first point)
+	c = Vector of the 3rd node (Control point of the last point)
+	d = Vector of the 4th node (Ending position)
+	t = Time, or better described as percent along the track from 0 to 1
+****/
+function Bezier( a, b, c, d, t )
+	local ab,bc,cd,abbc,bccd 
+	
+	ab = LerpVector(t, a, b)
+	bc = LerpVector(t, b, c)
+	cd = LerpVector(t, c, d)
+	abbc = LerpVector(t, ab, bc)
+	bccd = LerpVector(t, bc, cd)
+	dest = LerpVector(t, abbc, bccd)
+	
+	return dest //HOLY SHIT BEZIERSS
+end
 
--- Catmull-Rom spline is just like a B spline, only with a different basis
-function Controller:CatmullRomCalc(i, perc)
+//WHATTHEFUCK
+function Controller:BezierCalc(i, perc)
 	perc = perc or self.Perc
 	
 	if i == -1 then
@@ -151,7 +156,7 @@ function Controller:Point(i, perc)
 	
 	local vec = Vector(0, 0, 0)
 	
-	local safeguard = (#self.PointsList - 2)
+	local safeguard = (#self.PointsList - 1)
 	
 	-- Isolate a very specific issue where if it was at segment 3 and
 	-- you removed/undid to 4 nodes it would panic.
@@ -162,9 +167,18 @@ function Controller:Point(i, perc)
 		self.CurSegment = i
 	end
 	
+	if self.PointsList[i] && self.ControlList[i] then
+		local pt0 = self.PointsList[i]
+		local pt1 = self.ControlList[i].Control2
+		local pt2 = self.ControlList[i+1].Control1
+		local pt3 = self.PointsList[i+1]
+
+		vec = Bezier(pt0, pt1, pt2, pt3, perc)
+	end	
+/*
 	for j = -1, 2 do
 		local idx  = i + j
-		local multi = self:CatmullRomCalc(j, perc)
+		local multi = self:BezierCalc(j, perc)
 		
 		if self.PointsList[idx] then
 			vec.x = vec.x + (multi * self.PointsList[idx].x)
@@ -172,7 +186,7 @@ function Controller:Point(i, perc)
 			vec.z = vec.z + (multi * self.PointsList[idx].z)
 		end
 	end
-	
+	*/
     return vec
 end
 
@@ -191,7 +205,7 @@ function Controller:Angle(i, perc) -- Gods rotted euler angles! Let's use a pseu
 	local facing   = Vector(0, 0, 0)
 	local rotation = 0
 	
-	local safeguard = (#self.PointsList - 2)
+	local safeguard = (#self.PointsList - 1)
 	
 	-- Isolate a very specific issue where if it was at segment 3 and
 	-- you removed/undid to 4 nodes it would panic.
@@ -221,63 +235,21 @@ function Controller:Angle(i, perc) -- Gods rotted euler angles! Let's use a pseu
     return ang
 end
 
-function Controller:CalcZoom(i, perc) -- Gods rotted euler angles! Let's use a pseudo quaternion-like rotation scheme instead. :3
-	perc = perc or self.Perc
-	i = i or self.CurSegment
-	
-	local zoom = 0
-	
-	local safeguard = (#self.PointsList - 2)
-	
-	-- Isolate a very specific issue where if it was at segment 3 and
-	-- you removed/undid to 4 nodes it would panic.
-	
-	if i > safeguard then
-		i = safeguard
-		
-		self.CurSegment = i
-	end
-	
-	for j = -1, 2 do
-		local idx  = i + j
-		
-		if self.ZoomList[idx] then
-			zoom = zoom + (self:CatmullRomCalc(j, perc) * self.ZoomList[idx])
-		end
-	end
-	
-    return zoom
-end
-
 function Controller:CalcEntireSpline()
 	local nodecount = #self.PointsList
 	
-	if nodecount < 4 then
-		return ErrorNoHalt("Not enough nodes given, I need four and was given ", nodecount, ".\n")
+	if nodecount < 2 then
+		return ErrorNoHalt("Not enough nodes given, I need two and was given ", nodecount, ".\n")
 	end
 	
 	local pointcount = 0
 	
-	for index = 2, (nodecount - 2) do
+	for index = 1, (nodecount - 1) do
 		for j = 1, Controller.STEPS do
-			pointcount = pointcount + 1
-			
+			pointcount = pointcount + 1	
 			self.Spline[pointcount] = self:Point(index, j / Controller.STEPS)
 		end
 	end
-end
-
-function Controller:AngleAt(i, perc )
-	local AngVec = Vector(0,0,0)
-	local curSpline = self:GetCurrentSpline( i, perc )
-
-	if #self.Spline > curSpline + 1 then
-
-		AngVec = self.Spline[curSpline] - self.Spline[curSpline + 1]
-		AngVec:Normalize()
-	end
-	
-	return AngVec:Angle()
 end
 
 function Controller:GetCurrentSpline(i, perc)	
@@ -287,4 +259,4 @@ function Controller:GetCurrentSpline(i, perc)
 end
 
 
-CoasterManager.Controller = Controller
+CoasterManager.BezierController = Controller
