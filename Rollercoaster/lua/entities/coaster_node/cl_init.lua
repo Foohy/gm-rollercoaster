@@ -207,9 +207,11 @@ function ENT:RefreshClientSpline()
 			self.CatmullRom:AddPointAngle( amt, node:GetPos(), node:GetAngles(), 1.0 )
 			table.insert( self.Nodes, node )
 			//print("ADDED POINT: " .. tostring(node) .. ", " .. tostring(amt) .. ", Index: " .. node:EntIndex() .. "\n")
-			node = node:GetNextNode()
+			if node.GetNextNode then
+				node = node:GetNextNode()
 
-			amt = amt + 1		
+				amt = amt + 1	
+			end	
 		else
 			End = true
 		end
@@ -873,6 +875,8 @@ end
 
 function ENT:DrawSideRail( segment, offset )
 	if not (segment > 1 && (#self.CatmullRom.PointsList > segment )) then return end
+	if not self.CatmullRom then return end
+
 	local node = (segment - 2) * self.CatmullRom.STEPS
 	local NextSegment = self.Nodes[ segment + 1 ]
 	local ThisSegment = self.Nodes[ segment ]

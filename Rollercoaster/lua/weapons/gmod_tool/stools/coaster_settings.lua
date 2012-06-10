@@ -1,5 +1,5 @@
 TOOL.Category   = "Rollercoaster"
-TOOL.Name       = "Coaster Cart Creator"
+TOOL.Name       = "Track Settings"
 TOOL.Command    = nil
 TOOL.ConfigName	= nil
 
@@ -80,16 +80,20 @@ function TOOL:ValidTrace(trace)
 end
 
 function TOOL.BuildCPanel(panel)	
-	panel:AddControl("Slider",   {Label = "Number of carts: ",    Description = "The number of carts on the coaster train",       Type = "Int", Min = "1", Max = "8", Command = "coaster_cart_creator_cart_amount"})
-	panel:AddControl("CheckBox", {Label = "Minimum Speed: ", Description = "Should the cart ever stop (Behaves just like as if the cart was permanently on chains)", Command = "coaster_cart_creator_powered"})
 	panel:AddControl("Color", { Label = "Track Color", Multiplier = 255, ShowAlpha = false, Red = "coaster_settings_r", Green = "coaster_settings_g", Blue = "coaster_settings_b"})
+	local ComboBox = vgui.Create("DComboBox", panel)
+	ComboBox:AddChoice("Metal Coaster")
+	ComboBox:AddChoice("Wooden Coaster")
+	ComboBox:AddChoice("Simple Coaster")
+	ComboBox:ChooseOptionID( 1 )
+	panel:AddItem( ComboBox )
 
-	panel:AddControl( "Header", { Text = "#Tool_coaster_cart_creator_name", Description = "#Tool_track_cart_desc" }  )
+	panel:AddControl( "Header", { Text = "#Tool_coaster_settings_name", Description = "#Tool_track_cart_desc" }  )
 end
 
 if CLIENT then
 
-	language.Add( "Tool_coaster_settings_name", "Coaster Settings" )
+	language.Add( "Tool_coaster_settings_name", "Track Settings" )
 	language.Add( "Tool_coaster_settings_desc", "Change track-wide settings" )
 	language.Add( "Tool_coaster_settings_0", "Click on any node of a rollercoaster to update its settings" )
 

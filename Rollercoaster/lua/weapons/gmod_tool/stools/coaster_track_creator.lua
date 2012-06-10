@@ -14,6 +14,8 @@ TOOL.ClientConVar["relativeroll"] = "0"
 TOOL.GhostModel = Model("models/Combine_Helicopter/helicopter_bomb01.mdl")
 TOOL.WaitTime	= 0 //Time to wait to make sure the dtvars are updated
 
+coaster_track_creator_HoverEnt = nil
+
 function TOOL:LeftClick(trace)
 	local ply   = self:GetOwner()
 	
@@ -124,6 +126,10 @@ function TOOL:Reload(trace)
 
 end
 
+function TOOL:Holster()
+	 coaster_track_creator_HoverEnt = nil
+end
+
 function TOOL:Think()
 	if CLIENT then
 		local Elevation = self:GetClientNumber("elevation")
@@ -131,6 +137,10 @@ function TOOL:Think()
 		local plyAng	= self:GetOwner():GetAngles()
 			
 		local ply   = self:GetOwner()
+
+		if IsValid( self.GhostEntity ) && ( SERVER || !SinglePlayer() ) then 
+			self.GhostEntity:SetNoDraw( false )
+		end
 			
 		trace = {}
 		trace.start  = ply:GetShootPos()
@@ -144,15 +154,25 @@ function TOOL:Think()
 		//Make the tooltip
 
 		if IsValid( trace.Entity ) && ( trace.Entity:GetClass() == "coaster_node") && CurTime() > self.WaitTime then
+			coaster_track_creator_HoverEnt = trace.Entity 
+
 			local toolText = "Rollercoaster Node"
 			if trace.Entity:IsController() then 
 				toolText = toolText .. " (Controller)" 
+				toolText = toolText .. "\nLooped: " .. tostring( trace.Entity:Looped() )
 			end
 			toolText = toolText .. "\nChained: " .. tostring(trace.Entity:HasChains()) 
-			toolText = toolText .. "\nself: " .. tostring( trace.Entity )
-			toolText = toolText .. "\nNext Node: " .. tostring( trace.Entity:GetNextNode() )
+			toolText = toolText .. "\nRoll: " .. tostring( trace.Entity:GetRoll() )
+			//toolText = toolText .. "\nNext Node: " .. tostring( trace.Entity:GetNextNode() )
 			AddWorldTip( trace.Entity:EntIndex(), ( toolText ), 0.5, trace.Entity:GetPos(), trace.Entity  )
+
+			if IsValid( self.GhostEntity ) && ( SERVER || !SinglePlayer() ) then 
+				self.GhostEntity:SetNoDraw( true )
+			end
+		else 
+			coaster_track_creator_HoverEnt = nil 
 		end
+
 			
 		if !IsValid( self.GhostEntity ) then
 			self:MakeGhostEntity( self.GhostModel, newPos, newAng )
@@ -163,6 +183,18 @@ function TOOL:Think()
 		end
 	end
 end
+
+
+
+hook.Add( "PreDrawHalos", "DrawHoverHalo", function()
+	if ( !IsValid( coaster_track_creator_HoverEnt ) ) then return end
+
+	local tbl = {}
+	tbl[1] = coaster_track_creator_HoverEnt
+	local size = math.random( 1, 2 )
+	effects.halo.Add( tbl, Color( 180 - math.random( 0, 80 ), 220 - math.random( 0, 50 ), 255, 255 ), size, size, 1, true, false )
+
+end )
 
 function TOOL:ValidTrace(trace)
 
