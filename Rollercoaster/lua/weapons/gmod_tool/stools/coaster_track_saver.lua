@@ -454,11 +454,12 @@ if SERVER then
 
 		local pos = Vector( nodeinfo.pos )
 		local ang = Angle( nodeinfo.ang )
+		local color = Color( nodeinfo.color.r, nodeinfo.color.g, nodeinfo.color.b )
 
 		local node = CoasterManager.CreateNodeSimple(id, pos, ang )
 		node:SetRoll( nodeinfo.roll )
 		node:SetChains( nodeinfo.chains=="true" )
-		node:SetColor( nodeinfo.color )
+		node:SetColor( color  )
 		node:SetOwner( ply )
 		node.Filename = filename //Prevent duplicates of the coaster to be spawned
 
