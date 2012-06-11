@@ -1,7 +1,7 @@
 Garry's Mod Lua Rollercoasters
 ==============================
 
-Lua rollercoaster addon for Garry's Mod adds the ability create nodes to create a track. The curves of the track are using the catmull-rom spline algorithm.
+Lua rollercoaster addon for Garry's Mod adds the ability fully functioning rollercoasters. The curves of the track are using the catmull-rom spline algorithm.
 
 
 #### Features ####
@@ -15,7 +15,7 @@ Lua rollercoaster addon for Garry's Mod adds the ability create nodes to create 
 * Hopefully more eventually
 
 #### Perfomance Settings ####
-Although coasters are a relatively low perfomance hit when rendering, some things in excess can get a little slow.
+Although coasters have a relatively low perfomance hit when rendering, some things in excess can get a little slow.
 * coaster_supports 1/0 to toggle the drawing of support beams
 * coaster_previews 1/0 to toggle the drawing of track previews
 * coaster_motionblur 1/0 to toggle the drawing of motion blur.
@@ -23,3 +23,6 @@ Although coasters are a relatively low perfomance hit when rendering, some thing
 #### Installation ####
 Installation is relatively simple. Just extract the Rollercoasters folder into your garrysmod/garrysmod/addons folder.
 
+#### More information ####
+See current status on rollercoasters via the Trello page [located here](https://trello.com/board/rollercoaster/4fd3f7084971ae066211c8ad)
+[Facepunch Thread](http://does_not_exist_yet)
