@@ -157,7 +157,7 @@ function ENT:PhysicsSimulate(phys, deltatime)
 	
 	//Change the roll depending on the track
 	//local Roll = Lerp( self.Percent, CurNode:GetAngles().r,NextNode:GetAngles().r ) //Lerp the roll from the last segments roll to the next segments roll
-	local Roll = Lerp( self.Percent, CurNode:GetRoll(), NextNode:GetRoll())	
+	local Roll = Lerp( self.Percent, self.Controller.Nodes[self.CurSegment]:GetRoll(), self.Controller.Nodes[self.CurSegment + 1]:GetRoll())	
 	
 	//Set the roll for the current track peice
 	ang:RotateAroundAxis( self:AngleAt(self.CurSegment, self.Percent):Forward(), Roll ) //BAM
