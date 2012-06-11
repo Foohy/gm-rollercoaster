@@ -34,9 +34,10 @@ if SERVER then
 
 		//sv_tags, why not
 		local tag = GetConVar("sv_tags"):GetString()
-		if !string.find("Rollercoaster") then
+		tag = string.gsub( tag, "Rollercoaster", "")
+
 		RunConsoleCommand( "sv_tags", tag .. ",Rollercoaster" )
-		end
+
 	end )
 
 	//For use with spawning coasters from a file. Less automagic bs, but you have to know what you're doing
