@@ -24,5 +24,5 @@ Although coasters have a relatively low perfomance hit when rendering, some thin
 Installation is relatively simple. Just extract the Rollercoasters folder into your garrysmod/garrysmod/addons folder.
 
 #### More information ####
-See current status on rollercoasters via the Trello page [located here](https://trello.com/board/rollercoaster/4fd3f7084971ae066211c8ad)
-[Facepunch Thread](http://does_not_exist_yet)
+* See current status on rollercoasters via the Trello page [located here](https://trello.com/board/rollercoaster/4fd3f7084971ae066211c8ad)
+* [Facepunch Thread](http://does_not_exist_yet)
