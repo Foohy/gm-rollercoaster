@@ -11,14 +11,6 @@ ENT.CoastSound = nil //Sound of just moving
 ENT.ChainSound = nil //Sound of chains (Move to serverside?)
 ENT.WindSound  = nil //Sound of wind
 
-usermessage.Hook("Coaster_OffDaRailz", function( um )
-	local ent = um:ReadEntity()
-	
-	if IsValid( ent ) then
-		ent.OffDaRailz = true
-	end
-
-end )
 
 //Update with the controller node. Currently has no use
 usermessage.Hook("coaster_train_fullupdate", function(um)
@@ -29,25 +21,6 @@ usermessage.Hook("coaster_train_fullupdate", function(um)
 
 end )
 
-//Start on a segment with a chain
-usermessage.Hook("ChainStart", function(um)
-	local ent = um:ReadEntity()
-	
-	if IsValid( ent ) && ent.ChainSound != nil then
-		ent.ChainSound:PlayEx( 1, 100 )
-	end
-
-end )
-
-//Get off a segment with a chain
-usermessage.Hook("ChainStop", function(um)
-	local ent = um:ReadEntity()
-	
-	if IsValid( ent ) && ent.ChainSound != nil then
-		ent.ChainSound:Stop()
-	end
-
-end )
 
 //Create the sounds
 function ENT:Initialize()
@@ -65,6 +38,28 @@ function ENT:Draw()
 end
 
 function ENT:Think()
+	local CurrentNode = self:GetCurrentNode()
+	if IsValid( CurrentNode ) && CurrentNode:EntIndex() != 1 && CurrentNode:GetType() == COASTER_NODE_CHAINS then
+		if self.ChainSound then
+			if !self.ChainSound:IsPlaying() then
+				self.ChainSound:PlayEx(1, 100)
+			end
+		else
+			self.ChainSound = CreateSound( self, "coaster_chain.wav" )
+		end
+	else
+		if self.ChainSound then
+			if self.ChainSound:IsPlaying() then
+				self.ChainSound:Stop()
+			end
+		end
+
+		if CurrentNode:EntIndex() == 1 then
+			self.OffDaRailz = true
+		end
+	end
+
+
 	//Change sound pitch and volume depending on speed
 	if self.OffDaRailz then
 		if self.CoastSound != nil then self.CoastSound:Stop() end

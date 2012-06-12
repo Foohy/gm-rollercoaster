@@ -72,11 +72,33 @@ function TOOL:Reload(trace)
 end
 
 function TOOL:Think()
+	if CLIENT then
+		local ply = LocalPlayer()
 
+		trace = {}
+		trace.start  = ply:GetShootPos()
+		trace.endpos = trace.start + (ply:GetAimVector() * 999999)
+		trace.filter = ply
+		trace = util.TraceLine(trace)
+
+		if IsValid( trace.Entity ) && ( trace.Entity:GetClass() == "coaster_node") then
+			local controller = trace.Entity:GetController()
+			if IsValid( controller ) then
+				SelectAllNodes( controller, Color( 180 - math.random( 0, 80 ), 220 - math.random( 0, 50 ), 255, 255 ) )
+			end
+		else 
+			coaster_track_creator_HoverEnts = nil
+		end
+
+	end
 end
 
 function TOOL:ValidTrace(trace)
 
+end
+
+function TOOL:Holster()
+	 coaster_track_creator_HoverEnts = nil
 end
 
 function TOOL.BuildCPanel(panel)	

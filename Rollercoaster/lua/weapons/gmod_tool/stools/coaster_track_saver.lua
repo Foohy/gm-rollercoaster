@@ -50,7 +50,7 @@ function TOOL:RightClick(trace)
 				coaster_saver_ClipboardTrack[k] = {}
 				coaster_saver_ClipboardTrack[k].Pos = tostring(v:GetPos())
 				coaster_saver_ClipboardTrack[k].Ang = tostring(v:GetAngles())
-				coaster_saver_ClipboardTrack[k].Chains = tostring(v:HasChains())
+				coaster_saver_ClipboardTrack[k].Type = v:GetType()
 				coaster_saver_ClipboardTrack[k].Roll = v:GetRoll()
 				coaster_saver_ClipboardTrack[k].Color = v:GetColor()
 			end
@@ -67,8 +67,30 @@ function TOOL:Reload(trace)
 
 end
 
-function TOOL:Think()
+function TOOL:Holster()
+	 coaster_track_creator_HoverEnts = nil
+end
 
+function TOOL:Think()
+	if CLIENT then
+		local ply = LocalPlayer()
+
+		trace = {}
+		trace.start  = ply:GetShootPos()
+		trace.endpos = trace.start + (ply:GetAimVector() * 999999)
+		trace.filter = ply
+		trace = util.TraceLine(trace)
+
+		if IsValid( trace.Entity ) && ( trace.Entity:GetClass() == "coaster_node") then
+			local controller = trace.Entity:GetController()
+			if IsValid( controller ) then
+				SelectAllNodes( controller, Color( 180 - math.random( 0, 80 ), 220 - math.random( 0, 50 ), 255, 255 ) )
+			end
+		else 
+			coaster_track_creator_HoverEnts = nil
+		end
+
+	end
 end
 
 function TOOL:ValidTrace(trace)
@@ -450,7 +472,7 @@ end)
 //Activate things on the server (not really enough to govern a net function)
 if SERVER then
 	local controllernode = nil
-	function SpawnNode(nodeinfo, i, num, filename, id, looped)
+	function SpawnNode( ply, nodeinfo, i, num, filename, id, looped)
 
 		local pos = Vector( nodeinfo.pos )
 		local ang = Angle( nodeinfo.ang )
@@ -458,14 +480,16 @@ if SERVER then
 
 		local node = CoasterManager.CreateNodeSimple(id, pos, ang )
 		node:SetRoll( nodeinfo.roll )
-		node:SetChains( nodeinfo.chains=="true" )
+
+		node:SetType( nodeinfo.type )
 		node:SetColor( color  )
-		node:SetOwner( ply )
+
 		node.Filename = filename //Prevent duplicates of the coaster to be spawned
 
 		if i==1 then //Controller node is _always_ the first node
 			controllernode = node 
 			controllernode:SetLooped( looped )
+			controllernode:SetOwner( ply )
 		end
 
 		if i==num && IsValid( controllernode ) then
@@ -525,7 +549,7 @@ if SERVER then
 					//The node was unable to be grabbed by the physgun, despite any settings applied to it
 					//On the bright side, it makes a neat spawn effect
 					timer.Simple( i / 10, function()
-						SpawnNode( nodeinfo, i, tbl.numnodes, filename, id, looped)
+						SpawnNode( ply, nodeinfo, i, tbl.numnodes, filename, id, looped)
 					end )
 					/*
 					local pos = Vector( nodeinfo.pos )

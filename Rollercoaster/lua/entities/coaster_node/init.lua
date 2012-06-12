@@ -85,7 +85,7 @@ function ENT:AddTrackNode( ent )
 		//Create the second node if we are the very first created node(controller)
 		if !IsValid( self:GetFirstNode() ) && ent:IsController() then
 			print( ent:GetPos() )
-			local node = CoasterManager.CreateNode( ent.CoasterID, ent:GetPos(), ent:GetAngles(), ent:HasChains() )
+			local node = CoasterManager.CreateNode( ent.CoasterID, ent:GetPos(), ent:GetAngles(), ent:GetType() )
 
 			//node:Invalidate()
 		end
@@ -93,7 +93,7 @@ function ENT:AddTrackNode( ent )
 		//Create the 4th node if we are the 3rd node created (2nd click)
 		local firstNode = self:GetFirstNode()
 		if IsValid( firstNode ) && firstNode:GetNextNode() == ent then
-			local node = CoasterManager.CreateNode( ent.CoasterID, ent:GetPos(), ent:GetAngles(), ent:HasChains() )
+			local node = CoasterManager.CreateNode( ent.CoasterID, ent:GetPos(), ent:GetAngles(), ent:GetType() )
 			//node:Invalidate()
 			node:SetModel( "models/props_junk/PopCan01a.mdl" )
 		end

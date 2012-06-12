@@ -61,10 +61,10 @@ if SERVER then
 	end
 
 	//Spawn a new rollercoaster the simple way
-	function CoasterManager.CreateNode( id, pos, ang, chains )
+	function CoasterManager.CreateNode( id, pos, ang, type )
 		local node = ents.Create("coaster_node")		
 		node.CoasterID = id
-		node:SetChains(chains or false)
+		node:SetType( type )
 		
 		node:SetPos( pos )
 		node:SetAngles( ang )
@@ -114,6 +114,38 @@ if CLIENT then
 				v:DrawTrack()
 			end
 		end
+	end )
+
+	//Add all ents of a track to the glow filter
+	function SelectAllNodes(controller, color)
+		if !IsValid( controller ) || !controller.Nodes || #controller.Nodes < 1 then return end
+		if !coaster_track_creator_HoverEnts then coaster_track_creator_HoverEnts = {} end
+
+		coaster_track_creator_HoverEnts = controller.Nodes 
+		coaster_track_creator_HoverColor = color or Color( 180 - math.random( 0, 80 ), 220 - math.random( 0, 50 ), 255, 255 )
+	end
+
+	function SelectSingleNode( ent, color )
+		if !IsValid( ent ) then return end
+		if !coaster_track_creator_HoverEnts then coaster_track_creator_HoverEnts = {} end
+
+		coaster_track_creator_HoverEnts[1] =  ent
+		coaster_track_creator_HoverColor = color or Color( 180 - math.random( 0, 80 ), 220 - math.random( 0, 50 ), 255, 255 )
+	end
+
+	function ClearNodeSelection()
+		coaster_track_creator_HoverEnts = {}
+		coaster_track_creator_HoverColor = Color( 180 - math.random( 0, 80 ), 220 - math.random( 0, 50 ), 255, 255 )
+	end
+
+	//Glow functions yeahhhh
+	hook.Add( "PreDrawHalos", "DrawHoverHalo", function()
+		if ( !coaster_track_creator_HoverEnts || #coaster_track_creator_HoverEnts < 1 ) then return end
+		coaster_track_creator_HoverColor = coaster_track_creator_HoverColor or Color( 180 - math.random( 0, 80 ), 220 - math.random( 0, 50 ), 255, 255 )
+
+		local size = math.random( 1, 3 )
+		effects.halo.Add( coaster_track_creator_HoverEnts, coaster_track_creator_HoverColor, size, size, 1, true, false )
+
 	end )
 end
 

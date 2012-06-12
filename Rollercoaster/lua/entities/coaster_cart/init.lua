@@ -60,10 +60,8 @@ end
 //Pop
 function ENT:OffDaRailz()
 	self.IsOffDaRailz = true
-	
-	umsg.Start("Coaster_OffDaRailz")
-		umsg.Entity( self )
-	umsg.End()
+
+	self:SetCurrentNode( Entity( 1 ) ) //Basically set the entity to something improper to show we have no current node
 	
 	self:EmitSound("coaster_offdarailz.wav", 100, 100 )
 	self:SetCollisionGroup(COLLISION_GROUP_NONE)
@@ -75,29 +73,24 @@ function ENT:PhysicsSimulate(phys, deltatime)
 
 	local CurPos  = self:GetPos()
 	local CurNode = self.Controller.Nodes[self.CurSegment]
+	self:SetCurrentNode( CurNode )
 	local NextNode = self.Controller.Nodes[ self.CurSegment + 1]
 	//self.Controller.CatmullRom:CalcPerc() -- Can't be done in the parameter call or a side effect doesn't manifest properly
 	self.Velocity = self.Velocity - self:CalcFrictionalForce(self.CurSegment, self.Percent, deltatime)
 	self.Velocity = self.Velocity + ((math.NormalizeAngle(self:AngleAt(self.CurSegment, self.Percent).p )) / -phys:GetMass() ) * deltatime * 30
 	//self.CoastSound:ChangePitch(math.Clamp( math.abs(self.Velocity), 1, 240 ) )
-	if CurNode:HasChains() then
+	if CurNode:GetType() == COASTER_NODE_CHAINS then
 		if self.Velocity < CurNode.ChainSpeed then
 			self.Velocity = CurNode.ChainSpeed //- 0.5
 		end
 		
 		if !self.OnChains then
 			self.OnChains = true
-			umsg.Start("ChainStart")
-				umsg.Entity( self )
-			umsg.End()
 		end
 		
 	else
 		if self.OnChains then
 			self.OnChains = false
-			umsg.Start("ChainStop")
-				umsg.Entity( self )
-			umsg.End()
 		end
 	end
 	
@@ -157,7 +150,7 @@ function ENT:PhysicsSimulate(phys, deltatime)
 	
 	//Change the roll depending on the track
 	//local Roll = Lerp( self.Percent, CurNode:GetAngles().r,NextNode:GetAngles().r ) //Lerp the roll from the last segments roll to the next segments roll
-	local Roll = Lerp( self.Percent, self.Controller.Nodes[self.CurSegment]:GetRoll(), self.Controller.Nodes[self.CurSegment + 1]:GetRoll())	
+	local Roll = -Lerp( self.Percent, self.Controller.Nodes[self.CurSegment]:GetRoll(), self.Controller.Nodes[self.CurSegment + 1]:GetRoll())	
 	
 	//Set the roll for the current track peice
 	ang:RotateAroundAxis( self:AngleAt(self.CurSegment, self.Percent):Forward(), Roll ) //BAM
@@ -174,22 +167,6 @@ function ENT:PhysicsSimulate(phys, deltatime)
 	
 
 
-	/*
-	if false then //CurNode.BankOnTurn then -- :/
-		self.LastPos = self.LastPos or CurPos
-			
-		local NextPosNrml = self:WorldToLocal(self.PhysShadowControl.pos):Normalize()
-		local Multi = (math.abs(NextPosNrml.y) / NextPosNrml.y) * -1
-			
-		local a = (CurPos - self.LastPos):Normalize()
-		local b = (self.PhysShadowControl.pos - CurPos):Normalize()
-		local dot = math.Clamp((1 - (a:Dot(b) )) * CurNode.DeltaBankMulti * 50, -1, 1) * 90 * CurNode.DeltaBankMax
-			
-		self.LastPos = CurPos
-			
-		self.PhysShadowControl.angle.r = dot * 1.0
-	end
-	*/
 	self.PhysShadowControl.deltatime = deltatime	
 	return phys:ComputeShadowControl(self.PhysShadowControl)
 end

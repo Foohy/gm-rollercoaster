@@ -327,7 +327,7 @@ function ENT:UpdateClientMesh()
 				local perc = self:PercAlongNode( i )
 
 				//local Roll = Lerp( perc, ThisSegment:GetAngles().r,NextSegment:GetAngles().r )	
-				local Roll = Lerp( perc, ThisSegment:GetRoll(),NextSegment:GetRoll())	
+				local Roll = -Lerp( perc, ThisSegment:GetRoll(),NextSegment:GetRoll())	
 				if ThisSegment:RelativeRoll() then
 					//Roll = Roll + ang.p
 					Roll = Roll - ( ang.p - 180 )
@@ -339,7 +339,7 @@ function ENT:UpdateClientMesh()
 				local perc2 = self:PercAlongNode( i + 1, true )
 				//perc2 = (((i + 1) % self.CatmullRom.STEPS) / self.CatmullRom.STEPS )
 				//if ((i + 1) % 10 ) == 0 then perc2 = 1 end //quick fix
-				local Roll2 = Lerp( perc2, ThisSegment:GetRoll(), NextSegment:GetRoll() )
+				local Roll2 = -Lerp( perc2, ThisSegment:GetRoll(), NextSegment:GetRoll() )
 				if ThisSegment:RelativeRoll() then
 					Roll2 = Roll2 - ( ang2.p - 180 )
 				end
@@ -405,7 +405,7 @@ function ENT:UpdateClientMesh()
 			local ang = self:AngleAt(CurSegment, Percent)
 
 			//Change the roll depending on the track
-			local Roll = Lerp( Percent, CurNode:GetRoll(), NextNode:GetRoll())	
+			local Roll = -Lerp( Percent, CurNode:GetRoll(), NextNode:GetRoll())	
 			
 			//Set the roll for the current track peice
 			ang.r = Roll
@@ -703,7 +703,7 @@ function ENT:DrawTrack()
 		local CTime = CurTime()
 		
 		for i = 2, (#self.CatmullRom.PointsList - 2) do
-			if IsValid( self.Nodes[i] ) && self.Nodes[i]:HasChains() then
+			if IsValid( self.Nodes[i] ) && self.Nodes[i]:GetType() == COASTER_NODE_CHAINS then
 				render.SetMaterial( mat_chain ) //mat_chain
 				self:DrawSegment( i, CTime )
 			end 
@@ -903,7 +903,7 @@ function ENT:DrawSideRail( segment, offset )
 				//Get the percent along this node
 				perc = (i % self.CatmullRom.STEPS) / self.CatmullRom.STEPS
 				//local Roll = Lerp( perc, ThisSegment:GetAngles().r,NextSegment:GetAngles().r )	
-				local Roll = Lerp( perc, ThisSegment:GetRoll(),NextSegment:GetRoll())	
+				local Roll = -Lerp( perc, ThisSegment:GetRoll(),NextSegment:GetRoll())	
 				ang:RotateAroundAxis( AngVec, Roll ) //Segment:GetAngles().r
 			end
 		end
@@ -963,7 +963,7 @@ function ENT:DrawRail(offset)
 			//Get the percent along this node
 			perc = (i % self.CatmullRom.STEPS) / self.CatmullRom.STEPS
 			//local Roll = Lerp( perc, ThisSegment:GetAngles().r,NextSegment:GetAngles().r )	
-			local Roll = Lerp( perc, ThisSegment:GetRoll(),NextSegment:GetRoll())	
+			local Roll = -Lerp( perc, ThisSegment:GetRoll(),NextSegment:GetRoll())	
 			ang:RotateAroundAxis( AngVec, Roll ) //Segment:GetAngles().r
 		end
 			

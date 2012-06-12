@@ -12,11 +12,11 @@ ENT.Model			= Model( "models/Combine_Helicopter/helicopter_bomb01.mdl" )
 
 function ENT:SetupDataTables()
 	self:DTVar("Bool", 0, "IsController")
-	self:DTVar("Bool", 1, "Chained")
-	self:DTVar("Bool", 2, "RelativeRoll")
-	self:DTVar("Bool", 3, "Looped")
+	self:DTVar("Bool", 1, "RelativeRoll")
+	self:DTVar("Bool", 2, "Looped")
 	self:DTVar("Int", 0, "FirstNode")
 	self:DTVar("Int", 1, "NextNode")
+	self:DTVar("Int", 2, "Type")
 	self:DTVar("Float", 0, "Roll")
 	self:DTVar("Vector", 0, "TrackColor")
 	self:DTVar("Vector", 1, "SupportColor")
@@ -30,13 +30,13 @@ function ENT:IsController()
 	return self.dt.IsController or false
 end
 
-function ENT:SetChains(bChained)
-	self.dt.Chained = bChained
-end
+//function ENT:SetChains(bChained)
+//	self.dt.Chained = bChained
+//end
 
-function ENT:HasChains()
-	return self.dt.Chained or false
-end
+//function ENT:HasChains()
+//	return self.dt.Chained or false
+//end
 
 function ENT:SetRelativeRoll(bRelRoll)
 	self.dt.RelativeRoll = bRelRoll
@@ -68,6 +68,14 @@ end
 
 function ENT:GetNextNode()
 	return Entity(self.dt.NextNode)
+end
+
+function ENT:SetType(type)
+	self.dt.Type = type
+end
+
+function ENT:GetType()
+	return self.dt.Type or COASTER_NODE_NORMAL
 end
 
 function ENT:SetRoll(roll) //Not to be confused with CLuaParticle.SetRoll()
