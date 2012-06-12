@@ -15,10 +15,14 @@ TOOL.ClientConVar["relativeroll"] = "0"
 
 TOOL.GhostModel = Model("models/Combine_Helicopter/helicopter_bomb01.mdl")
 TOOL.WaitTime	= 0 //Time to wait to make sure the dtvars are updated
+TOOL.CoolDown 	= 0 //Woah there lil' doggy
 
 coaster_track_creator_HoverEnts = {}
 
 function TOOL:LeftClick(trace)
+	if CurTime() < self.CoolDown then return end
+	self.CoolDown = CurTime() + .25
+
 	local ply   = self:GetOwner()
 	
 	trace = {}
@@ -85,6 +89,19 @@ function TOOL:LeftClick(trace)
 	end
 	self.WaitTime = CurTime() + 1
 	return true
+end
+
+if CLIENT then
+concommand.Add("updatetracks", function(ply, cmd, args ) 
+
+//function UpdateTrackTypes()
+
+	local Tracks = file.Find("autorun/tracktypes/*", "LUA_PATH")
+
+	PrintTable( Tracks )
+
+//end
+	end )
 end
 
 function TOOL:RightClick(trace)
@@ -211,20 +228,22 @@ function TOOL.BuildCPanel(panel)
 	panel:AddControl("Slider",   {Label = "Bank: ",    Description = "How far to bank at that node",       Type = "Float", Min = "-180.0", Max = "180.0", Command = "coaster_track_creator_bank"})
 
 	local ComboBox = vgui.Create("DComboBox", panel)
-	ComboBox:AddChoice("Normal Track")
-	ComboBox:AddChoice("Chains")
-	ComboBox:AddChoice("Speedup")
-	ComboBox:AddChoice("Home")
-	ComboBox:ChooseOptionID( 1 )
+	//Create some nice choices
+	if EnumNames.Nodes && #EnumNames.Nodes > 0 then
+		for k, v in pairs( EnumNames.Nodes ) do
+			ComboBox:AddChoice(v)
+		end
+
+		ComboBox:ChooseOptionID( COASTER_NODE_NORMAL )
+		RunConsoleCommand("coaster_track_creator_tracktype", COASTER_NODE_NORMAL ) //Default to normal
+	end
+
 	ComboBox.OnSelect = function(index, value, data)
 		RunConsoleCommand("coaster_track_creator_tracktype" , tostring( value ) )
 	end
 
 	panel:AddItem( ComboBox )
-	//panel.ComboBox = ComboBox
 
-
-	panel:AddControl("CheckBox", {Label = "Chains: ", Description = "Should the track have chains to push the cart up the hill?", Command = "coaster_track_creator_trackchains"})
 	panel:AddControl("CheckBox", {Label = "Relative Roll: ", Description = "Roll of the cart is relative to the tracks angle (LOOPDY LOOP HEAVEN)", Command = "coaster_track_creator_relativeroll"})
 	panel:AddControl("Button",	 {Label = "BUILD COASTER (CAUTION WEEOOO)", Description = "Build the current rollercoaster with a pretty mesh track. WARNING FREEZES FOR A FEW SECONDS.", Command = "update_mesh"})
 

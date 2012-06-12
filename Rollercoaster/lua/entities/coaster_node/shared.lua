@@ -17,6 +17,7 @@ function ENT:SetupDataTables()
 	self:DTVar("Int", 0, "FirstNode")
 	self:DTVar("Int", 1, "NextNode")
 	self:DTVar("Int", 2, "Type")
+	self:DTVar("Int", 3, "TrackType")
 	self:DTVar("Float", 0, "Roll")
 	self:DTVar("Vector", 0, "TrackColor")
 	self:DTVar("Vector", 1, "SupportColor")
@@ -76,6 +77,14 @@ end
 
 function ENT:GetType()
 	return self.dt.Type or COASTER_NODE_NORMAL
+end
+
+function ENT:SetTrackType(type)
+	self.dt.TrackType = type
+end
+
+function ENT:GetTrackType()
+	return self.dt.TrackType or COASTER_TRACK_METAL
 end
 
 function ENT:SetRoll(roll) //Not to be confused with CLuaParticle.SetRoll()

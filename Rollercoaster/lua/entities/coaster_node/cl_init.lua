@@ -1,5 +1,5 @@
 include( "shared.lua" )
-include( "mesh_beams.lua")
+include( "autorun/mesh_beams.lua")
 
 ENT.Spacing = 30 //How many units away each wood track is
 ENT.TrackModel = Model("models/props_debris/wood_board06a.mdl")
@@ -11,6 +11,8 @@ ENT.TrackMeshes = {} //Store generated track meshes to render
 ENT.SupportModel 		= nil
 ENT.SupportModelStart 	= nil
 ENT.SupportModelBase 	= nil
+
+ENT.LastGenTime = 0
 
 ENT.Nodes = {}
 ENT.CatmullRom = {}
@@ -184,7 +186,9 @@ usermessage.Hook("Coaster_nodeinvalidate", function( um )
 end )
 
 //Refresh the client spline for track previews and mesh generation
+//TODO: This thing is really unstable. Recode.
 function ENT:RefreshClientSpline()
+
 	//Empty all current splines and nodes
 	self.CatmullRom:Reset()
 	table.Empty( self.Nodes )
@@ -205,7 +209,7 @@ function ENT:RefreshClientSpline()
 	local amt = 3
 	local End = false
 	repeat
-		if node:GetClass() == "coaster_node" && node:EntIndex() != 0 then
+		if node:GetClass() == "coaster_node" && node:EntIndex() != 1 then
 
 			self.CatmullRom:AddPointAngle( amt, node:GetPos(), node:GetAngles(), 1.0 )
 			table.insert( self.Nodes, node )
@@ -219,7 +223,7 @@ function ENT:RefreshClientSpline()
 			End = true
 		end
 	until (!IsValid(node) || node == firstNode || End)
-
+	print( amt )
 	//If there are enough nodes (4 for catmull-rom), calculate the curve
 	if #self.CatmullRom.PointsList > 3 then
 		self.CatmullRom:CalcEntireSpline()
@@ -289,159 +293,22 @@ function ENT:UpdateClientMesh()
 			end
 		end
 
-		local Vertices = {} //Create an array that will hold an array of vertices (This is to split up the model)
-
-		Cylinder.Start( Radius, PointCount ) //We're starting up making a beam of cylinders
-		local LastAng = nil
-		for i = 1, #self.CatmullRom.Spline do
-			local NexterSegment = self.Nodes[ self:GetSplineSegment(i) + 2]
-			local NextSegment = self.Nodes[self:GetSplineSegment(i) + 1]
-			local ThisSegment = self.Nodes[ self:GetSplineSegment(i) ]
-
-			local AngVec = Vector( 0, 0, 0 )
-			local AngVec2 = Vector( 0, 0, 0 )
-
-			if #self.CatmullRom.Spline >= i + 1 then		
-				AngVec = self.CatmullRom.Spline[i] - self.CatmullRom.Spline[i + 1]
-				AngVec:Normalize()
-			else
-				AngVec = self.CatmullRom.Spline[i] - self.CatmullRom.PointsList[ #self.CatmullRom.PointsList ]
-				AngVec:Normalize()
-			end
-
-			if #self.CatmullRom.Spline >= i + 2 then
-				AngVec2 = self.CatmullRom.Spline[i+1] - self.CatmullRom.Spline[i+2]
-				AngVec2:Normalize()
-			else
-				AngVec2 = AngVec
-
-			end
-
-			//print(tostring(AngVec) .. tostring(AngVec2))
-
-			local ang = AngVec:Angle()
-			local ang2 = AngVec2:Angle()
-			if IsValid( ThisSegment ) && IsValid( NextSegment ) then
-				//Get the percent along this node
-				//local perc = (i % self.CatmullRom.STEPS) / self.CatmullRom.STEPS
-				local perc = self:PercAlongNode( i )
-
-				//local Roll = Lerp( perc, ThisSegment:GetAngles().r,NextSegment:GetAngles().r )	
-				local Roll = -Lerp( perc, ThisSegment:GetRoll(),NextSegment:GetRoll())	
-				if ThisSegment:RelativeRoll() then
-					//Roll = Roll + ang.p
-					Roll = Roll - ( ang.p - 180 )
-				end
-				//print(Roll .. " at:" .. i)
-				ang:RotateAroundAxis( AngVec, Roll ) //Segment:GetAngles().r
-
-				//For shits and giggles get it for this one too
-				local perc2 = self:PercAlongNode( i + 1, true )
-				//perc2 = (((i + 1) % self.CatmullRom.STEPS) / self.CatmullRom.STEPS )
-				//if ((i + 1) % 10 ) == 0 then perc2 = 1 end //quick fix
-				local Roll2 = -Lerp( perc2, ThisSegment:GetRoll(), NextSegment:GetRoll() )
-				if ThisSegment:RelativeRoll() then
-					Roll2 = Roll2 - ( ang2.p - 180 )
-				end
-				ang2:RotateAroundAxis( AngVec2, Roll2 )
-			end
 
 
-			if #self.CatmullRom.Spline >= i+1 then
-				local posL = self.CatmullRom.Spline[i] + ang:Right() * -RailOffset
-				local posR = self.CatmullRom.Spline[i] + ang:Right() * RailOffset
-				local nPosL = self.CatmullRom.Spline[i+1] + ang2:Right() * -RailOffset
-				local nPosR = self.CatmullRom.Spline[i+1] + ang2:Right() * RailOffset
+		//Get the currently selected node type
+		local gentype = self:GetTrackType()
+		local track = trackmanager.Get(EnumNames.Tracks[gentype])
+		local generated = nil
 
-				local vec = self.CatmullRom.Spline[i] - self.CatmullRom.Spline[i+1]
+		if track then
+			self.TrackClass = track
 
-				local vec2 = vec
-
-				if #self.CatmullRom.Spline >= i+2 then
-					vec2 = self.CatmullRom.Spline[i+1] - self.CatmullRom.Spline[i+2]
-				end
-				//vec:Normalize() //new
-				NewAng = vec:Angle()
-				NewAng:RotateAroundAxis( vec:Angle():Right(), 90 )
-				NewAng:RotateAroundAxis( vec:Angle():Up(), 270 )
-
-				if LastAng == nil then LastAng = NewAng end
-
-				//vec:ANgle()
-				Cylinder.AddBeam(self.CatmullRom.Spline[i] + (ang:Up() * -Offset), LastAng, self.CatmullRom.Spline[i+1] + (ang2:Up() * -Offset), NewAng, Radius )
-
-				//Side rails
-				Cylinder.AddBeam( posL, LastAng, nPosL, NewAng, 4 )
-				Cylinder.AddBeam( posR, LastAng, nPosR, NewAng, 4 )
-
-				if #Cylinder.Vertices > 50000 then// some arbitrary limit to split up the verts into seperate meshes
-
-					Vertices[modelCount] = Cylinder.Vertices
-					modelCount = modelCount + 1
-					print( modelCount )
-
-					Cylinder.Vertices = {}
-					Cylinder.TriCount = 1
-				end
-				LastAng = NewAng
-			end
-		end	
-
-		local verts = Cylinder.EndBeam()
-		Vertices[modelCount] = verts
-
-		//Stage 2, create the struts in between the coaster rails
-		local CurSegment = 2
-		local Percent = 0
-		local Multiplier = 1
-		local StrutVerts = {} //mmm yeah strut those verts
-
-		while CurSegment < #self.CatmullRom.PointsList - 1 do
-			local CurNode = self.Nodes[CurSegment]
-			local NextNode = self.Nodes[CurSegment + 1]
-
-			local Position = self.CatmullRom:Point(CurSegment, Percent)
-
-			local ang = self:AngleAt(CurSegment, Percent)
-
-			//Change the roll depending on the track
-			local Roll = -Lerp( Percent, CurNode:GetRoll(), NextNode:GetRoll())	
-			
-			//Set the roll for the current track peice
-			ang.r = Roll
-			//ang:RotateAroundAxis( self:AngleAt(CurSegment, Percent), Roll ) //BAM
-
-			//Now... manage moving throughout the track evenly
-			//Each spline has a certain multiplier so the cart travel at a constant speed throughout the track
-			Multiplier = self:GetMultiplier(CurSegment, Percent)
-
-			//Move ourselves forward along the track
-			Percent = Percent + ( Multiplier * StrutOffset )
-
-			//Manage moving between nodes
-			if Percent > 1 then
-				CurSegment = CurSegment + 1
-				if CurSegment > #self.Nodes - 2 then 			
-					break
-				end	
-				Percent = 0
-			end
-			local verts = self:CreateStrutsMesh(Position, ang)
-			table.Add( StrutVerts, verts ) //Combine the tables into da big table
+			print("Compiling with GenType: " .. EnumNames.Tracks[gentype] )
+			generated = self.TrackClass:Generate( self )
+		else
+			print("Failed to use track type \"" .. ( EnumNames.Tracks[gentype] or "Unknown (" .. gentype .. ")" ) .. "\"!" )
 		end
 
-		//put the struts into the big vertices table
-		if #Vertices > 0 then
-			Vertices[#Vertices + 1] = StrutVerts
-		end
-		//self.Verts = verts //Only stored for debugging
-
-		for i=1, #Vertices do
-			if #Vertices[i] > 2 then
-				self.TrackMeshes[i] = NewMesh()
-				self.TrackMeshes[i]:BuildFromTriangles( Vertices[i] )
-			end
-		end
 		self:ValidateNodes()
 		self.BuildingMesh = false
 	end
@@ -673,20 +540,6 @@ function ENT:CreateStrutsMesh(pos, ang)
 	return Vertices
 end
 
-//Gets the distance along the track
-function ENT:GetTrackDistance()
-	if #self.Nodes < 2 then return 0 end
-	
-	local dist = 0
-	for k, v in pairs(self.Nodes) do
-		if IsValid( v ) && IsValid( self.Nodes[ k + 1 ] )then
-			dist = dist + (v:GetPos():Distance( self.Nodes[ k + 1] ) )
-		end
-	end
-	
-	return dist
-end
-
 //Given a spline number, return the segment it's on
 function ENT:GetSplineSegment(spline) //Get the segment of the given spline
 	local STEPS = self.CatmullRom.STEPS
@@ -773,7 +626,7 @@ function ENT:DrawSegment(segment)
 	local node = (segment - 2) * self.CatmullRom.STEPS
 	local Dist = 0
 	//Draw the main Rail
-	render.StartBeam( self.CatmullRom.STEPS )
+	render.StartBeam( self.CatmullRom.STEPS + 1 )
 	render.AddBeam(self.CatmullRom.PointsList[segment], 32, Dist, color_white) //time or 1
 
 	for i = 1, (self.CatmullRom.STEPS) do
@@ -785,7 +638,7 @@ function ENT:DrawSegment(segment)
 		render.AddBeam(self.CatmullRom.Spline[node + i],32, Dist*0.05, color_white)
 	end
 	
-	Dist = Dist - self.CatmullRom.PointsList[ segment + 1]:Distance( self.CatmullRom.Spline[ node + self.CatmullRom.STEPS ] )
+	Dist = Dist - self.CatmullRom.PointsList[segment + 1]:Distance( self.CatmullRom.Spline[ node + self.CatmullRom.STEPS ] )
 	render.AddBeam(self.CatmullRom.PointsList[segment + 1], 32, Dist*0.05, color_white)
 	render.EndBeam()
 
@@ -853,7 +706,7 @@ function ENT:DrawSupports()
 				
 			local skin = self.MatSkins[trace.MatType]
 			//render.SetMaterial( skin or table.GetFirstValue(self.MatSkins) )
-
+			//print( trace.MatType )
 			render.SetColorModulation( 1, 1, 1 )
 			self.SupportModelBase:SetSkin( skin or 1 )
 			self.SupportModelBase:SetRenderOrigin( trace.HitPos )
@@ -926,14 +779,8 @@ function ENT:DrawRailMesh()
 	//Set their colors
 	local r, g, b = self:GetTrackColor()
 
-
-	if self.TrackMeshes != nil && #self.TrackMeshes > 0 && !self.BuildingMesh then
-		for k, v in pairs( self.TrackMeshes ) do
-			render.SetColorModulation( r / 255, g / 255, b / 255)
-			v:Draw() //TODO: I think IMesh resets color modulation upon drawing. Figure out a way around this?
-			render.SetColorModulation( 1, 1, 1)
-		end
-		
+	if self.TrackClass && self.TrackClass.Meshes && #self.TrackClass.Meshes > 0 then
+		self.TrackClass:Draw( self )
 	end
 	
 end
@@ -1004,7 +851,7 @@ end
 //Update the node's spline if our velocity (and thus position) changes
 function ENT:Think()
 	if !self:IsController() then return end
-	
+
 	for k, v in pairs( self.Nodes ) do	
 		if IsValid( v ) && v:GetVelocity():Length() > 0 then
 			self:UpdateClientSpline() //So we can see the beams move while me move a node

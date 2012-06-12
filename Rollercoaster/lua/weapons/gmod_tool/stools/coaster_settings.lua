@@ -7,6 +7,8 @@ TOOL.ClientConVar["r"] = "255"
 TOOL.ClientConVar["g"] = "255"
 TOOL.ClientConVar["b"] = "255"
 
+TOOL.ClientConVar["tracktype"] = "1"
+
 function TOOL:LeftClick(trace)
 	local ply   = self:GetOwner()
 	
@@ -18,6 +20,7 @@ function TOOL:LeftClick(trace)
 
 	local CartNum = self:GetClientNumber("cart_amount")
 	local Powered = self:GetClientNumber("powered")
+	local tracktype = self:GetClientNumber("tracktype")
 	local r = tonumber(self:GetClientNumber("r")) or 255
 	local g = tonumber(self:GetClientNumber("g")) or 255
 	local b = tonumber(self:GetClientNumber("b")) or 255
@@ -31,6 +34,7 @@ function TOOL:LeftClick(trace)
 			if IsValid( controller ) then
 				print("Editing settings for "..tostring(controller.CoasterID))
 				controller:SetTrackColor(r,g,b)
+				controller:SetTrackType(tracktype)
 			end
 		end
 	
@@ -87,7 +91,7 @@ function TOOL:Think()
 				SelectAllNodes( controller, Color( 180 - math.random( 0, 80 ), 220 - math.random( 0, 50 ), 255, 255 ) )
 			end
 		else 
-			coaster_track_creator_HoverEnts = nil
+			ClearNodeSelection()
 		end
 
 	end
@@ -98,19 +102,39 @@ function TOOL:ValidTrace(trace)
 end
 
 function TOOL:Holster()
-	 coaster_track_creator_HoverEnts = nil
+	if CLIENT then
+		ClearNodeSelection()
+	end
 end
 
 function TOOL.BuildCPanel(panel)	
 	panel:AddControl("Color", { Label = "Track Color", Multiplier = 255, ShowAlpha = false, Red = "coaster_settings_r", Green = "coaster_settings_g", Blue = "coaster_settings_b"})
 	local ComboBox = vgui.Create("DComboBox", panel)
-	ComboBox:AddChoice("Metal Coaster")
-	ComboBox:AddChoice("Wooden Coaster")
-	ComboBox:AddChoice("Simple Coaster")
+
+	//Create some nice choices
+	if EnumNames.Tracks && #EnumNames.Tracks > 0 then
+		for k, v in pairs( EnumNames.Tracks ) do
+			ComboBox:AddChoice(v)
+		end
+		local trackConVar = GetConVar("coaster_settings_tracktype" )
+
+		if trackConVar && trackConVar:GetInt() > 0 then
+			ComboBox:ChooseOptionID( trackConVar:GetInt() )
+			RunConsoleCommand("coaster_settings_tracktype", trackConVar:GetInt() ) //Default to normal
+		else
+			ComboBox:ChooseOptionID( COASTER_TRACK_METAL )
+			RunConsoleCommand("coaster_settings_tracktype", COASTER_TRACK_METAL ) //Default to normal
+		end
+	end
+
+	ComboBox.OnSelect = function(index, value, data)
+		RunConsoleCommand("coaster_settings_tracktype" , tostring( value ) )
+	end
+
 	ComboBox:ChooseOptionID( 1 )
 	panel:AddItem( ComboBox )
 
-	panel:AddControl( "Header", { Text = "#Tool_coaster_settings_name", Description = "#Tool_track_cart_desc" }  )
+	panel:AddControl( "Header", { Text = "#Tool_coaster_settings_name", Description = "#Tool_coaster_settings_desc" }  )
 end
 
 if CLIENT then

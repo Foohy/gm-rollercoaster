@@ -73,12 +73,12 @@ function ENT:PhysicsSimulate(phys, deltatime)
 
 	local CurPos  = self:GetPos()
 	local CurNode = self.Controller.Nodes[self.CurSegment]
-	self:SetCurrentNode( CurNode )
 	local NextNode = self.Controller.Nodes[ self.CurSegment + 1]
-	//self.Controller.CatmullRom:CalcPerc() -- Can't be done in the parameter call or a side effect doesn't manifest properly
+	self:SetCurrentNode( CurNode )
+
 	self.Velocity = self.Velocity - self:CalcFrictionalForce(self.CurSegment, self.Percent, deltatime)
 	self.Velocity = self.Velocity + ((math.NormalizeAngle(self:AngleAt(self.CurSegment, self.Percent).p )) / -phys:GetMass() ) * deltatime * 30
-	//self.CoastSound:ChangePitch(math.Clamp( math.abs(self.Velocity), 1, 240 ) )
+
 	if CurNode:GetType() == COASTER_NODE_CHAINS then
 		if self.Velocity < CurNode.ChainSpeed then
 			self.Velocity = CurNode.ChainSpeed //- 0.5

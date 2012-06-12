@@ -1,5 +1,8 @@
 AddCSLuaFile( "autorun/coasterManager.lua" )
 
+AddCSLuaFile("trackmanager.lua")
+include("trackmanager.lua")
+
 Rollercoasters = {} //Holds all the rollercoasters
 CoasterManager = {} //Holds all the methods and variables for rollercoasters
 Controller	   = {}
@@ -44,6 +47,8 @@ if SERVER then
 	function CoasterManager.CreateNodeSimple( id, pos, ang ) //For use with spawning coasters from a file. Less automagic bs
 		local node = ents.Create("coaster_node")		
 		node.CoasterID = id
+		node:SetTrackType( COASTER_TRACK_METAL )
+		
 		node:SetPos( pos )
 		node:SetAngles( ang )
 		node:Spawn()
@@ -65,6 +70,7 @@ if SERVER then
 		local node = ents.Create("coaster_node")		
 		node.CoasterID = id
 		node:SetType( type )
+		node:SetTrackType( COASTER_TRACK_METAL )
 		
 		node:SetPos( pos )
 		node:SetAngles( ang )
