@@ -20,8 +20,8 @@ TOOL.CoolDown 	= 0 //Woah there lil' doggy
 coaster_track_creator_HoverEnts = {}
 
 function TOOL:LeftClick(trace)
-	if CurTime() < self.CoolDown then return end
-	self.CoolDown = CurTime() + .25
+	//if CurTime() < self.CoolDown then return end
+	//self.CoolDown = CurTime() + .25
 
 	local ply   = self:GetOwner()
 	

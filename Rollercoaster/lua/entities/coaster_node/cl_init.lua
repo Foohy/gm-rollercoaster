@@ -207,8 +207,10 @@ function ENT:RefreshClientSpline()
 
 	//Recurse through all the nodes, adding them, until they are no longer valid
 	local amt = 3
+	local recurse = 0
 	local End = false
 	repeat
+		recurse = recurse + 1
 		if node:GetClass() == "coaster_node" && node:EntIndex() != 1 then
 
 			self.CatmullRom:AddPointAngle( amt, node:GetPos(), node:GetAngles(), 1.0 )
@@ -218,12 +220,14 @@ function ENT:RefreshClientSpline()
 				node = node:GetNextNode()
 
 				amt = amt + 1	
-			end	
+			else
+				End = true
+			end
 		else
 			End = true
 		end
 	until (!IsValid(node) || node == firstNode || End)
-	print( amt )
+	print( recurse  )
 	//If there are enough nodes (4 for catmull-rom), calculate the curve
 	if #self.CatmullRom.PointsList > 3 then
 		self.CatmullRom:CalcEntireSpline()
@@ -726,7 +730,7 @@ end
 //Draw a rail of a segment with a given offset
 function ENT:DrawSideRail( segment, offset )
 	if not (segment > 1 && (#self.CatmullRom.PointsList > segment )) then return end
-	if not self.CatmullRom then return end
+	if not self.CatmullRom || !self.CatmullRom.Spline then return end
 
 	local node = (segment - 2) * self.CatmullRom.STEPS
 	local NextSegment = self.Nodes[ segment + 1 ]

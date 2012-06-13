@@ -12,7 +12,6 @@ local Offset = 20  //Downwards offset of large center beam
 local RailOffset = 25 //Distance track beams away from eachother
 local Radius = 10 	//radius of the circular track beams
 local PointCount = 7 //how many points make the cylinder of the track mesh
-local modelCount = 1 //how many models the mesh has been split into
 
 /******************************
 Generate function. Generate the IMeshes.
@@ -21,6 +20,7 @@ function TRACK:Generate( controller )
 	if !IsValid( controller ) || !controller:IsController() then return end
 	local Vertices = {} //Create an array that will hold an array of vertices (This is to split up the model)
 	self.Meshes = {} 
+	local modelCount = 1 
 
 	Cylinder.Start( Radius, PointCount ) //We're starting up making a beam of cylinders
 	local LastAng = nil
@@ -48,28 +48,21 @@ function TRACK:Generate( controller )
 
 		end
 
-		//print(tostring(AngVec) .. tostring(AngVec2))
 
 		local ang = AngVec:Angle()
 		local ang2 = AngVec2:Angle()
 		if IsValid( ThisSegment ) && IsValid( NextSegment ) then
 			//Get the percent along this node
-			//local perc = (i % controller.CatmullRom.STEPS) / controller.CatmullRom.STEPS
 			local perc = controller:PercAlongNode( i )
 
-			//local Roll = Lerp( perc, ThisSegment:GetAngles().r,NextSegment:GetAngles().r )	
 			local Roll = -Lerp( perc, ThisSegment:GetRoll(),NextSegment:GetRoll())	
 			if ThisSegment:RelativeRoll() then
-				//Roll = Roll + ang.p
 				Roll = Roll - ( ang.p - 180 )
 			end
-			//print(Roll .. " at:" .. i)
-			ang:RotateAroundAxis( AngVec, Roll ) //Segment:GetAngles().r
+			ang:RotateAroundAxis( AngVec, Roll )
 
 			//For shits and giggles get it for this one too
 			local perc2 = controller:PercAlongNode( i + 1, true )
-			//perc2 = (((i + 1) % controller.CatmullRom.STEPS) / controller.CatmullRom.STEPS )
-			//if ((i + 1) % 10 ) == 0 then perc2 = 1 end //quick fix
 			local Roll2 = -Lerp( perc2, ThisSegment:GetRoll(), NextSegment:GetRoll() )
 			if ThisSegment:RelativeRoll() then
 				Roll2 = Roll2 - ( ang2.p - 180 )
@@ -109,7 +102,6 @@ function TRACK:Generate( controller )
 
 				Vertices[modelCount] = Cylinder.Vertices
 				modelCount = modelCount + 1
-				print( modelCount )
 
 				Cylinder.Vertices = {}
 				Cylinder.TriCount = 1
@@ -188,7 +180,6 @@ function TRACK:Draw( controller )
 	for k, v in pairs( self.Meshes ) do
 		//render.SetColorModulation( r / 255, g / 255, b / 255)
 		if v then 
-			print(tostring(v))
 			v:Draw() //TODO: I think IMesh resets color modulation upon drawing. Figure out a way around this?
 		end
 		//render.SetColorModulation( 1, 1, 1)
