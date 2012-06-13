@@ -13,6 +13,11 @@ ENT.WheelFriction = 0.04 //Coeffecient for mechanical friction (NOT drag) (no id
 ENT.Velocity = 4 //Starting velocity
 ENT.Multiplier = 1 //Multiplier to set the same speed per node segment
 
+//Speedup node options
+ENT.SpeedupForce = 1400 //Force of which to accelerate the car
+ENT.MaxSpeed = 160 //The maximum speed to which accelerate the car
+ENT.LastSpark = 0
+
 //Credits to LPine for code on how to use a shadow controller for something like this
 ENT.PhysShadowControl = {}
 ENT.PhysShadowControl.secondstoarrive  = .01
@@ -55,6 +60,11 @@ function ENT:Initialize()
 		self:GetPhysicsObject():Wake()
 	end
 
+	self.SparkEffect = EffectData()
+	//self.SparkEffect:SetStart( self:GetPos() )
+	//self.SparkEffect:SetOrigin( self:GetPos() )
+	self.SparkEffect:SetEntity( self )
+
 end
 
 //Pop
@@ -79,20 +89,9 @@ function ENT:PhysicsSimulate(phys, deltatime)
 	self.Velocity = self.Velocity - self:CalcFrictionalForce(self.CurSegment, self.Percent, deltatime)
 	self.Velocity = self.Velocity + ((math.NormalizeAngle(self:AngleAt(self.CurSegment, self.Percent).p )) / -phys:GetMass() ) * deltatime * 30
 
-	if CurNode:GetType() == COASTER_NODE_CHAINS then
-		if self.Velocity < CurNode.ChainSpeed then
-			self.Velocity = CurNode.ChainSpeed //- 0.5
-		end
-		
-		if !self.OnChains then
-			self.OnChains = true
-		end
-		
-	else
-		if self.OnChains then
-			self.OnChains = false
-		end
-	end
+
+	self:ChainThink()
+	self:SpeedupThink(deltatime)
 	
 	self.PhysShadowControl.pos = self.Controller.CatmullRom:Point(self.CurSegment, self.Percent)
 	
@@ -195,6 +194,43 @@ function ENT:CalcFrictionalForce(i, perc, dt)
 	end
 
 	return Velocity
+end
+
+function ENT:SpeedupThink(dt)
+	if self:GetCurrentNode():GetType() == COASTER_NODE_SPEEDUP && self.Velocity < self.MaxSpeed then
+		local Acceleration = self.SpeedupForce / self:GetPhysicsObject():GetMass() //F = MA. thus, (F / M) = A
+		local Velocity = Acceleration * dt //A = VelocityChange / TimeChange. thus, V = AT
+
+		self.Velocity = self.Velocity + Velocity
+
+		if self.LastSpark && self.LastSpark < CurTime() then
+			self.LastSpark = CurTime() + 0.01
+
+			self.SparkEffect:SetOrigin( self:GetPos() )
+			local newangles = self:GetAngles() + Angle( 15, 0, 0 )
+			self.SparkEffect:SetNormal( -newangles:Forward() + Vector( 0, 0, 0.5) )
+			util.Effect("ManhackSparks", self.SparkEffect )
+		end
+	end
+end
+
+function ENT:ChainThink()
+	if self:GetCurrentNode():GetType() == COASTER_NODE_CHAINS then
+		local CurNode = self:GetCurrentNode()
+
+		if self.Velocity < CurNode.ChainSpeed then
+			self.Velocity = CurNode.ChainSpeed //- 0.5
+		end
+		
+		if !self.OnChains then
+			self.OnChains = true
+		end
+		
+	else
+		if self.OnChains then
+			self.OnChains = false
+		end
+	end
 end
 
 //Get the angle at a specific point on a track
