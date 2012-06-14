@@ -294,10 +294,12 @@ function ENT:UpdateClientMesh()
 		self.BuildingMesh = true //Tell the mesh to stop drawing because we're gonna rebuild it
 
 		//Destroy ALL meshes
-		for k,v in pairs( self.TrackMeshes ) do
-			if IsValid ( v ) then
-				v:Destroy() 
-				v = nil
+		if self.TrackMeshes then
+			for k,v in pairs( self.TrackMeshes ) do
+				if IsValid ( v ) then
+					v:Destroy() 
+					v = nil
+				end
 			end
 		end
 
@@ -311,6 +313,7 @@ function ENT:UpdateClientMesh()
 
 			print("Compiling with GenType: " .. EnumNames.Tracks[gentype] )
 			self.TrackMeshes = self.TrackClass:Generate( self )
+			print( tostring( self.TrackClass ))
 		else
 			print("Failed to use track type \"" .. ( EnumNames.Tracks[gentype] or "Unknown (" .. gentype .. ")" ) .. "\"!" )
 		end

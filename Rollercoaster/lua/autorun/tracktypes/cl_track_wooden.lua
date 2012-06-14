@@ -4,7 +4,7 @@ local TRACK = {}
 
 TRACK.Name = "Wooden Track"
 TRACK.Description = "An old fashioned wooden track. Fancy."
-TRACK.Meshes = {}
+TRACK.Material = Material("phoenix_storms/dome")
 
 //local Offset = 20  //Downwards offset of large center beam
 local RailOffset = 25 //Distance track beams away from eachother
@@ -15,7 +15,8 @@ TRACK.CylinderPointCount = 4 //How many points make the cylinder of the track me
 function TRACK:Generate( controller )
 	if !IsValid( controller ) || !controller:IsController() then return end
 	local Vertices = {} //Create an array that will hold an array of vertices (This is to split up the model)
-	self.Meshes = {} 
+	Meshes = {} 
+
 	local modelCount = 1 //how many models the mesh has been split into
 
 	Cylinder.Start( self.CylinderRadius, self.CylinderPointCount ) //We're starting up making a beam of cylinders
@@ -131,8 +132,8 @@ function TRACK:Generate( controller )
 
 	for i=1, #Vertices do
 		if #Vertices[i] > 2 then
-			self.Meshes[i] = NewMesh()
-			self.Meshes[i]:BuildFromTriangles( Vertices[i] )
+			Meshes[i] = NewMesh()
+			Meshes[i]:BuildFromTriangles( Vertices[i] )
 		end
 	end
 end
@@ -140,9 +141,10 @@ end
 function TRACK:Draw( controller )
 	if !IsValid( controller ) || !controller:IsController() then return end
 
-	if !self.Meshes || #self.Meshes < 1 then return end
+	if !Meshes || #Meshes < 1 then return end
 
-	for k, v in pairs( self.Meshes ) do
+	for k, v in pairs( Meshes ) do
+		render.SetMaterial(self.Material)
 		if v then 
 			v:Draw() //TODO: I think IMesh resets color modulation upon drawing. Figure out a way around this?
 		end
@@ -150,4 +152,4 @@ function TRACK:Draw( controller )
 
 end
 
-trackmanager.Register( EnumNames.Tracks[COASTER_TRACK_SIMPLE], TRACK )
+trackmanager.Register( EnumNames.Tracks[COASTER_TRACK_WOOD], TRACK )

@@ -5,6 +5,7 @@ local TRACK = {}
 
 TRACK.Name = "Metal Track"
 TRACK.Description = "A nice metal coaster"
+TRACK.Material = Material("phoenix_storms/dome")
 
 local StrutOffset = 2 //Space between coaster struts
 local Offset = 20  //Downwards offset of large center beam
@@ -177,7 +178,7 @@ function TRACK:Draw( controller, Meshes )
 	if !Meshes || #Meshes < 1 then return end
 
 	for k, v in pairs( Meshes ) do
-		//render.SetColorModulation( r / 255, g / 255, b / 255)
+		render.SetMaterial(self.Material)
 		if v then 
 			v:Draw() //TODO: I think IMesh resets color modulation upon drawing. Figure out a way around this?
 		end

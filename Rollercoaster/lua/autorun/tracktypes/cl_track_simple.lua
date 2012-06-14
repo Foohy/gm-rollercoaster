@@ -4,6 +4,7 @@ local TRACK = {}
 
 TRACK.Name = "Simple Track"
 TRACK.Description = "The bare basics of a track. Good for customization."
+TRACK.Material = Material("phoenix_storms/dome")
 
 //local Offset = 20  //Downwards offset of large center beam
 local RailOffset = 25 //Distance track beams away from eachother
@@ -12,6 +13,7 @@ TRACK.CylinderRadius = 10 //Radius of the circular track beams
 TRACK.CylinderPointCount = 7 //How many points make the cylinder of the track mesh
 
 function TRACK:Generate( controller )
+	print("Nyerd")
 	if !IsValid( controller ) || !controller:IsController() then return end
 	local Vertices = {} //Create an array that will hold an array of vertices (This is to split up the model)
 	Meshes = {} 
@@ -134,6 +136,8 @@ function TRACK:Generate( controller )
 			Meshes[i]:BuildFromTriangles( Vertices[i] )
 		end
 	end
+	print("heyo")
+	return Meshes
 end
 
 function TRACK:Draw( controller, Meshes )
@@ -142,6 +146,7 @@ function TRACK:Draw( controller, Meshes )
 	if !Meshes || #Meshes < 1 then return end
 
 	for k, v in pairs( Meshes ) do
+		render.SetMaterial(self.Material)
 		if v then 
 			v:Draw() //TODO: I think IMesh resets color modulation upon drawing. Figure out a way around this?
 		end
