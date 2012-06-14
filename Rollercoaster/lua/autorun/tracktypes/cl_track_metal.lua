@@ -5,7 +5,6 @@ local TRACK = {}
 
 TRACK.Name = "Metal Track"
 TRACK.Description = "A nice metal coaster"
-TRACK.Meshes = {}
 
 local StrutOffset = 2 //Space between coaster struts
 local Offset = 20  //Downwards offset of large center beam
@@ -19,7 +18,7 @@ Generate function. Generate the IMeshes.
 function TRACK:Generate( controller )
 	if !IsValid( controller ) || !controller:IsController() then return end
 	local Vertices = {} //Create an array that will hold an array of vertices (This is to split up the model)
-	self.Meshes = {} 
+	local Meshes = {} 
 	local modelCount = 1 
 
 	Cylinder.Start( Radius, PointCount ) //We're starting up making a beam of cylinders
@@ -161,23 +160,23 @@ function TRACK:Generate( controller )
 
 	for i=1, #Vertices do
 		if #Vertices[i] > 2 then
-			self.Meshes[i] = NewMesh()
-			self.Meshes[i]:BuildFromTriangles( Vertices[i] )
+			Meshes[i] = NewMesh()
+			Meshes[i]:BuildFromTriangles( Vertices[i] )
 		end
 	end
 
-	return true
+	return Meshes
 end
 
 
 /****************************
 Draw function. Draw the mesh
 ****************************/
-function TRACK:Draw( controller )
+function TRACK:Draw( controller, Meshes )
 	if !IsValid( controller ) || !controller:IsController() then return end
-	if !self.Meshes || #self.Meshes < 1 then return end
+	if !Meshes || #Meshes < 1 then return end
 
-	for k, v in pairs( self.Meshes ) do
+	for k, v in pairs( Meshes ) do
 		//render.SetColorModulation( r / 255, g / 255, b / 255)
 		if v then 
 			v:Draw() //TODO: I think IMesh resets color modulation upon drawing. Figure out a way around this?

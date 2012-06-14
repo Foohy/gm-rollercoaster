@@ -301,8 +301,6 @@ function ENT:UpdateClientMesh()
 			end
 		end
 
-
-
 		//Get the currently selected node type
 		local gentype = self:GetTrackType()
 		local track = trackmanager.Get(EnumNames.Tracks[gentype])
@@ -312,7 +310,7 @@ function ENT:UpdateClientMesh()
 			self.TrackClass = track
 
 			print("Compiling with GenType: " .. EnumNames.Tracks[gentype] )
-			generated = self.TrackClass:Generate( self )
+			self.TrackMeshes = self.TrackClass:Generate( self )
 		else
 			print("Failed to use track type \"" .. ( EnumNames.Tracks[gentype] or "Unknown (" .. gentype .. ")" ) .. "\"!" )
 		end
@@ -662,6 +660,10 @@ end
 function ENT:DrawSupports()
 	if LocalPlayer():GetInfoNum("coaster_supports") == 0 then return end
 
+	if !IsValid(self.SupportModel ) then return end
+	if !IsValid(self.SupportModelStart ) then return end
+	if !IsValid(self.SupportModelBase ) then return end
+
 	local controller = nil
 	for k, v in pairs( self.Nodes ) do
 		local cont = true
@@ -738,23 +740,30 @@ end
 
 local rotation = 0
 local rotstart = 0
-local WheelOffset = 2
+local WheelOffset = 4
+
+
 function ENT:DrawSpeedupModels( segment )
 	if not (segment > 1 && (#self.CatmullRom.PointsList > segment )) then return end
 	if not self.CatmullRom || !self.CatmullRom.Spline then return end
+	if !IsValid( self.SpeedupModel ) then return end
 
 	local node = (segment - 2) * self.CatmullRom.STEPS
 	local ThisSegment = self.Nodes[ segment ]
 	local NextSegment = self.Nodes[ segment + 1 ]
+
 	local Percent = 0
 	local ang = Angle( 0, 0, 0)
 	local Position = Vector( 0, 0, 0 )
 	local Roll = 0
 
+	if !IsValid( ThisSegment ) || !IsValid( NextSegment ) then return end 
+	self.SpeedupModel:SetNoDraw( false )
+
 	Multiplier = self:GetMultiplier(segment, Percent)
 
 	//Move ourselves forward along the track
-	Percent = ( Percent + ( Multiplier * WheelOffset ) ) / 2
+	Percent = ( Percent + ( Multiplier * 2 ) ) / 2 //move ourselves one half forward, so the wheels are between track struts
 
 	while Percent < 1 do
 		rotation = rotation + FrameTime()*60
@@ -782,12 +791,13 @@ function ENT:DrawSpeedupModels( segment )
 
 		if Percent > 1 then return end
 
-
 		self.SpeedupModel:SetRenderOrigin( Position )
 		self.SpeedupModel:SetAngles( ang )
 		self.SpeedupModel:SetupBones()
 		self.SpeedupModel:DrawModel()
+
 	end
+	self.SpeedupModel:SetNoDraw( true )
 end
 
 //Draw a rail of a segment with a given offset
@@ -846,8 +856,8 @@ function ENT:DrawRailMesh()
 	//Set their colors
 	local r, g, b = self:GetTrackColor()
 
-	if self.TrackClass && self.TrackClass.Meshes && #self.TrackClass.Meshes > 0 then
-		self.TrackClass:Draw( self )
+	if self.TrackClass && self.TrackMeshes then
+		self.TrackClass:Draw( self, self.TrackMeshes )
 	end
 	
 end
@@ -931,6 +941,12 @@ end
 function ENT:OnRemove()
 	if IsValid( self ) && self:IsController() then
 		self:UpdateClientSpline()
+
+		//Remove models
+		if IsValid( self.SupportModel  ) then self.SupportModel :Remove() end
+		if IsValid( self.SupportModelStart ) then self.SupportModelStart:Remove() end
+		if IsValid( self.SupportModelBase ) then self.SupportModelBase:Remove() end
+		if IsValid( self.SpeedupModel ) then self.SpeedupModel:Remove() end
 	end
 end
 

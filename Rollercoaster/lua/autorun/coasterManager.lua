@@ -153,5 +153,6 @@ if CLIENT then
 		effects.halo.Add( coaster_track_creator_HoverEnts, coaster_track_creator_HoverColor, size, size, 1, true, false )
 
 	end )
+
 end
 
