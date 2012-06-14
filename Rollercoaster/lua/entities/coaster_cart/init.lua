@@ -9,16 +9,27 @@ ENT.Controller 	= nil //Controller
 ENT.OnChains 	= false //Currently on a track node with chains?
 ENT.IsOffDaRailz  = false 
 
+//Physics stuff
+ENT.GRAVITY = 9.8
 ENT.WheelFriction = 0.04 //Coeffecient for mechanical friction (NOT drag) (no idea what the actual mew is for a rollercoaster, ~wild guesses~)
 ENT.Velocity = 4 //Starting velocity
 ENT.Multiplier = 1 //Multiplier to set the same speed per node segment
 
-//Speedup node options
+//Speedup node options/variables
 ENT.SpeedupForce = 1400 //Force of which to accelerate the car
-ENT.MaxSpeed = 160 //The maximum speed to which accelerate the car
+ENT.MaxSpeed = 3600 //The maximum speed to which accelerate the car
 ENT.LastSpark = 0
 
-//Credits to LPine for code on how to use a shadow controller for something like this
+//Home station options/variables
+ENT.HomeStage = 0
+ENT.StopTime = 5 //Time to stop and wait for people to leave/board
+
+//Break node options/variables
+ENT.BreakForce = 1400 //Force of which to deccelerate the car
+ENT.BreakSpeed = 4 //The minimum speed of the car when in break zone
+
+
+//Credits to LPine for code on how to use a shadow controller 
 ENT.PhysShadowControl = {}
 ENT.PhysShadowControl.secondstoarrive  = .01
 ENT.PhysShadowControl.pos              = Vector(0, 0, 0)
@@ -56,7 +67,7 @@ function ENT:Initialize()
 	
 	//more random guesses
 	if IsValid( self:GetPhysicsObject() ) then
-		self:GetPhysicsObject():SetMass( 150 )
+		self:GetPhysicsObject():SetMass( 100 )
 		self:GetPhysicsObject():Wake()
 	end
 
@@ -75,6 +86,7 @@ function ENT:OffDaRailz()
 	
 	self:EmitSound("coaster_offdarailz.wav", 100, 100 )
 	self:SetCollisionGroup(COLLISION_GROUP_NONE)
+	self:GetPhysicsObject():SetMass( 500 ) //If this is wrong I don't wanna be right
 end
 
 //Calculate our movement along the curve
@@ -86,12 +98,15 @@ function ENT:PhysicsSimulate(phys, deltatime)
 	local NextNode = self.Controller.Nodes[ self.CurSegment + 1]
 	self:SetCurrentNode( CurNode )
 
+	//Forces that are always being applied to the cart
 	self.Velocity = self.Velocity - self:CalcFrictionalForce(self.CurSegment, self.Percent, deltatime)
-	self.Velocity = self.Velocity + ((math.NormalizeAngle(self:AngleAt(self.CurSegment, self.Percent).p )) / -phys:GetMass() ) * deltatime * 30
+	self.Velocity = self.Velocity - self:CalcChangeInVelocity( self.CurSegment, self.Percent, deltatime )
 
-
+	//Node specific forces
 	self:ChainThink()
 	self:SpeedupThink(deltatime)
+	self:BreakThink(deltatime)
+	self:HomeStationThink(deltatime)
 	
 	self.PhysShadowControl.pos = self.Controller.CatmullRom:Point(self.CurSegment, self.Percent)
 	
@@ -163,8 +178,6 @@ function ENT:PhysicsSimulate(phys, deltatime)
 
 	self.PhysShadowControl.pos = self.PhysShadowControl.pos + ang:Up() * 10
 
-	
-
 
 	self.PhysShadowControl.deltatime = deltatime	
 	return phys:ComputeShadowControl(self.PhysShadowControl)
@@ -180,7 +193,7 @@ function ENT:CalcFrictionalForce(i, perc, dt)
 
 	local Ang = self:AngleAt( i, perc )
 
-	Force = self.WheelFriction * ( math.cos( math.rad(Ang.p) ) * mass * 9.8 ) //frictional force = mew*normal of weight
+	Force = self.WheelFriction * ( math.cos( math.rad(Ang.p) ) * mass * self.GRAVITY ) //frictional force = mew*normal of weight
 	Velocity = (Force / mass) * dt // F = MA and your every day best friend DVA
 	
 
@@ -194,6 +207,18 @@ function ENT:CalcFrictionalForce(i, perc, dt)
 	end
 
 	return Velocity
+end
+
+function ENT:CalcChangeInVelocity(i, perc, dt)
+	local Force = 0
+	local Velocity = 0
+
+	local mass = self:GetPhysicsObject():GetMass()
+	local Ang = self:AngleAt( i, perc )
+
+	Force = math.sin( math.rad( Ang.p )) * mass * self.GRAVITY
+
+	return (Force / mass) * dt //A = VelocityChange / TimeChange. thus, V = AT
 end
 
 function ENT:SpeedupThink(dt)
@@ -214,6 +239,27 @@ function ENT:SpeedupThink(dt)
 	end
 end
 
+//Basically the exact opposite of speedup
+function ENT:BreakThink(dt)
+	if self:GetCurrentNode():GetType() == COASTER_NODE_BREAKS && self.Velocity > self.BreakSpeed then
+		local Acceleration = self.BreakForce / self:GetPhysicsObject():GetMass() //F = MA. thus, (F / M) = A
+		local Velocity = Acceleration * dt //A = VelocityChange / TimeChange. thus, V = AT
+
+		self.Velocity = self.Velocity - Velocity
+
+		/*
+		if self.LastSpark && self.LastSpark < CurTime() then
+			self.LastSpark = CurTime() + 0.01
+
+			self.SparkEffect:SetOrigin( self:GetPos() )
+			local newangles = self:GetAngles() + Angle( 15, 0, 0 )
+			self.SparkEffect:SetNormal( -newangles:Forward() + Vector( 0, 0, 0.5) )
+			util.Effect("ManhackSparks", self.SparkEffect )
+		end
+		*/
+	end
+end
+
 function ENT:ChainThink()
 	if self:GetCurrentNode():GetType() == COASTER_NODE_CHAINS then
 		local CurNode = self:GetCurrentNode()
@@ -222,14 +268,36 @@ function ENT:ChainThink()
 			self.Velocity = CurNode.ChainSpeed //- 0.5
 		end
 		
-		if !self.OnChains then
-			self.OnChains = true
+	end
+end
+
+function ENT:HomeStationThink(dt)
+	if self:GetCurrentNode():GetType() == COASTER_NODE_HOME then
+
+		if self.HomeStage == 0 then //Moving to center
+			if self.Percent < 0.4 || self.Percent > 0.6 then
+				if self.Percent > 0.6 then
+					self.Velocity = -4
+				else
+					self.Velocity = 4
+				end
+			else
+				self.HomeStage = 1
+				self.TimeToStart = CurTime() + self.StopTime
+			end
+
+		elseif self.HomeStage == 1 then //Stopped and waiting
+			self.Velocity = 0
+
+			if self.TimeToStart && self.TimeToStart < CurTime() then 
+				self.HomeStage = 2 
+			end
+		else //Moving to next node
+			if self.Velocity < 5 then self.Velocity = 5 end
 		end
-		
+
 	else
-		if self.OnChains then
-			self.OnChains = false
-		end
+		self.HomeStage = 0
 	end
 end
 

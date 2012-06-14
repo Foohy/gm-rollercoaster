@@ -11,6 +11,7 @@ ENT.TrackMeshes = {} //Store generated track meshes to render
 ENT.SupportModel 		= nil
 ENT.SupportModelStart 	= nil
 ENT.SupportModelBase 	= nil
+ENT.SpeedupModel 		= nil
 
 ENT.LastGenTime = 0
 
@@ -32,12 +33,15 @@ function ENT:Initialize()
 	//Create the client side models
 	//self.TrackMesh   		= NewMesh()
 	self.SupportModel 		= ClientsideModel( "models/sunabouzu/coaster_pole.mdl" )
-	self.SupportModelStart 	= ClientsideModel("models/sunabouzu/coaster_pole_start.mdl")
+	self.SupportModelStart 	= ClientsideModel( "models/sunabouzu/coaster_pole_start.mdl" )
 	self.SupportModelBase 	= ClientsideModel( "models/sunabouzu/coaster_base.mdl" )
+	self.SpeedupModel 		= ClientsideModel( "models/props_vehicles/tire001c_car.mdl")
 	
 	self.SupportModel:SetPos( Vector( 100000, 10000, -10000000) )
 	self.SupportModelStart:SetPos( Vector( 100000, 10000, -10000000) )
 	self.SupportModelBase:SetPos( Vector( 100000, 10000, -10000000) )
+	self.SpeedupModel:SetPos( Vector( 100000, 100000, -100000 ) )
+	self.SpeedupModel:SetModelScale( Vector( 1.6, 1.6, 1.6))
 
 	//Create the index to hold all compiled track meshes
 	self.TrackMeshes = {}
@@ -560,9 +564,14 @@ function ENT:DrawTrack()
 		local CTime = CurTime()
 		
 		for i = 2, (#self.CatmullRom.PointsList - 2) do
-			if IsValid( self.Nodes[i] ) && self.Nodes[i]:GetType() == COASTER_NODE_CHAINS then
-				render.SetMaterial( mat_chain ) //mat_chain
-				self:DrawSegment( i, CTime )
+			if IsValid( self.Nodes[i] ) then
+				if self.Nodes[i]:GetType() == COASTER_NODE_CHAINS then
+					render.SetMaterial( mat_chain ) //mat_chain
+					self:DrawSegment( i, CTime )
+
+				elseif self.Nodes[i]:GetType() == COASTER_NODE_SPEEDUP then
+					self:DrawSpeedupModels(i)
+				end
 			end 
 		end
 		
@@ -725,6 +734,60 @@ function ENT:DrawSupports()
 	self.SupportModelStart:SetNoDraw( true )
 	self.SupportModelBase:SetNoDraw( true )
 	
+end
+
+local rotation = 0
+local rotstart = 0
+local WheelOffset = 2
+function ENT:DrawSpeedupModels( segment )
+	if not (segment > 1 && (#self.CatmullRom.PointsList > segment )) then return end
+	if not self.CatmullRom || !self.CatmullRom.Spline then return end
+
+	local node = (segment - 2) * self.CatmullRom.STEPS
+	local ThisSegment = self.Nodes[ segment ]
+	local NextSegment = self.Nodes[ segment + 1 ]
+	local Percent = 0
+	local ang = Angle( 0, 0, 0)
+	local Position = Vector( 0, 0, 0 )
+	local Roll = 0
+
+	Multiplier = self:GetMultiplier(segment, Percent)
+
+	//Move ourselves forward along the track
+	Percent = ( Percent + ( Multiplier * WheelOffset ) ) / 2
+
+	while Percent < 1 do
+		rotation = rotation + FrameTime()*60
+
+		ang = self:AngleAt( segment, Percent)
+
+		//Change the roll depending on the track
+		Roll = -Lerp( Percent, ThisSegment:GetRoll(), NextSegment:GetRoll())	
+		
+		//Set the roll for the current track peice
+		ang.r = Roll
+		//ang.y = ang.y - 90
+		ang:RotateAroundAxis( ang:Up(), -90 )
+		Position = self.CatmullRom:Point(segment, Percent)
+		Position = Position + ang:Up() * -13
+
+		ang:RotateAroundAxis( ang:Forward(), rotation ) //BAM
+
+		//Now... manage moving throughout the track evenly
+		//Each spline has a certain multiplier so the cart travel at a constant speed throughout the track
+		Multiplier = self:GetMultiplier(segment, Percent)
+
+		//Move ourselves forward along the track
+		Percent = Percent + ( Multiplier * WheelOffset )
+
+		if Percent > 1 then return end
+
+
+		self.SpeedupModel:SetRenderOrigin( Position )
+		self.SpeedupModel:SetAngles( ang )
+		self.SpeedupModel:SetupBones()
+		self.SpeedupModel:DrawModel()
+	end
 end
 
 //Draw a rail of a segment with a given offset
