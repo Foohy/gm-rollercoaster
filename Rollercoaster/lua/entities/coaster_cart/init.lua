@@ -12,8 +12,10 @@ ENT.IsOffDaRailz  = false
 //Physics stuff
 ENT.GRAVITY = 9.8
 ENT.WheelFriction = 0.04 //Coeffecient for mechanical friction (NOT drag) (no idea what the actual mew is for a rollercoaster, ~wild guesses~)
+ENT.Restitution = 0.9
 ENT.Velocity = 4 //Starting velocity
-ENT.Multiplier = 1 //Multiplier to set the same speed per node segment
+ENT.Multiplier = 0.99999 //Multiplier to set the same speed per node segment
+ENT.IsOffDaRailz = false
 
 //Speedup node options/variables
 ENT.SpeedupForce = 1400 //Force of which to accelerate the car
@@ -47,7 +49,7 @@ function ENT:Initialize()
 	self:PhysicsInit(SOLID_VPHYSICS)
 	self:SetMoveType(MOVETYPE_VPHYSICS)
 	self:SetSolid(SOLID_VPHYSICS)
-	self:SetCollisionGroup(COLLISION_GROUP_PROJECTILE)
+	//self:SetCollisionGroup(COLLISION_GROUP_PROJECTILE)
 	
 	//Spawn at the beginning second node, where the curve starts
 	self.CurSegment = 2
@@ -112,6 +114,30 @@ function ENT:PhysicsSimulate(phys, deltatime)
 	
 	//Each node has a certain multiplier so the cart travel at a constant speed throughout the track
 	self.Multiplier = self:GetMultiplier(self.CurSegment, self.Percent)
+
+
+
+	//Check for collisions
+	for k, v in pairs( ents.FindInSphere( self:GetPos(), 150 ) ) do
+		if !self.IsOffDaRailz && ( IsValid(v) && v:GetClass() == "coaster_cart" ) && v.Velocity then
+			local ourmass = self:GetPhysicsObject():GetMass()
+			local theirmass = v:GetPhysicsObject():GetMass()
+
+			local SelfVelocity = ( (ourmass*self.Velocity) + (theirmass*v.Velocity)) / (ourmass + theirmass)
+			local TheirVelocity = SelfVelocity
+			//local SelfVelocity = ( self.Restitution*theirmass*( v.Velocity - self.Velocity ) + (ourmass*self.Velocity) + (theirmass*v.Velocity ) ) / ( ourmass + theirmass )
+			//local TheirVelocity = ( self.Restitution*ourmass*(self.Velocity - v.Velocity) + (ourmass*self.Velocity) + (theirmass*v.Velocity)) / ( ourmass + theirmass )
+
+			//local SelfVelocity = ( self.Velocity * ( ourmass - theirmass ) + ( 2 *theirmass*v.Velocity)) / (ourmass + theirmass)
+			//local TheirVelocity = ( v.Velocity * ( theirmass - ourmass ) + ( 2*ourmass*self.Velocity )) / ( ourmass + theirmass)
+
+
+			self.Velocity = SelfVelocity
+			v.Velocity = TheirVelocity
+
+		end
+	end
+
 
 	//Move ourselves forward along the track
 	self.Percent = self.Percent + (deltatime * self.Multiplier * self.Velocity )
@@ -180,6 +206,7 @@ function ENT:PhysicsSimulate(phys, deltatime)
 
 
 	self.PhysShadowControl.deltatime = deltatime	
+	//print( tostring( self:EntIndex() ) .. ": " .. tostring( self.Velocity ) )
 	return phys:ComputeShadowControl(self.PhysShadowControl)
 end
 
@@ -346,6 +373,11 @@ function ENT:PhysicsUpdate(physobj)
 	end
 end
 
+function ENT:SetTrackVelocity( newVel )
+	self.UpdateTrackVelocity = true
+	self.QueuedVelocity = newVel
+end
+
 //Explode if they are off the rails
 function ENT:PhysicsCollide(data, physobj)
 	if data.Speed > 60 && self.IsOffDaRailz && ( (IsValid(data.HitEntity) && data.HitEntity:GetClass() != "coaster_cart" ) || !IsValid( data.HitEntity )) then
@@ -363,12 +395,43 @@ function ENT:PhysicsCollide(data, physobj)
 		util.Effect( "coaster_cart_debris", debris )
 
 		self:Remove()
+	end
+	//print( !self.OffDaRailz )
+	//print( ( IsValid(data.HitEntity) && data.HitEntity:GetClass() == "coaster_cart" ) )
+	//print( data.HitEntity.Velocity )
+	if !self.IsOffDaRailz && ( IsValid(data.HitEntity) && data.HitEntity:GetClass() == "coaster_cart" ) && data.HitEntity.Velocity then
+		local ourmass = physobj:GetMass()
+		local theirmass = data.HitEntity:GetPhysicsObject():GetMass()
+
+		local SelfVelocity = ( self.Restitution*theirmass*( data.HitEntity.Velocity - self.Velocity ) + (ourmass*self.Velocity) + (theirmass*data.HitEntity.Velocity ) ) / ( ourmass + theirmass )
+		local TheirVelocity = ( self.Restitution*ourmass*(self.Velocity - data.HitEntity.Velocity) + (ourmass*self.Velocity) + (theirmass*data.HitEntity.Velocity)) / ( ourmass + theirmass )
+
+		//local SelfVelocity = ( self.Velocity * ( ourmass - theirmass ) + ( 2 *theirmass*data.HitEntity.Velocity)) / (ourmass + theirmass)
+		//local TheirVelocity = ( -data.HitEntity.Velocity * ( theirmass - ourmass ) + ( 2*ourmass*self.Velocity )) / ( ourmass + theirmass)
+
+		//local SelfVelocity = ( self.Velocity * (ourmass - theirmass ) ) / ( ourmass + theirmass )
+		//local TheirVelocity = ( 2 * ourmass * self.Velocity)
+
+		//local SelfVelocity = ( ( ourmass - (self.Restitution*theirmass)) / (ourmass + theirmass) ) * self.Velocity 
+		//local TheirVelocity = ( ( ( 1 + self.Restitution) * ourmass ) / (ourmass + theirmass ) ) * self.Velocity
+
+		//print( TheirVelocity )
+
+		//self.Velocity = SelfVelocity
+		//data.HitEntity.Velocity = TheirVelocity
+		//print("heyo guess what")
+		//print( self.Velocity )
 
 	end
 end
 
 function ENT:Think()
+	//Make it so changing the actual gravity affects the coaster
+	local Grav = GetConVar( "sv_gravity" ):GetInt()
+	self.GRAVITY = (Grav / 61.2244) or 9.8
 
+	self:NextThink( CurTime() + 1 ) //This doesn't need to happen constantly
+	return true
 end
 
 function ENT:OnRemove()
