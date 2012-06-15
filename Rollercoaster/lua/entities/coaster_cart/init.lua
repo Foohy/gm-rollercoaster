@@ -49,7 +49,7 @@ function ENT:Initialize()
 	self:PhysicsInit(SOLID_VPHYSICS)
 	self:SetMoveType(MOVETYPE_VPHYSICS)
 	self:SetSolid(SOLID_VPHYSICS)
-	//self:SetCollisionGroup(COLLISION_GROUP_PROJECTILE)
+	self:SetCollisionGroup(COLLISION_GROUP_PROJECTILE)
 	
 	//Spawn at the beginning second node, where the curve starts
 	self.CurSegment = 2
@@ -132,8 +132,8 @@ function ENT:PhysicsSimulate(phys, deltatime)
 			//local TheirVelocity = ( v.Velocity * ( theirmass - ourmass ) + ( 2*ourmass*self.Velocity )) / ( ourmass + theirmass)
 
 
-			self.Velocity = SelfVelocity
-			v.Velocity = TheirVelocity
+			//self.Velocity = SelfVelocity
+			//v.Velocity = TheirVelocity
 
 		end
 	end

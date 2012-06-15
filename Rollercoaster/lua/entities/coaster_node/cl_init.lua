@@ -206,7 +206,12 @@ function ENT:RefreshClientSpline()
 	
 	self.CatmullRom:AddPointAngle( 2, firstNode:GetPos(), firstNode:GetAngles(), 1.0 )
 	table.insert( self.Nodes, firstNode )
-	local node = firstNode:GetNextNode()
+
+	local node = nil
+	if IsValid( firstNode ) && firstNode.GetNextNode then
+		node = firstNode:GetNextNode()
+	end
+
 	if !IsValid(node) then return end
 
 	//Recurse through all the nodes, adding them, until they are no longer valid

@@ -131,7 +131,7 @@ function CreateSeatAtPos(pos, angle)
 end
 
 hook.Add("KeyRelease", "EnterSeat", function(ply, key)
-
+	if CLIENT then return end
 	if key != IN_USE || ply:InVehicle() || (ply.ExitTime && CurTime() < ply.ExitTime + 1) then return end
 
 	local eye = ply:EyePos()

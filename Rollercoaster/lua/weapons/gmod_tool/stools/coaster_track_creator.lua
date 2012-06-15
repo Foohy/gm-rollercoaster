@@ -150,30 +150,38 @@ function TOOL:RightClick(trace)
 end
 
 function TOOL:Reload(trace)
+	local ply   = self:GetOwner()
+	
+	trace = {}
+	trace.start  = ply:GetShootPos()
+	trace.endpos = trace.start + (ply:GetAimVector() * 99999999)
+	trace.filter = ply
+	trace = util.TraceLine(trace)
 
+	if IsValid( trace.Entity ) && trace.Entity:GetClass() == "coaster_node" then //Update an existing node's settings
+		//Info gathering time
+		local type = trace.Entity:GetType()
+		local ID = trace.Entity.CoasterID
+		local Bank = trace.Entity:GetRoll()
+		local RelRoll = trace.Entity:GetRelativeRoll()
+
+	end
 end
 
 function TOOL:Holster()
 	if CLIENT then
 		ClearNodeSelection()
 	end
-
-	 if IsValid( self.GhostEntity ) && ( SERVER || !SinglePlayer() ) then 
-		self.GhostEntity:SetNoDraw( true )
-	end
 end
 
 function TOOL:Think()
+
 	if CLIENT then
 		local Elevation = self:GetClientNumber("elevation")
 		local Slope 	= self:GetClientNumber("slope")
 		local plyAng	= self:GetOwner():GetAngles()
 			
 		local ply   = self:GetOwner()
-
-		if IsValid( self.GhostEntity ) && ( SERVER || !SinglePlayer() ) then 
-			self.GhostEntity:SetNoDraw( false )
-		end
 			
 		trace = {}
 		trace.start  = ply:GetShootPos()
@@ -199,23 +207,41 @@ function TOOL:Think()
 			toolText = toolText .. "\nRoll: " .. tostring( trace.Entity:GetRoll() )
 			//toolText = toolText .. "\nNext Node: " .. tostring( trace.Entity:GetNextNode() )
 			AddWorldTip( trace.Entity:EntIndex(), ( toolText ), 0.5, trace.Entity:GetPos(), trace.Entity  )
-
-			if IsValid( self.GhostEntity ) && ( SERVER || !SinglePlayer() ) then 
-				self.GhostEntity:SetNoDraw( true )
-			end
 		else 
 			ClearNodeSelection()
 		end
-
-			
-		if !IsValid( self.GhostEntity ) then
-			self:MakeGhostEntity( self.GhostModel, newPos, newAng )
-		end
-		if SERVER || !SinglePlayer() then 
-			self.GhostEntity:SetPos( newPos )
-			self.GhostEntity:SetAngles( newAng )
-		end
 	end
+
+
+	if !IsValid( self.GhostEntity ) then
+		self:MakeGhostEntity( self.GhostModel, Vector( 0, 0, 0), Angle( 0, 0, 0) )
+	end
+
+	self:UpdateGhostNode( self.GhostEntity )
+end
+
+function TOOL:UpdateGhostNode( ent )
+ 		local ply   = self:GetOwner()
+
+		if ( !ent || !ent:IsValid() ) then return end
+ 
+		local tr        = util.GetPlayerTrace( ply, ply:GetCursorAimVector() )
+		local trace     = util.TraceLine( tr )
+       
+		if (!trace.Hit || trace.Entity:IsPlayer() || trace.Entity:GetClass() == "coaster_node" ) then
+			ent:SetNoDraw( true )
+			return
+		end
+
+		local Elevation = self:GetClientNumber("elevation")
+		local newPos = trace.HitPos + Vector( 0, 0, Elevation )
+		local newAng = Angle(0, ply:GetAngles().y, 0) + Angle( 0, 0, 0 )
+
+		ent:SetAngles( newAng )   
+        ent:SetPos( newPos )
+       
+        ent:SetNoDraw( false )
+ 
 end
 
 function TOOL:ValidTrace(trace)
@@ -254,7 +280,7 @@ if CLIENT then
 
 	language.Add( "Tool_coaster_track_creator_name", "Rollercoaster Track Layout Creator" )
 	language.Add( "Tool_coaster_track_creator_desc", "Create the track nodes to a rollercoaster!" )
-	language.Add( "Tool_coaster_track_creator_0", "Left click on the world to create a node. Click on an existing node to update it's settings. Right click on any node to loop the track." )
+	language.Add( "Tool_coaster_track_creator_0", "Left click on the world to create a node. Click on an existing node to update it's settings. Right click on any node to loop the track. Reload to retrieve a node's settings." )
 
 end
 

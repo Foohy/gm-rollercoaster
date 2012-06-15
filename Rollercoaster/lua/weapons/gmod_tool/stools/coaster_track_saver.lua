@@ -24,7 +24,7 @@ end
 
 function TOOL:LeftClick(trace)
 	if CurTime() < self.CoolDown then return end
-	if CLIENT then
+	if CLIENT || SinglePlayer() then
 		self:SpawnTrack()
 		self.CoolDown = CurTime() + .25
 
@@ -375,17 +375,18 @@ function LoadSelectedTrack()
 		end
 
 		if line then
-			if SinglePlayer() then
-				print( line:GetValue( 3 ))
-				local contents = file.Read( line:GetValue(3) ) //Is there a way to get the full file path of the file?
-				local tbl = util.KeyValuesToTable( contents )
+			//if SinglePlayer() then
+			//	print( line:GetValue( 3 ))
+			//	local contents = file.Read( line:GetValue(3) ) //Is there a way to get the full file path of the file?
+			//	local tbl = util.KeyValuesToTable( contents )
 
-				coaster_saver_ClipboardTrack = tbl //Load the table into our clipboard TODO: make a visualize clipboard function
-			else
-				print("TODO: Handle spawning in multiplayer")
+			//	coaster_saver_ClipboardTrack = tbl //Load the table into our clipboard TODO: make a visualize clipboard function
+			//else
 				coaster_saver_selectedfilename = line:GetValue( 1 ) .. ".txt"
 				print( "selected: " .. tostring(line:GetValue( 1 )))
-			end
+
+				print(coaster_saver_selectedfilename)
+			//end
 		else
 			return
 			print("Failed to load track - Line was nil")
@@ -393,8 +394,22 @@ function LoadSelectedTrack()
 	end
 end
 
+usermessage.Hook("Coaster_spawntrack_sp", function(um) 
+	RunConsoleCommand( "coaster_track_saver_spawntrack", coaster_saver_selectedfilename, um:ReadShort() or 1)
+	print("Building \"" .. coaster_saver_selectedfilename .. "\"")
+end )
+
 function TOOL:SpawnTrack()
-	PrintTable(coaster_saver_ClipboardTrack)
+	if SinglePlayer() then //I'm seriously sending a usermessage to the client, who is the host. WHY IS LEFTCLICK NOT CALLED ON THE CLIENT IN SINGLEPLAYER
+		umsg.Start("Coaster_spawntrack_sp")
+			umsg.Short(self:GetClientNumber("ID"))
+		umsg.End()
+	else
+			RunConsoleCommand( "coaster_track_saver_spawntrack", coaster_saver_selectedfilename, self:GetClientNumber("ID"))
+			print("Building \"" .. coaster_saver_selectedfilename .. "\"")
+	end
+	//print(coaster_saver_selectedfilename)
+	//PrintTable(coaster_saver_ClipboardTrack)
 	//print(coaster_saver_ClipboardTrack["name"] )
 	//if coaster_saver_ClipboardTrack && coaster_saver_ClipboardTrack["name"] != nil then
 		//OH BOY
@@ -402,10 +417,12 @@ function TOOL:SpawnTrack()
 
 		//Tell the server we want to spawn the track
 		
-		if !SinglePlayer() && coaster_saver_selectedfilename != nil then	
-			RunConsoleCommand( "coaster_track_saver_spawntrack", coaster_saver_selectedfilename, self:GetClientNumber("ID"))
-			print("Building \"" .. coaster_saver_selectedfilename .. "\"")
-		end
+		//if !SinglePlayer() && coaster_saver_selectedfilename != nil && CLIENT then	
+			//RunConsoleCommand( "coaster_track_saver_spawntrack", coaster_saver_selectedfilename, self:GetClientNumber("ID"))
+			//print("Building \"" .. coaster_saver_selectedfilename .. "\"")
+		//elseif SinglePlayer() && SERVER then
+		//	RunConsoleCommand( "coaster_track_saver_spawntrack_sp", coaster_saver_selectedfilename, self:GetClientNumber("ID"))
+		//end
 	//else
 	//	print("No track in clipboard!")
 	//end
@@ -521,7 +538,10 @@ if SERVER then
 		local filename = args[1]
 		local id = args[1] or 9
 
-		if file.Exists("Rollercoasters/Server/" .. filename, "DATA") then
+		local directory ="Rollercoasters/Server/"
+		if SinglePlayer() then directory = "Rollercoasters/" end
+
+		if file.Exists(directory .. filename, "DATA") then
 			//Check if the track exists (Temporary until tracks can be spawned via toolgun)
 			for k, v in pairs( ents.FindByClass("coaster_node") ) do
 				if v.Filename == filename then
@@ -531,7 +551,7 @@ if SERVER then
 			end
 
 			//Load the file
-			local contents = file.Read( "Rollercoasters/Server/" .. filename )
+			local contents = file.Read( directory .. filename )
 			local tbl = util.KeyValuesToTable( contents )
 
 			if tbl then
@@ -566,7 +586,7 @@ if SERVER then
 
 			end
 		end
-	end)
+	end )
 end
 
 //Use net library to send local file to server (If I may add, holy shit I love the net library)
