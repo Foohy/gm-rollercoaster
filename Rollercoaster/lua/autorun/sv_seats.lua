@@ -169,6 +169,17 @@ hook.Add("KeyRelease", "EnterSeat", function(ply, key)
 	usetable[pos] = true
 	trace.Entity.UseTable = usetable
 
+	if trace.Entity:GetClass() == "coaster_cart" then
+		if !trace.Entity.Occupants then
+			trace.Entity.Occupants = {}
+		end
+		table.insert( trace.Entity.Occupants, ply )
+
+		trace.Entity:UpdateMass()
+
+	end
+
+
 	ply.EntryPoint = ply:GetPos()
 	ply.EntryAngles = ply:EyeAngles()
 	ply.SeatEnt = trace.Entity
@@ -225,6 +236,15 @@ end
 
 local function PlayerLeaveVehice( vehicle, ply )
 	if vehicle:GetClass() != "prop_vehicle_prisoner_pod" then return end
+
+	local parent = vehicle:GetParent()
+	if IsValid( parent ) && parent:GetClass() == "coaster_cart" && parent.Occupants && #parent.Occupants > 0 then
+		for k, v in pairs( parent.Occupants ) do
+			if v == ply then table.remove( parent.Occupants, k ) end
+		end
+
+		parent:UpdateMass()
+	end
 
 	if !IsValid(ply.SeatEnt) then
 		return true

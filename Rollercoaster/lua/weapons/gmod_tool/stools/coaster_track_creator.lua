@@ -76,7 +76,7 @@ function TOOL:LeftClick(trace)
 				//controller.Looped = false
 				controller:SetLooped( false )
 			else
-				local node = CoasterManager.CreateNode( ID, newPos, newAng, Type )
+				local node = CoasterManager.CreateNode( ID, newPos, newAng, Type, self:GetOwner() )
 				node:SetRoll( Bank )
 				node:SetRelativeRoll( RelRoll==1 )
 
@@ -128,7 +128,7 @@ function TOOL:RightClick(trace)
 			local SecondNode = FirstNode:GetNextNode()
 			
 			if IsValid( Controller ) && IsValid( Controller:GetFirstNode() ) then
-				local newNode = CoasterManager.CreateNode( ID, FirstNode:GetPos(), FirstNode:GetAngles(), COASTER_NODE_NORMAL )
+				local newNode = CoasterManager.CreateNode( ID, FirstNode:GetPos(), FirstNode:GetAngles(), COASTER_NODE_NORMAL, self:GetOwner() )
 
 				local lastNode = Controller.Nodes[ #Controller.Nodes ]
 				

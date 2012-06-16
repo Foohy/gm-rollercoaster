@@ -66,7 +66,7 @@ if SERVER then
 	end
 
 	//Spawn a new rollercoaster the simple way
-	function CoasterManager.CreateNode( id, pos, ang, type )
+	function CoasterManager.CreateNode( id, pos, ang, type, ply )
 		local node = ents.Create("coaster_node")		
 		node.CoasterID = id
 		node:SetType( type )
@@ -82,15 +82,28 @@ if SERVER then
 			Rollercoasters[id] = node
 			Rollercoasters[id]:SetController(true)
 			Rollercoasters[id]:SetModel( "models/props_junk/PopCan01a.mdl" )
-			Rollercoasters[id]:AddTrackNode( node ) //The first node is always the controller node
+			Rollercoasters[id]:AddTrackNode( node, ply ) //The first node is always the controller node
 		else //The ID IS an actual rollercoaster, so let's append to it
-			Rollercoasters[id]:AddTrackNode( node )
+			Rollercoasters[id]:AddTrackNode( node, ply )
 			Msg("Creating a new node: "..tostring(Rollercoasters[id]:GetNumNodes()).." for coaster ID: "..id.."\n")
 		end
 		
 		return node
 
 	end
+
+
+	hook.Add( "PlayerInitialSpawn", "UpdateWithAllTracks", function( ply )
+		timer.Simple( 5, function() //is there a hook when the player is able to receive umsgs?
+			for k, v in pairs( ents.FindByClass("coaster_node") ) do
+				if IsValid( v ) && v:IsController() then
+					umsg.Start("Coaster_RefreshTrack", ply)
+						umsg.Entity(v)
+					umsg.End()
+				end
+			end
+		end )
+	end )
 end
 
 

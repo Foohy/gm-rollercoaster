@@ -6,11 +6,11 @@ ENT.CoasterID 	= -1 //Unique ID of the coaster this cart is attached to
 ENT.NumCarts 	= 1 //Length of the train of carts
 ENT.Powered 	= false //If powered, never slow beyond a certain speed. Basically silent always-on chains
 ENT.Controller 	= nil //Controller
-ENT.OnChains 	= false //Currently on a track node with chains?
 ENT.IsOffDaRailz  = false 
 
 //Physics stuff
 ENT.GRAVITY = 9.8
+ENT.InitialMass = 100
 ENT.WheelFriction = 0.04 //Coeffecient for mechanical friction (NOT drag) (no idea what the actual mew is for a rollercoaster, ~wild guesses~)
 ENT.Restitution = 0.9
 ENT.Velocity = 4 //Starting velocity
@@ -69,7 +69,7 @@ function ENT:Initialize()
 	
 	//more random guesses
 	if IsValid( self:GetPhysicsObject() ) then
-		self:GetPhysicsObject():SetMass( 100 )
+		self:GetPhysicsObject():SetMass( self.InitialMass )
 		self:GetPhysicsObject():Wake()
 	end
 
@@ -335,7 +335,6 @@ function ENT:AngleAt(i, perc )
 
 	local AngVec = Vector(0,0,0)
 
-
 	AngVec = Vec1 - Vec2
 
 	return AngVec:Normalize():Angle()
@@ -349,6 +348,20 @@ function ENT:GetMultiplier(i, perc)
 
 	Dist = Vec1:Distance( Vec2 )
 	return 1 / Dist 
+end
+
+//Adjust cart mass based on it's current occupants
+function ENT:UpdateMass()
+	if self.Occupants && #self.Occupants > 0 then
+		local mass = self.InitialMass
+		for k, v in pairs( self.Occupants ) do
+			if IsValid( v ) then mass = mass + v:GetPhysicsObject():GetMass() end
+		end
+		print( "New mass: " .. tostring( mass ))
+		self:GetPhysicsObject():SetMass( mass )
+	else
+		self:GetPhysicsObject():SetMass( self.InitialMass )
+	end
 end
 
 //Get the current spline we are on from a percent along a specific segment
@@ -371,11 +384,6 @@ function ENT:PhysicsUpdate(physobj)
 	if self:IsPlayerHolding() then
 		self.Velocity = 0
 	end
-end
-
-function ENT:SetTrackVelocity( newVel )
-	self.UpdateTrackVelocity = true
-	self.QueuedVelocity = newVel
 end
 
 //Explode if they are off the rails

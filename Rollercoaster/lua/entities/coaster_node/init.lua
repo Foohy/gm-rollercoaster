@@ -50,7 +50,16 @@ function ENT:GetNumNodes()
 	return #self.Nodes or 0
 end
 
-function ENT:AddNodeSimple( ent ) //For use when being spawned by a file
+function ENT:CheckForInvalidNodes()
+	if !self.Nodes or #self.Nodes < 1 then return end
+
+	for k, v in pairs( self.Nodes ) do
+		if !IsValid( v ) then table.remove( self.Nodes, k ) end
+	end
+
+end
+
+function ENT:AddNodeSimple( ent, ply ) //For use when being spawned by a file
 	if IsValid( ent ) && ent:GetClass() == self:GetClass() then
 		local index = table.insert( self.Nodes, ent )
 
@@ -65,41 +74,63 @@ function ENT:AddNodeSimple( ent ) //For use when being spawned by a file
 	end
 end
 
-function ENT:AddTrackNode( ent )
+function ENT:AddTrackNode( ent, ply )
 	if IsValid( ent ) && ent:GetClass() == self:GetClass() then
 		local index = table.insert( self.Nodes, ent )
-		
+		local FirstNode = self:GetFirstNode()
 
 		local prevNode = self.Nodes[index-1]
 		if IsValid(prevNode) then
 			prevNode:SetNextNode(ent)	
 			
 			//Set the new node to the old 'unconnected' node's position
-			if !prevNode:IsController() && prevNode != self:GetFirstNode() then
+			if !prevNode:IsController() && prevNode != FirstNode then
 				prevNode:SetModel( self.Model )
 				prevNode:SetPos( ent:GetPos() )
 				ent:SetModel( "models/props_junk/PopCan01a.mdl" )
 			end
+
+			//Add our undo stuff
+			if IsValid( ply ) && index > 4 then
+				undo.Create("Coaster Node")
+					undo.AddEntity( prevNode )
+					undo.SetPlayer( ply )
+					undo.SetCustomUndoText("Undone Track Node")
+				undo.Finish()
+			end
+
 		end
 		
 		//Create the second node if we are the very first created node(controller)
-		if !IsValid( self:GetFirstNode() ) && ent:IsController() then
+		if ( !IsValid( FirstNode ) || FirstNode:EntIndex() == 1 ) && ent:IsController() then
 			print( ent:GetPos() )
-			local node = CoasterManager.CreateNode( ent.CoasterID, ent:GetPos(), ent:GetAngles(), ent:GetType() )
+			local node = CoasterManager.CreateNode( ent.CoasterID, ent:GetPos(), ent:GetAngles(), ent:GetType(), ply )
 
+			undo.Create("Rollercoaster")
+				undo.AddEntity( ent )
+				undo.AddEntity( node )
+				undo.SetPlayer( ply )
+				undo.SetCustomUndoText("Undone Rollercoaster")
+			undo.Finish()
 			//node:Invalidate()
 		end
 		
 		//Create the 4th node if we are the 3rd node created (2nd click)
-		local firstNode = self:GetFirstNode()
-		if IsValid( firstNode ) && firstNode:GetNextNode() == ent then
-			local node = CoasterManager.CreateNode( ent.CoasterID, ent:GetPos(), ent:GetAngles(), ent:GetType() )
-			//node:Invalidate()
+		if IsValid( FirstNode ) && FirstNode:EntIndex() != 1 && FirstNode:GetNextNode() == ent then
+			local node = CoasterManager.CreateNode( ent.CoasterID, ent:GetPos(), ent:GetAngles(), ent:GetType(), ply )
+			
+			undo.Create("Coaster Node")
+				undo.AddEntity( ent )
+				undo.AddEntity( node )
+				undo.SetPlayer( ply )
+				undo.SetCustomUndoText("Undone Rollercoaster")
+			undo.Finish()
+
 			node:SetModel( "models/props_junk/PopCan01a.mdl" )
 		end
 		
 		// First node is the node after the controller
-		if !IsValid(self:GetFirstNode()) and !ent:IsController() then
+		if ( !IsValid(FirstNode ) || FirstNode:EntIndex() == 1 ) and !ent:IsController() then
 			self:SetFirstNode(ent)
 			self:SetPos( ent:GetPos() )
 		end
@@ -167,37 +198,41 @@ function ENT:PhysicsUpdate(physobj)
 			self:Invalidate() //invalidate ourselves, we moved
 		end
 		
-		//This is a bit nasty... it sets the appropriate nodes to their proper position to keep a looped track looped
-		if self:Looped() || Rollercoasters[ self.CoasterID ]:Looped() then
-			local controller = Rollercoasters[ self.CoasterID ]
-			
-			if controller.Nodes[ #controller.Nodes - 2] == self then
-				controller:SetPos( self:GetPos() )
-			elseif self:IsController() && IsValid( controller.Nodes[ #controller.Nodes - 2 ] ) then
-				controller.Nodes[ #controller.Nodes - 2 ]:SetPos( self:GetPos() )
-			elseif controller:GetFirstNode() == self then
-				controller.Nodes[ #controller.Nodes - 1 ]:SetPos( self:GetPos() )
-			elseif controller.Nodes[ #controller.Nodes - 1 ] == self then
-				controller:GetFirstNode():SetPos( controller.Nodes[ #controller.Nodes - 1 ]:GetPos() )
-			elseif controller.Nodes[ #controller.Nodes ] == self then
-				controller.Nodes[ 3 ]:SetPos( self:GetPos() )
-			elseif controller.Nodes[ 3 ] == self then
-				controller.Nodes[ #controller.Nodes ]:SetPos( self:GetPos() )
-			end
-		else //If it isn't looped, just set the controller/end node to a place to hide
-			local controller = Rollercoasters[ self.CoasterID ]
-			
-			if self == controller:GetFirstNode() then
-				controller:SetPos( self:GetPos() )
-			elseif self == controller.Nodes[ #controller.Nodes - 1 ] && IsValid( controller.Nodes[#controller.Nodes] ) then //If we are grabbing the last connected node, set the last unconnected node's position to it
-				controller.Nodes[ #controller.Nodes]:SetPos( self:GetPos() )
-			end
-		
-		
-		
-		end
+		self:UpdateMagicPositions()
 		
 	end
+end
+
+//This is a bit nasty... it sets the appropriate nodes to their proper position to keep a looped track looped
+//I wasn't being very creative for a function name
+function ENT:UpdateMagicPositions()
+	if self:Looped() || Rollercoasters[ self.CoasterID ]:Looped() then
+		local controller = Rollercoasters[ self.CoasterID ]
+		
+		if controller.Nodes[ #controller.Nodes - 2] == self then
+			controller:SetPos( self:GetPos() )
+		elseif self:IsController() && IsValid( controller.Nodes[ #controller.Nodes - 2 ] ) then
+			controller.Nodes[ #controller.Nodes - 2 ]:SetPos( self:GetPos() )
+		elseif controller:GetFirstNode() == self then
+			controller.Nodes[ #controller.Nodes - 1 ]:SetPos( self:GetPos() )
+		elseif controller.Nodes[ #controller.Nodes - 1 ] == self then
+			controller:GetFirstNode():SetPos( controller.Nodes[ #controller.Nodes - 1 ]:GetPos() )
+		elseif controller.Nodes[ #controller.Nodes ] == self then
+			controller.Nodes[ 3 ]:SetPos( self:GetPos() )
+		elseif controller.Nodes[ 3 ] == self then
+			controller.Nodes[ #controller.Nodes ]:SetPos( self:GetPos() )
+		end
+	else //If it isn't looped, just set the controller/end node to a place to hide
+		local controller = Rollercoasters[ self.CoasterID ]
+		
+		if self == controller:GetFirstNode() then
+			controller:SetPos( self:GetPos() )
+		elseif self == controller.Nodes[ #controller.Nodes - 1 ] && IsValid( controller.Nodes[#controller.Nodes] ) then //If we are grabbing the last connected node, set the last unconnected node's position to it
+			controller.Nodes[ #controller.Nodes]:SetPos( self:GetPos() )
+		end
+
+	end
+
 end
 
 //Invalidate the node on the client
@@ -252,8 +287,10 @@ function ENT:Think()
 end
 
 function ENT:OnRemove()	
-	if self:IsController() then
-		for _, v in pairs( self.Nodes ) do
+	local cont = Rollercoasters[self.CoasterID]
+
+	if self:IsController() || (IsValid( cont ) && #cont.Nodes <= 4 ) then // || (IsValid( cont ) && cont.Nodes[2] == self ) 
+		for _, v in pairs( cont.Nodes ) do
 			if IsValid( v ) then 
 				v.SafeDeleted = true 
 				v:Remove() 
@@ -261,10 +298,24 @@ function ENT:OnRemove()
 		end
 		
 		self:ClearTrains() 
+	elseif ( IsValid( cont ) && #cont.Nodes <= 4 ) && cont.Nodes[4] == self || cont.Nodes[3] == self then
+		print("speical caase")
+		if cont.Nodes[4] == self then
+			if IsValid( cont.Nodes[3] ) then
+				cont.Nodes[3]:Remove() 
+			end
+		end
+
+		if cont.Nodes[3] == self then
+			if IsValid( cont.Nodes[4] ) then 
+				cont.Nodes[4]:Remove() 
+			end
+		end
+
 	else
 		//This massive bit of ugly code removes unvalid nodes from the tables and stuff
 		if !self.SafeDeleted then
-			local cont = Rollercoasters[self.CoasterID]
+
 			if IsValid( cont ) then
 				for k, v in pairs( cont.Nodes ) do
 					if v == self then 
@@ -277,9 +328,24 @@ function ENT:OnRemove()
 				end
 			end
 			
-			//Update the track
-			self:UpdateServerSpline() 
 		end
+	end
+
+	//Update the track
+	cont:CheckForInvalidNodes()
+	cont:UpdateServerSpline() 
+
+	timer.Simple(0.25, function() 
+		umsg.Start("Coaster_RefreshTrack")
+			umsg.Entity( cont )
+		umsg.End()
+	end )
+
+	//Go through and make sure everything is in their proper place
+	if !IsValid( cont ) || !cont.Nodes then return end
+
+	for _, v in pairs( cont.Nodes ) do
+		if IsValid( v ) then v:UpdateMagicPositions() end
 	end
 end
 

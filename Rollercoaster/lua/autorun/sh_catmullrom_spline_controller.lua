@@ -43,6 +43,7 @@ function Controller:Reset()
 	self.CurSegment = 2
 	self.CurSegmentTimestamp = CurTime()
 	self.PointsList = {}
+	self.Spline = {}
 	
 	if self.DurationList[2] then
 		self.CurSegmentTimestamp = self.CurSegmentTimestamp + self.DurationList[2]

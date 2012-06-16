@@ -77,7 +77,8 @@ end
 
 usermessage.Hook("Coaster_RefreshTrack", function( um )
 	self = um:ReadEntity()
-	
+	if !IsValid( self ) || !self.IsController then return end
+
 	if self:IsController() then
 		//self:SetupTrack()
 		self:RefreshClientSpline()
@@ -93,22 +94,13 @@ end )
 
 usermessage.Hook("Coaster_AddNode", function( um )
 	local self = Entity(um:ReadShort())
-	/*local node = Entity(um:ReadShort())
 
-	if self.Nodes == nil then self.Nodes = {} end
-	//table.insert( self.Nodes, node )
-	if (self.Nodes == nil ) then 
-		self.Nodes = {}
-		self.Nodes[1] = node 
-	else
-		self.Nodes[ #self.Nodes + 1] = node 
-	end*/
 	if !self.IsController then return end //Shared functions don't exist yet.
 
 	if (self:IsController()) then
-		//self:SetupTrack()
+
 		self:RefreshClientSpline()
-		//self:UpdateClientMesh()
+
 		
 		//Invalidate nearby nodes
 		if self.Nodes != nil then
@@ -794,15 +786,13 @@ function ENT:DrawSpeedupModels( segment )
 		//Each spline has a certain multiplier so the cart travel at a constant speed throughout the track
 		Multiplier = self:GetMultiplier(segment, Percent)
 
-		//Move ourselves forward along the track
-		Percent = Percent + ( Multiplier * WheelOffset )
-
-		if Percent > 1 then return end
-
 		self.SpeedupModel:SetRenderOrigin( Position )
 		self.SpeedupModel:SetAngles( ang )
 		self.SpeedupModel:SetupBones()
 		self.SpeedupModel:DrawModel()
+
+		//Move ourselves forward along the track
+		Percent = Percent + ( Multiplier * WheelOffset )
 
 	end
 	self.SpeedupModel:SetNoDraw( true )
@@ -913,7 +903,7 @@ function ENT:GetController()
 	if self:IsController() then return self end
 
 	for _, v in pairs( ents.FindByClass( self:GetClass() )) do
-		if v:IsController() then
+		if v.IsController && v:IsController() then
 			if v.Nodes && #v.Nodes > 0 then
 				for _, node in pairs( v.Nodes ) do
 					if node == self then
@@ -955,6 +945,19 @@ function ENT:OnRemove()
 		if IsValid( self.SupportModelStart ) then self.SupportModelStart:Remove() end
 		if IsValid( self.SupportModelBase ) then self.SupportModelBase:Remove() end
 		if IsValid( self.SpeedupModel ) then self.SpeedupModel:Remove() end
+	else
+		local Controller = self:GetController()
+		if !IsValid( Controller ) then return end
+
+		for k, v in pairs( Controller.Nodes ) do
+			if v == self then 			
+				table.remove( Controller.Nodes, k ) 
+				Controller:RefreshClientSpline()
+
+				break
+			end
+		end
+
 	end
 end
 
