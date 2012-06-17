@@ -249,23 +249,27 @@ function ENT:GetController()
 	return Rollercoasters[self.CoasterID]
 end
 
-function ENT:SetTrain(ply, cartnum, powered)
+function ENT:SetTrain(ply, model, cartnum)
 	if #self.Nodes < 4 then
 		umsg.Start("Coaster_CartFailed", ply)
 			umsg.Char( 4 - #self.Nodes )
 		umsg.End()
 		return
 	end
-	self.Train 			= ents.Create( "coaster_cart")
-	self.Train.NumCarts = cartnum
-	self.Train.Powered 	= powered
-	self.Train.CoasterID = self.CoasterID
-	self.Train.Controller = self
+	local train			= ents.Create( "coaster_cart")
+	train.Model = model 
+	//train:SetModel(model)
+	train.NumCarts = cartnum
+	train.Powered 	= powered
+	train.CoasterID = self.CoasterID
+	train.Controller = self
 	
-	self.Train:SetPos(self:GetPos())
-	self.Train:Spawn()
-	self.Train:Activate()
-	self.Train:SetAngles( Angle( 0, 180, 0 ) )
+	train:SetPos(self:GetPos())
+	train:Spawn()
+	train:Activate()
+	train:SetAngles( Angle( 0, 180, 0 ) )
+
+	return train
 end
 
 function ENT:ClearTrains()

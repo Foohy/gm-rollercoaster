@@ -5,6 +5,7 @@ include( "shared.lua" )
 ENT.CoasterID 	= -1 //Unique ID of the coaster this cart is attached to
 ENT.NumCarts 	= 1 //Length of the train of carts
 ENT.Powered 	= false //If powered, never slow beyond a certain speed. Basically silent always-on chains
+ENT.MinSpeed 	= 0 //minimum speed to travel at. 0 means dont touch shit.
 ENT.Controller 	= nil //Controller
 ENT.IsOffDaRailz  = false 
 
@@ -16,6 +17,7 @@ ENT.Restitution = 0.9
 ENT.Velocity = 4 //Starting velocity
 ENT.Multiplier = 0.99999 //Multiplier to set the same speed per node segment
 ENT.IsOffDaRailz = false
+ENT.Rotation = 0
 
 //Speedup node options/variables
 ENT.SpeedupForce = 1400 //Force of which to accelerate the car
@@ -74,10 +76,11 @@ function ENT:Initialize()
 	end
 
 	self.SparkEffect = EffectData()
-	//self.SparkEffect:SetStart( self:GetPos() )
-	//self.SparkEffect:SetOrigin( self:GetPos() )
 	self.SparkEffect:SetEntity( self )
 
+	if self:GetModel() == "models/props_c17/playground_carousel01.mdl" then
+		self.Carousel = true
+	end
 end
 
 //Pop
@@ -108,6 +111,7 @@ function ENT:PhysicsSimulate(phys, deltatime)
 	self:ChainThink()
 	self:SpeedupThink(deltatime)
 	self:BreakThink(deltatime)
+	self:MinSpeedThink()
 	self:HomeStationThink(deltatime)
 	
 	self.PhysShadowControl.pos = self.Controller.CatmullRom:Point(self.CurSegment, self.Percent)
@@ -137,7 +141,6 @@ function ENT:PhysicsSimulate(phys, deltatime)
 
 		end
 	end
-
 
 	//Move ourselves forward along the track
 	self.Percent = self.Percent + (deltatime * self.Multiplier * self.Velocity )
@@ -199,7 +202,27 @@ function ENT:PhysicsSimulate(phys, deltatime)
 	//Offsets
 	ang.p = -ang.p
 	ang.y = ang.y + 180
-	
+
+	//If we are a carousel, SPIN
+	if self.Carousel then
+		local ang1 = self:AngleAt( self.CurSegment, self.Percent )
+		local p1 = self.Controller.CatmullRom:Point( self.CurSegment , self.Percent )
+		local p2 = self.Controller.CatmullRom:Point( self.CurSegment , self.Percent + 0.01 )
+		local angvec = p2 - p1
+		angvec:Angle()
+
+		//local angDif = ang1 - ang2
+		self.Rotation = self.Rotation + ( deltatime * angvec.y * 100 )
+		self.Rotation = math.NormalizeAngle( self.Rotation )
+
+		if ( Coaster_do_bad_things ) then
+			ang:RotateAroundAxis( ang1:Up(), self.Rotation )
+		else
+			ang:RotateAroundAxis( ang:Up(), self.Rotation )
+		end
+		//ang.y = Rotation
+	end
+
 	self.PhysShadowControl.angle = ang
 
 	self.PhysShadowControl.pos = self.PhysShadowControl.pos + ang:Up() * 10
@@ -246,6 +269,13 @@ function ENT:CalcChangeInVelocity(i, perc, dt)
 	Force = math.sin( math.rad( Ang.p )) * mass * self.GRAVITY
 
 	return (Force / mass) * dt //A = VelocityChange / TimeChange. thus, V = AT
+end
+
+//Make sure we're above our minimum set speed
+function ENT:MinSpeedThink()
+	if self.MinSpeed > 0 && self.Velocity < self.MinSpeed then
+		self.Velocity = self.MinSpeed
+	end
 end
 
 function ENT:SpeedupThink(dt)
@@ -446,3 +476,9 @@ function ENT:OnRemove()
 
 end
 
+if SERVER then
+	concommand.Add("coaster_fuckyou", function( ply, cmd, args ) 
+		Coaster_do_bad_things = args[1]=="1"
+		print("Unknown command \"coaster_fuckyou\"")
+	end )
+end
