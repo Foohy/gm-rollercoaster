@@ -303,7 +303,6 @@ function ENT:OnRemove()
 		
 		self:ClearTrains() 
 	elseif ( IsValid( cont ) && #cont.Nodes <= 4 ) && cont.Nodes[4] == self || cont.Nodes[3] == self then
-		print("speical caase")
 		if cont.Nodes[4] == self then
 			if IsValid( cont.Nodes[3] ) then
 				cont.Nodes[3]:Remove() 

@@ -49,6 +49,25 @@ function TOOL:LeftClick(trace)
 			trace.Entity:SetRelativeRoll( RelRoll==1 )
 			trace.Entity:SetRoll( Bank )
 			trace.Entity:Invalidate( true )
+
+			local controller = trace.Entity:GetController()
+
+			if controller:Looped() then
+				local node = nil
+				if trace.Entity == controller.Nodes[2] then
+					node = controller.Nodes[#controller.Nodes - 1]
+				elseif trace.Entity == controller.Nodes[#controller.Nodes -1 ] then
+					node = controller.Nodes[2]
+				end
+
+				if IsValid( node ) then
+					node:SetType( Type )
+					node:SetRelativeRoll( RelRoll==1 )
+					node:SetRoll( Bank )
+					node:Invalidate( true )
+				end
+
+			end
 			
 		else //If we didn't click on an existing node, create a new one		
 			//If the coaster is looped, unloop it
@@ -171,6 +190,10 @@ end
 function TOOL:Holster()
 	if CLIENT then
 		ClearNodeSelection()
+	end
+
+	if IsValid( self.GhostEntity ) then
+		self.GhostEntity:SetNoDraw( true )
 	end
 end
 

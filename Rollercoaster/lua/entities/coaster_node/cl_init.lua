@@ -208,10 +208,8 @@ function ENT:RefreshClientSpline()
 
 	//Recurse through all the nodes, adding them, until they are no longer valid
 	local amt = 3
-	local recurse = 0
 	local End = false
 	repeat
-		recurse = recurse + 1
 		if node:GetClass() == "coaster_node" && node:EntIndex() != 1 then
 
 			self.CatmullRom:AddPointAngle( amt, node:GetPos(), node:GetAngles(), 1.0 )
@@ -228,7 +226,7 @@ function ENT:RefreshClientSpline()
 			End = true
 		end
 	until (!IsValid(node) || node == firstNode || End)
-	print( recurse  )
+		
 	//If there are enough nodes (4 for catmull-rom), calculate the curve
 	if #self.CatmullRom.PointsList > 3 then
 		self.CatmullRom:CalcEntireSpline()
@@ -310,7 +308,6 @@ function ENT:UpdateClientMesh()
 
 			print("Compiling with GenType: " .. EnumNames.Tracks[gentype] )
 			self.TrackMeshes = self.TrackClass:Generate( self )
-			print( tostring( self.TrackClass ))
 		else
 			print("Failed to use track type \"" .. ( EnumNames.Tracks[gentype] or "Unknown (" .. gentype .. ")" ) .. "\"!" )
 		end
@@ -707,7 +704,7 @@ function ENT:DrawSupports()
 			local height = math.Clamp( Distance, 1, self.PoleHeight + self.BaseHeight )
 			self.SupportModelStart:SetModelScale( Vector( 1, 1, height / self.PoleHeight ) )
 			self.SupportModelStart:SetAngles( Angle( 0, v:GetAngles().y, 0 ) )
-			self.SupportModelStart:SetupBones()
+			//self.SupportModelStart:SetupBones()
 			self.SupportModelStart:DrawModel()
 				
 			//Draw the second pole (if applicable)
@@ -715,7 +712,7 @@ function ENT:DrawSupports()
 				self.SupportModel:SetRenderOrigin( trace.HitPos + Vector(0, 0, self.PoleHeight + self.BaseHeight ))
 				self.SupportModel:SetModelScale( Vector( 1, 1, ((Distance - self.PoleHeight) / self.PoleHeight)   ) )
 				self.SupportModel:SetAngles( Angle( 0, v:GetAngles().y, 0 ) )				
-				self.SupportModel:SetupBones()	
+				//self.SupportModel:SetupBones()	
 				self.SupportModel:DrawModel()
 			end
 				
@@ -790,6 +787,7 @@ function ENT:DrawSpeedupModels( segment )
 		self.SpeedupModel:SetAngles( ang )
 		self.SpeedupModel:SetupBones()
 		self.SpeedupModel:DrawModel()
+
 
 		//Move ourselves forward along the track
 		Percent = Percent + ( Multiplier * WheelOffset )

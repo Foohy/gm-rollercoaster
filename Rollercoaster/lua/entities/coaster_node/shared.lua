@@ -8,7 +8,7 @@ ENT.Category		= "Foohy"
 ENT.Spawnable		= false
 ENT.AdminSpawnable	= false
 
-ENT.Model			= Model( "models/Combine_Helicopter/helicopter_bomb01.mdl" )
+ENT.Model			= Model( "models/hunter/misc/sphere075x075.mdl" )
 
 function ENT:SetupDataTables()
 	self:DTVar("Bool", 0, "IsController")

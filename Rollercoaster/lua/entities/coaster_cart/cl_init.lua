@@ -80,10 +80,15 @@ function ENT:Think()
 		end
 	end
 	
-	//Manage shaking TODO: screenshake doesn't lower amplitude as distance from center becomes higher. Come up with alternative shake?
-	local amp = math.Clamp( self:GetVelocity():Length() / 2000, 0, 32 )
-	amp = math.Clamp( amp - LocalPlayer():GetPos():Distance( self:GetPos() ), 0, 2000 )
-	util.ScreenShake( self:GetPos(), amp, 300, .5, 300 )
+	//I have no idea, I just threw these values in
+	local amp = 0
+	if LocalPlayer():InVehicle() then
+		amp = math.Clamp( self:GetVelocity():Length() / 4000, 0, 32 )
+	else
+		amp = math.Clamp( self:GetVelocity():Length() / 30, 0, 32 )
+		amp = math.Clamp( amp / ( LocalPlayer():GetPos():Distance( self:GetPos() ) ), 0, 2000 )
+	end
+	util.ScreenShake( LocalPlayer():GetPos(), amp, 300, .5, 300 )
 
 end
 

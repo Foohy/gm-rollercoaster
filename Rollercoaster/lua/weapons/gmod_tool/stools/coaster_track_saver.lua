@@ -542,7 +542,7 @@ if SERVER then
 
 	concommand.Add("coaster_track_saver_spawntrack", function(ply, cmd, args)
 		local filename = args[1]
-		local id = args[1] or 9
+		local id = math.Round(tonumber(args[2]) ) or 9
 
 		local directory ="Rollercoasters/Server/"
 		if SinglePlayer() then directory = "Rollercoasters/" end
