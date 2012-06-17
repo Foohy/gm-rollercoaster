@@ -5,6 +5,34 @@ ChairOffsets = {
 		Vector(-40.3, 10.5, 19.4), -- back left
 		Vector(-40.3, -10.5, 19.4) -- back right
 	},
+	["models/props_c17/playground_carousel01.mdl"] = {
+		Vector(0, 53, 20.2), //Angle( 0, 90, 0 )
+		Vector(53, 0, 20.2), //Angle( 0, 0, 0 )
+		Vector(0, -53, 20.2), //Angle( 0, -90, 0 )
+		Vector(-53, 0, 20.2), //Angle( 0, 180, 0 )
+
+		Vector(43, 43, 20.2), //Angle( 0, 45, 0 )
+		Vector(43, -43, 20.2), //Angle( 0, -45, 0 )
+		Vector(-43, 43, 20.2), //Angle( 0, 140, 0 )
+		Vector(-43, -43, 20.2), //Angle( 0, -140, 0 )
+	},
+	["models/xqm/CoasterTrack/train_2.mdl"] = {
+		Vector(30.7, -14, 20.8), 
+		Vector(-30.7, -14, 20.2), 
+	},
+	["models/xqm/coastertrain1.mdl"] = {
+		Vector( -60, 11, 23 ), 
+		Vector( -9.6, 11, 23 ),  
+		Vector( 40, 11, 23 ), 
+
+		Vector( -60, -11, 23 ), 
+		Vector( -9.6, -11, 23 ),
+		Vector( 40, -11, 23 ), 
+	},
+	["models/xqm/coastertrain1seat.mdl"] = {
+		Vector(-12.3, 11, 20.2),
+		Vector(-12.3, -9.6, 20.2),
+	},
 	["models/props/de_inferno/furniture_couch02a.mdl"] = {
 		Vector(7.6080, 0.2916, -5.1108)
 	},

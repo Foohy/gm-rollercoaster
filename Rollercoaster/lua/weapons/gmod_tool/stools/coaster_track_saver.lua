@@ -518,6 +518,12 @@ if SERVER then
 					umsg.Short( controllernode:EntIndex() )
 				umsg.End()
 			end )
+
+			undo.Create("Saved Rollercoaster")
+				undo.AddEntity( controllernode )
+				undo.SetPlayer( ply )
+				undo.SetCustomUndoText("Undone \"" .. filename .. "\"")
+			undo.Finish()
 		end
 
 		//Force the server and client to update the spline
@@ -560,6 +566,7 @@ if SERVER then
 				//local controllernode = nil
 
 				if IsValid( Rollercoasters[id] ) then Rollercoasters[id]:Remove() end
+
 				for i=1, tbl.numnodes do
 					local nodeinfo = tbl[i]
 					local looped = tbl.looped == "true"

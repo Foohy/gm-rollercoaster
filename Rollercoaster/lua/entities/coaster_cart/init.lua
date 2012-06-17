@@ -101,6 +101,7 @@ function ENT:PhysicsSimulate(phys, deltatime)
 	local CurPos  = self:GetPos()
 	local CurNode = self.Controller.Nodes[self.CurSegment]
 	local NextNode = self.Controller.Nodes[ self.CurSegment + 1]
+	if !IsValid( CurNode ) || !IsValid( NextNode ) then self.CurSegment = #Rollercoasters[self.CoasterID].Nodes end
 	self:SetCurrentNode( CurNode )
 
 	//Forces that are always being applied to the cart
@@ -192,8 +193,10 @@ function ENT:PhysicsSimulate(phys, deltatime)
 	local ang = self:AngleAt(self.CurSegment, self.Percent)
 	
 	//Change the roll depending on the track
-	//local Roll = Lerp( self.Percent, CurNode:GetAngles().r,NextNode:GetAngles().r ) //Lerp the roll from the last segments roll to the next segments roll
-	local Roll = -Lerp( self.Percent, self.Controller.Nodes[self.CurSegment]:GetRoll(), self.Controller.Nodes[self.CurSegment + 1]:GetRoll())	
+	local Roll = 0
+	if IsValid( CurNode ) && IsValid( NextNode ) then
+		Roll = -Lerp( self.Percent, CurNode:GetRoll(), NextNode:GetRoll())	
+	end
 	
 	//Set the roll for the current track peice
 	ang:RotateAroundAxis( self:AngleAt(self.CurSegment, self.Percent):Forward(), Roll ) //BAM
