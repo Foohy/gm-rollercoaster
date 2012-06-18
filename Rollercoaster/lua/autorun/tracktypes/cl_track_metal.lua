@@ -91,6 +91,24 @@ function TRACK:Generate( controller )
 
 			if LastAng == nil then LastAng = NewAng end
 
+			//Draw the first segment
+			if i==1 then
+				local FirstLeft = controller:GetPos() + ang:Right() * -RailOffset
+				local FirstRight = controller:GetPos() + ang:Right() * RailOffset
+				local CenterBeam = controller:GetPos() +  ang:Up() * -Offset 
+
+				if controller:Looped() then
+					FirstLeft = controller.CatmullRom.PointsList[2] + ang:Right() * -RailOffset
+					FirstRight = controller.CatmullRom.PointsList[2] + ang:Right() * RailOffset
+					CenterBeam = controller.CatmullRom.PointsList[2] + ang:Up() * -Offset
+				end
+
+				Cylinder.AddBeam(CenterBeam, LastAng, controller.CatmullRom.Spline[i] + ang:Up() * -Offset, NewAng, Radius )
+
+				Cylinder.AddBeam( FirstLeft, LastAng, posL, NewAng, 4 )
+				Cylinder.AddBeam( FirstRight, LastAng, posR, NewAng, 4 )
+			end
+
 			//vec:ANgle()
 			Cylinder.AddBeam(controller.CatmullRom.Spline[i] + (ang:Up() * -Offset), LastAng, controller.CatmullRom.Spline[i+1] + (ang2:Up() * -Offset), NewAng, Radius )
 

@@ -3,6 +3,10 @@ AddCSLuaFile( "autorun/coasterManager.lua" )
 AddCSLuaFile("trackmanager.lua")
 include("trackmanager.lua")
 
+AddCSLuaFile("cl_coaster_spawnmenu.lua")
+include("cl_coaster_spawnmenu.lua")
+
+
 Rollercoasters = {} //Holds all the rollercoasters
 CoasterManager = {} //Holds all the methods and variables for rollercoasters
 Controller	   = {}
@@ -113,6 +117,7 @@ if CLIENT then
 	CreateClientConVar("coaster_supports", 1, false, false )
 	CreateClientConVar("coaster_previews", 1, false, false )
 	CreateClientConVar("coaster_motionblur", 1, false, false )
+	CreateClientConVar("coaster_maxwheels", 15, false, false)
 
 	//Motion blur
 	local function GetMotionBlurValues( x, y, fwd, spin )

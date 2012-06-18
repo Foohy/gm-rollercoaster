@@ -13,8 +13,8 @@ TRACK.CylinderRadius = 10 //Radius of the circular track beams
 TRACK.CylinderPointCount = 7 //How many points make the cylinder of the track mesh
 
 function TRACK:Generate( controller )
-	print("Nyerd")
 	if !IsValid( controller ) || !controller:IsController() then return end
+
 	local Vertices = {} //Create an array that will hold an array of vertices (This is to split up the model)
 	Meshes = {} 
 	local modelCount = 1 //how many models the mesh has been split into
@@ -92,18 +92,28 @@ function TRACK:Generate( controller )
 			if #controller.CatmullRom.Spline >= i+2 then
 				vec2 = controller.CatmullRom.Spline[i+1] - controller.CatmullRom.Spline[i+2]
 			end
-			//vec:Normalize() //new
+
 			NewAng = vec:Angle()
 			NewAng:RotateAroundAxis( vec:Angle():Right(), 90 )
 			NewAng:RotateAroundAxis( vec:Angle():Up(), 270 )
 
-			//if LastAng == nil then LastAng = NewAng end
 			//only if LastAng is null do we set to it
 			LastAng = LastAng or NewAng
 
 			//Main center beam
 			//Cylinder.AddBeam(controller.CatmullRom.Spline[i] + (ang:Up() * -Offset), LastAng, controller.CatmullRom.Spline[i+1] + (ang2:Up() * -Offset), NewAng, Radius )
+			if i==1 then
+				local FirstLeft = controller:GetPos() + ang:Right() * -RailOffset
+				local FirstRight = controller:GetPos() + ang:Right() * RailOffset
 
+				if controller:Looped() then
+					FirstLeft = controller.CatmullRom.PointsList[2] + ang:Right() * -RailOffset
+					FirstRight = controller.CatmullRom.PointsList[2] + ang:Right() * RailOffset
+				end
+
+				Cylinder.AddBeam( FirstLeft, LastAng, posL, NewAng, 4 )
+				Cylinder.AddBeam( FirstRight, LastAng, posR, NewAng, 4 )
+			end
 			//Side rails
 			Cylinder.AddBeam( posL, LastAng, nPosL, NewAng, 4 )
 			Cylinder.AddBeam( posR, LastAng, nPosR, NewAng, 4 )
@@ -136,7 +146,7 @@ function TRACK:Generate( controller )
 			Meshes[i]:BuildFromTriangles( Vertices[i] )
 		end
 	end
-	print("heyo")
+
 	return Meshes
 end
 
