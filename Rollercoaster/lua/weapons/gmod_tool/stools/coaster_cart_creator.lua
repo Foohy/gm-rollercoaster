@@ -128,13 +128,11 @@ function TOOL.BuildCPanel(panel)
 	panel:AddControl( "Header", { Text = "#Tool_coaster_cart_creator_name", Description = "#Tool_track_cart_desc" }  )
 end
 
-list.Set( "CartModels", "models/XQM/CoasterTrack/train_2.mdl", { } )
-list.Set( "CartModels", "models/XQM/coastertrain1.mdl", { } )
-list.Set( "CartModels", "models/XQM/coastertrain1seat.mdl", {} )
-
-list.Set( "CartModels", "models/props_c17/playground_carousel01.mdl", {} )
-
-list.Set( "CartModels" , "models/XQM/coastertrain2seat.mdl", {})
+//list.Set( "CartModels", "models/XQM/CoasterTrack/train_2.mdl", { } )
+//list.Set( "CartModels", "models/XQM/coastertrain1.mdl", { } )
+//list.Set( "CartModels", "models/XQM/coastertrain1seat.mdl", {} )
+//list.Set( "CartModels", "models/props_c17/playground_carousel01.mdl", {} )
+//list.Set( "CartModels" , "models/XQM/coastertrain2seat.mdl", {})
 
 if CLIENT then
 

@@ -269,6 +269,13 @@ function ENT:SetTrain(ply, model, cartnum)
 	train:Activate()
 	train:SetAngles( Angle( 0, 180, 0 ) )
 
+	undo.Create("Coaster Train")
+		undo.AddEntity( train )
+		undo.SetPlayer( ply )
+		undo.SetCustomUndoText("Undone Train")
+	undo.Finish()
+
+
 	return train
 end
 

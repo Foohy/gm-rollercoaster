@@ -1,6 +1,6 @@
 "UnlitGeneric"
 {
-	"$basetexture"		"coaster/track"
+	"$basetexture"		"coaster/remover"
 	"$ignorez"			1
 	"$vertexcolor" 		1
 	"$vertexalpha" 		1

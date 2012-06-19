@@ -23,16 +23,3 @@ function CoasterTweaksMenu( Panel )
 	Panel:AddControl("CheckBox", {Label = "Motion Blur: ", Description = "Draw fancy motion blur", Command = "coaster_motionblur"})
 
 end
-
-
-MAIN TOOL FILE
-
-TOOL:LeftClick()
-	self.CurrentTab.LeftClick()
-end
-
-SOME OTHER TOOL FILE
-
-TAB:LeftClick()
-	//lol do shit
-end

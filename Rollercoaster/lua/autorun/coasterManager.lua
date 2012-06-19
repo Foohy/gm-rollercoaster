@@ -1,4 +1,5 @@
 AddCSLuaFile( "autorun/coasterManager.lua" )
+AddCSLuaFile( "weapons/gmod_tool/ghostentity.lua" )
 
 AddCSLuaFile("trackmanager.lua")
 include("trackmanager.lua")
@@ -20,6 +21,12 @@ resource.AddFile("sound/coaster_wind.wav")
 
 resource.AddFile("materials/sunabouzu/old_chain.vmt")
 resource.AddFile("materials/sunabouzu/coaster_track.vmt")
+resource.AddFile("materials/coaster/cart.vmt")
+resource.AddFile("materials/coaster/remover.vmt")
+resource.AddFile("materials/coaster/settings.vmt")
+resource.AddFile("materials/coaster/track.vmt")
+resource.AddFile("materials/coaster/save.vmt")
+resource.AddFile("materials/models/sunabouzu/sonic_the_carthog.vmt")
 
 resource.AddFile("models/sunabouzu/coaster_base.mdl")
 resource.AddFile("materials/models/sunabouzu/coaster_base.vmt")
@@ -29,6 +36,8 @@ resource.AddFile("models/sunabouzu/coaster_pole.mdl")
 resource.AddFile("materials/models/sunabouzu/coaster_pole.vmt")
 resource.AddFile("models/sunabouzu/coaster_pole_start.mdl")
 resource.AddFile("materials/models/sunabouzu/coaster_pole_start.vmt")
+
+resource.AddFile("models/sunabouzu/sonic_the_carthog.mdl")
 
 if SERVER then
 
