@@ -45,7 +45,7 @@ end
 
 function TAB:BuildPanel( )
 	local panel = vgui.Create("DForm")
-	panel:SetText("OVERWRITE ME")
+	panel:SetName("OVERWRITE ME")
 
 	return panel
 end

@@ -3,10 +3,6 @@ AddCSLuaFile( "autorun/coasterManager.lua" )
 AddCSLuaFile("trackmanager.lua")
 include("trackmanager.lua")
 
-AddCSLuaFile("cl_coaster_spawnmenu.lua")
-include("cl_coaster_spawnmenu.lua")
-
-
 Rollercoasters = {} //Holds all the rollercoasters
 CoasterManager = {} //Holds all the methods and variables for rollercoasters
 Controller	   = {}

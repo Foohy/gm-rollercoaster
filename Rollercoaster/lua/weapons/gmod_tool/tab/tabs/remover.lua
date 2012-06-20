@@ -79,7 +79,7 @@ end
 
 function TAB:BuildPanel( )
 	local panel = vgui.Create("DForm")
-	panel:SetText("Coaster Remover")
+	panel:SetName("Coaster Remover")
 
 	return panel
 end

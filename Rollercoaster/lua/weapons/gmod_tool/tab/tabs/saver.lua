@@ -98,8 +98,7 @@ end
 
 function TAB:BuildPanel( )
 	local panel = vgui.Create("DForm")
-	panel:SetText("OVERWRITE ME")
-	panel.Label = "whwowhwho"
+	panel:SetName("Save/Load/Upload Completed Tracks")
 
 		local tracklist = vgui.Create("DListView")
 	tracklist:SetParent( panel )
@@ -148,7 +147,7 @@ function TAB:BuildPanel( )
 	CheckOrigAng:SetConVar("coaster_supertool_tab_saver_orig_ang")
 	panel:AddItem( CheckOrigAng )
 
-	local Seperator = vgui.Create("Label", panel)
+	local Seperator = vgui.Create("DLabel", panel)
 	Seperator:SetText("______________________________________________")
 	panel:AddItem( Seperator )
 
@@ -389,7 +388,7 @@ end
 //Send the file list back to the player
 function RequestTrackList(ply)
 	if CLIENT then return end //serverside only
-	print( ply:Name() .. " wants a tracklist!" )
+
 	local files, folders = file.Find("Rollercoasters/Server/*.txt", "DATA")
 
 	if !files then return end

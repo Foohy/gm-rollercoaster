@@ -104,15 +104,14 @@ function TAB:Think( tool )
 	end
 end
 
-function UpdateConColors()
-
-end
-
 function TAB:BuildPanel( )
 	local panel = vgui.Create("DForm")
-	panel:SetText("Track Settings")
+	panel:SetName("Settings")
 
-	local ColorMixer = vgui.Create("DColorMixer", panel )
+	local TrackPanel = vgui.Create("DForm", panel )
+	TrackPanel:SetName("Track-Specific Settings")
+
+	local ColorMixer = vgui.Create("DColorMixer", TrackPanel )
 	ColorMixer:SetText("Track Color")
 	ColorMixer:SetHeight( 150 )
 	ColorMixer:SetConVarA( nil )
@@ -120,11 +119,14 @@ function TAB:BuildPanel( )
 	ColorMixer.m_ConVarG = "coaster_supertool_tab_track_settings_g"
 	ColorMixer.m_ConVarB = "coaster_supertool_tab_track_settings_b"
 
-	panel.ColorMixer = ColorMixer
-	panel:AddItem( ColorMixer )
-	
+	TrackPanel.ColorMixer = ColorMixer
+	TrackPanel:AddItem( ColorMixer )
 
-	local ComboBox = vgui.Create("DComboBox", panel)
+	local TrackTypesLabel = vgui.Create("DLabel", TrackPanel)
+	TrackTypesLabel:SetText("Generation Types: ")
+	TrackPanel:AddItem( TrackTypesLabel )
+
+	local ComboBox = vgui.Create("DComboBox", TrackPanel)
 
 	//Create some nice choices
 	if EnumNames.Tracks && #EnumNames.Tracks > 0 then
@@ -147,10 +149,36 @@ function TAB:BuildPanel( )
 	end
 
 	ComboBox:ChooseOptionID( 1 )
-	panel:AddItem( ComboBox )
+	TrackPanel:AddItem( ComboBox )
+	panel:AddItem( TrackPanel )
+	local AllSettingsPanel = vgui.Create("DForm", panel )
+	AllSettingsPanel:SetName("Addon-Wide Settings")
 
-	//panel:AddControl( "Header", { Text = "#Tool_coaster_settings_name", Description = "#Tool_coaster_settings_desc" }  )
+	local MaxWheels = vgui.Create("DNumSlider", AllSettingsPanel )
+	MaxWheels:SetText("Max wheels per segment: ")
+	MaxWheels:SetDecimals( 0 )
+	MaxWheels:SetMin( 0 )
+	MaxWheels:SetMax( 100 )
+	MaxWheels:SetConVar( "coaster_maxwheels")
+	AllSettingsPanel:AddItem( MaxWheels )
 
+	local TrackPreviews = vgui.Create("DCheckBoxLabel", AllSettingsPanel )
+	TrackPreviews:SetText("Draw track previews")
+	TrackPreviews:SetConVar("coaster_previews")
+	AllSettingsPanel:AddItem( TrackPreviews )
+
+	local TrackSupports = vgui.Create("DCheckBoxLabel", AllSettingsPanel )
+	TrackSupports:SetText("Draw track supports")
+	TrackSupports:SetConVar("coaster_supports")
+	AllSettingsPanel:AddItem( TrackSupports )
+
+	local MotionBlur = vgui.Create("DCheckBoxLabel", AllSettingsPanel )
+	MotionBlur:SetText("Draw fancy motion blur")
+	MotionBlur:SetConVar("coaster_motionblur")
+	AllSettingsPanel:AddItem( MotionBlur )
+
+
+	panel:AddItem( AllSettingsPanel )
 	return panel
 end
 

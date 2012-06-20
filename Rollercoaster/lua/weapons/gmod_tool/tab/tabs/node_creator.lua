@@ -250,7 +250,7 @@ end
 
 function TAB:BuildPanel( )
 	local panel = vgui.Create("DForm")
-	panel:SetText("Node Spawner")
+	panel:SetName("Node Spawner")
 
 	local IDSlider = vgui.Create("DNumSlider", panel )
 	IDSlider:SetText("ID: ")

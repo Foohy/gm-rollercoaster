@@ -97,7 +97,7 @@ end
 
 function TAB:BuildPanel()
 	local panel = vgui.Create("DForm")
-	panel:SetText("Cart Options")
+	panel:SetName("Cart Options")
 
 	local propSelect = vgui.Create("PropSelect", panel)
 	propSelect:SetText("#WheelTool_model")
