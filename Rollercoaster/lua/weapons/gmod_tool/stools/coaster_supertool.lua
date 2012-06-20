@@ -1,4 +1,7 @@
-include("tabmanager.lua")
+AddCSLuaFile( "weapons/gmod_tool/tab/tab_utils.lua")
+AddCSLuaFile( "weapons/gmod_tool/tab/tabmanager.lua")
+include("weapons/gmod_tool/tab/tabmanager.lua")
+include("weapons/gmod_tool/tab/tab_utils.lua")
 
 TOOL.Category   = "Rollercoaster"
 TOOL.Name       = "SUPER TOOL"
@@ -100,7 +103,7 @@ function TOOL:Holster()
 end
 
 function TOOL:GetCurrentTab()
-	local Class = coastertabmanager.Get( self:GetClientInfo("selected_tab") )
+	local Class = coastertabmanager.Get( self:GetClientInfo( "selected_tab") )
 
 	if Class then
 		return Class
@@ -135,7 +138,9 @@ function TOOL.BuildCPanel(panel)
 	local FixedTable = toSortedTable( coastertabmanager.List, "Position")
 
 	for k, v in pairs(FixedTable) do
-		local sheet = PropertySheet:AddSheet( v.Name, v:BuildPanel(), v.Icon, false, false, v.Description )	
+		local panel = v:BuildPanel()
+		RegisterTabPanel( panel, v.UniqueName )
+		local sheet = PropertySheet:AddSheet( v.Name, panel, v.Icon, false, false, v.Description )	
 		sheet.Tab.Class = v
 	end
 

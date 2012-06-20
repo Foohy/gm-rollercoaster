@@ -31,11 +31,11 @@ function TOOL:LeftClick(trace)
 	trace.filter = ply
 	trace = util.TraceLine(trace)
 	
-	local Elevation = self:GetClientNumber("elevation")
-	local Bank	 	= self:GetClientNumber("bank")
-	local ID 		= self:GetClientNumber("id")
-	local Type 		= self:GetClientNumber("tracktype")
-	local RelRoll 	= self:GetClientNumber("relativeroll")
+	local Elevation = GetClientNumber( self, "elevation")
+	local Bank	 	= GetClientNumber( self, "bank")
+	local ID 		= GetClientNumber( self, "id")
+	local Type 		= GetClientNumber( self, "tracktype")
+	local RelRoll 	= GetClientNumber( self, "relativeroll")
 
 	local plyAng	= self:GetOwner():GetAngles()
 			
@@ -132,10 +132,10 @@ function TOOL:RightClick(trace)
 	trace.filter = ply
 	trace = util.TraceLine(trace)
 	
-	local Elevation = self:GetClientNumber("elevation")
-	local Bank	 	= self:GetClientNumber("bank")
-	local ID 		= self:GetClientNumber("id")
-	local Chains	= self:GetClientNumber("trackchains")
+	local Elevation = GetClientNumber( self, "elevation")
+	local Bank	 	= GetClientNumber( self, "bank")
+	local ID 		= GetClientNumber( self, "id")
+	local Chains	= GetClientNumber( self, "trackchains")
 	local plyAng	= self:GetOwner():GetAngles()
 
 	if SERVER then
@@ -200,8 +200,8 @@ end
 function TOOL:Think()
 
 	if CLIENT then
-		local Elevation = self:GetClientNumber("elevation")
-		local Slope 	= self:GetClientNumber("slope")
+		local Elevation = GetClientNumber( self, "elevation")
+		local Slope 	= GetClientNumber( self, "slope")
 		local plyAng	= self:GetOwner():GetAngles()
 			
 		local ply   = self:GetOwner()
@@ -256,7 +256,7 @@ function TOOL:UpdateGhostNode( ent )
 			return
 		end
 
-		local Elevation = self:GetClientNumber("elevation")
+		local Elevation = GetClientNumber( self, "elevation")
 		local newPos = trace.HitPos + Vector( 0, 0, Elevation )
 		local newAng = Angle(0, ply:GetAngles().y, 0) + Angle( 0, 0, 0 )
 

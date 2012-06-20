@@ -16,7 +16,6 @@ concommand.Add("coaster_forcerefresh", function(ply, cmd, args)
 	for _, v in pairs( ents.FindByClass("coaster_node") ) do
 		if IsValid( v ) && v:IsController() then 
 			v:UpdateServerSpline()
-			//PrintTable( v.Nodes )
 		end
 	end
 end )
@@ -300,7 +299,7 @@ end
 function ENT:OnRemove()	
 	local cont = Rollercoasters[self.CoasterID]
 
-	if self:IsController() || (IsValid( cont ) && #cont.Nodes <= 4 ) then // || (IsValid( cont ) && cont.Nodes[2] == self ) 
+	if self:IsController() || (IsValid( cont ) && #cont.Nodes <= 4 )|| (IsValid( cont ) && self == cont.Nodes[2]) then // || (IsValid( cont ) && cont.Nodes[2] == self ) 
 		for _, v in pairs( cont.Nodes ) do
 			if IsValid( v ) then 
 				v.SafeDeleted = true 
@@ -309,6 +308,13 @@ function ENT:OnRemove()
 		end
 		
 		self:ClearTrains() 
+
+
+		timer.Simple(0.25, function() 
+			umsg.Start("Coaster_RefreshTrack")
+				umsg.Entity( cont )
+			umsg.End()
+		end )
 	elseif ( IsValid( cont ) && #cont.Nodes <= 4 ) && cont.Nodes[4] == self || cont.Nodes[3] == self then
 		if cont.Nodes[4] == self then
 			if IsValid( cont.Nodes[3] ) then
@@ -321,6 +327,13 @@ function ENT:OnRemove()
 				cont.Nodes[4]:Remove() 
 			end
 		end
+
+
+		timer.Simple(0.25, function() 
+			umsg.Start("Coaster_RefreshTrack")
+				umsg.Entity( cont )
+			umsg.End()
+		end )
 
 	else
 		//This massive bit of ugly code removes unvalid nodes from the tables and stuff
@@ -337,6 +350,13 @@ function ENT:OnRemove()
 					end
 				end
 			end
+
+			//Only send the umsg if one particular node was not safely deleted
+			timer.Simple(0.25, function() 
+				umsg.Start("Coaster_RefreshTrack")
+					umsg.Entity( cont )
+				umsg.End()
+			end )
 			
 		end
 	end
@@ -345,11 +365,7 @@ function ENT:OnRemove()
 	cont:CheckForInvalidNodes()
 	cont:UpdateServerSpline() 
 
-	timer.Simple(0.25, function() 
-		umsg.Start("Coaster_RefreshTrack")
-			umsg.Entity( cont )
-		umsg.End()
-	end )
+
 
 	//Go through and make sure everything is in their proper place
 	if !IsValid( cont ) || !cont.Nodes then return end

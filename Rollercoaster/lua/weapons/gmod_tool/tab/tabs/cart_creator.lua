@@ -1,3 +1,5 @@
+include("weapons/gmod_tool/tab/tab_utils.lua")
+
 local TAB = {}
 TAB.ClientConVar = {}
 local UNIQUENAME = "cart_creator"
@@ -24,11 +26,11 @@ list.Set( "CartModels", "4 seater train front", "models/xqm/coastertrain2seat.md
 function TAB:LeftClick( trace, tool )
 	local ply   = tool:GetOwner()
 
-	local CartNum 		= self:GetClientNumber("cart_amount", tool)
-	local Friction 		= self:GetClientNumber("friction", tool)
-	local minSpeed 		= self:GetClientNumber("minSpeed", tool)
-	local allowWeapons	= self:GetClientNumber("allow_weapons", tool)
-	local model 		= self:GetClientInfo("model", tool)
+	local CartNum 		= GetClientNumber( self, "cart_amount", tool)
+	local Friction 		= GetClientNumber( self, "friction", tool)
+	local minSpeed 		= GetClientNumber( self, "minSpeed", tool)
+	local allowWeapons	= GetClientNumber( self, "allow_weapons", tool)
+	local model 		= GetClientInfo( self, "model", tool)
 
 	//if ( !util.IsValidModel( model ) ) then return false end
 	
@@ -56,8 +58,8 @@ end
 function TAB:RightClick( trace, tool )
 	local ply   = tool:GetOwner()
 
-	local CartNum = self:GetClientNumber("cart_amount", tool )
-	local Powered = self:GetClientNumber("powered", tool )
+	local CartNum = GetClientNumber( self, "cart_amount", tool )
+	local Powered = GetClientNumber( self, "powered", tool )
 	
 	local Ent 		= trace.Entity
 	
@@ -137,7 +139,7 @@ function TAB:BuildPanel()
 	panel:AddItem( FrictionSlider )
 
 	//panel:AddControl("CheckBox", {Label = "Use weapons while in cart", Description = "Aim and shoot weapons while in the cart.", Command = "coaster_cart_creator_allow_weapons"})
-	local CheckWeapons = vgui.Create("DCheckBox", panel )
+	local CheckWeapons = vgui.Create("DCheckBoxLabel", panel )
 	CheckWeapons:SetText("Use weapons while in cart")
 	CheckWeapons:SetConVar("coaster_supertool_tab_cart_creator_allow_weapons")
 	panel:AddItem( CheckWeapons )
@@ -147,20 +149,5 @@ function TAB:BuildPanel()
 
 	return panel
 end
-
-
-
-/////////////////
-//Util Functions
-/////////////////
-
-function TAB:GetClientNumber( convar, tool)
-	return tool:GetOwner():GetInfoNum("coaster_supertool_tab_" .. self.UniqueName .. "_" .. convar, 0 )
-end
-
-function TAB:GetClientInfo(convar, tool)
-	return tool:GetOwner():GetInfo("coaster_supertool_tab_" .. self.UniqueName .. "_" .. convar )
-end
-
 
 coastertabmanager.Register( UNIQUENAME, TAB )

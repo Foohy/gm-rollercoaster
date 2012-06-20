@@ -10,7 +10,10 @@ ENT.Controller = nil //Controller entity. Useless
 ENT.CoastSound = nil //Sound of just moving
 ENT.ChainSound = nil //Sound of chains (Move to serverside?)
 ENT.WindSound  = nil //Sound of wind
+ENT.ShakeMultiplier = 1 //Multiplier to fine-tune shaking
+ENT.Timer = math.huge
 
+ENT.RenderGroup 	= RENDERGROUP_TRANSLUCENT
 
 //Update with the controller node. Currently has no use
 usermessage.Hook("coaster_train_fullupdate", function(um)
@@ -31,13 +34,44 @@ function ENT:Initialize()
 	self.WindSound:PlayEx(0, 100)
 	
 	self.ChainSound = CreateSound( self, "coaster_chain.wav" )
+
+	local sequence = self:LookupSequence( "idle" )
+	self:ResetSequence( sequence )
+	self:SetPlaybackRate( 1.0 )
+
+	if self:GetModel() == "models/sunabouzu/sonic_the_carthog.mdl" then
+		surface.PlaySound("coaster_sonic_the_carthog.mp3")
+		self.Timer = CurTime() + 24.00
+		self.Enabled = true
+
+		local sequence = self:LookupSequence( "GOING_FAST" )
+		self:ResetSequence( sequence )
+		self:SetPlaybackRate( 1.0 )
+	end
 end
 
 function ENT:Draw()
+	if self.Enabled then
+		if !self.Frame then self.Frame = 0 end
+
+		self.Frame = self.Frame + ( FrameTime() * self:GetVelocity():Length() / 300 )
+		self:FrameAdvance( self.Frame )
+		self:SetCycle( self.Frame )
+	end
 	self:DrawModel()	
+
 end
 
 function ENT:Think()
+	if self.Enabled then
+		if !self.Frame then self.Frame = 0 end
+		
+		self.Frame = self.Frame + ( FrameTime() * self:GetVelocity():Length() / 300 )
+		self:FrameAdvance( self.Frame )
+		self:SetCycle( self.Frame )
+	end
+
+
 	local CurrentNode = self:GetCurrentNode()
 	if IsValid( CurrentNode ) && CurrentNode:EntIndex() != 1 && CurrentNode:GetType() == COASTER_NODE_CHAINS then
 		if self.ChainSound then
@@ -57,6 +91,11 @@ function ENT:Think()
 		if CurrentNode:EntIndex() == 1 then
 			self.OffDaRailz = true
 		end
+	end
+
+	if CurTime() >= self.Timer then
+		CoasterBlur = 1.000
+		self.ShakeMultiplier = 30
 	end
 
 
@@ -88,6 +127,7 @@ function ENT:Think()
 		amp = math.Clamp( self:GetVelocity():Length() / 30, 0, 32 )
 		amp = math.Clamp( amp / ( LocalPlayer():GetPos():Distance( self:GetPos() ) ), 0, 2000 )
 	end
+	amp = amp * self.ShakeMultiplier
 	util.ScreenShake( LocalPlayer():GetPos(), amp, 300, .5, 300 )
 
 end

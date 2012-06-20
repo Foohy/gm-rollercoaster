@@ -1,3 +1,23 @@
+function GetClientNumber( self, convar, tool)
+	return tool:GetOwner():GetInfoNum("coaster_supertool_tab_" .. self.UniqueName .. "_" .. convar, 0 )
+end
+
+function GetClientInfo( self, convar, tool)
+	return tool:GetOwner():GetInfo("coaster_supertool_tab_" .. self.UniqueName .. "_" .. convar )
+end
+
+SupertoolTabPanels = {}
+function RegisterTabPanel( panel, name )
+	SupertoolTabPanels[ name ] = panel
+end
+
+function GetTabPanel( name )
+	return SupertoolTabPanels[ name ]
+end
+
+/*****************************************************************************
+================================ GHOST ENTITY ================================
+******************************************************************************/
 
 --[[---------------------------------------------------------
    Starts up the ghost entity

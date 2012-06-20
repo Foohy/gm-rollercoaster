@@ -1,5 +1,4 @@
 AddCSLuaFile( "autorun/coasterManager.lua" )
-AddCSLuaFile( "weapons/gmod_tool/ghostentity.lua" )
 
 AddCSLuaFile("trackmanager.lua")
 include("trackmanager.lua")
@@ -18,6 +17,7 @@ resource.AddFile("sound/coaster_ride.wav")
 resource.AddFile("sound/coaster_chain.wav")
 resource.AddFile("sound/coaster_offdarailz.wav")
 resource.AddFile("sound/coaster_wind.wav")
+resource.AddFile("sound/coaster_sonic_the_carthog.mp3")
 
 resource.AddFile("materials/sunabouzu/old_chain.vmt")
 resource.AddFile("materials/sunabouzu/coaster_track.vmt")

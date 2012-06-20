@@ -33,6 +33,12 @@ ChairOffsets = {
 		Vector(-12.3, 11, 20.2),
 		Vector(-12.3, -9.6, 20.2),
 	},
+	["models/sunabouzu/sonic_the_carthog.mdl"] = {
+		Vector(15.8, -43, 14), -- front left
+		Vector(-8.4, -43, 14), -- front right
+		Vector(15.8, -3.5, 14), -- back left
+		Vector(-8.4, -3.5, 14) -- back right
+	},
 	["models/props/de_inferno/furniture_couch02a.mdl"] = {
 		Vector(7.6080, 0.2916, -5.1108)
 	},
@@ -125,9 +131,11 @@ ChairOffsets = {
 	}
 }
 	
-NotRight = {	["models/props/de_tides/patio_chair2.mdl"]	= 180,
+NotRight = {	
+		["models/props/de_tides/patio_chair2.mdl"]	= 180,
 	 	["models/props/cs_militia/couch.mdl"]		= 0,
 		["models/gmod_tower/stealth box/box.mdl"]	= 180,
+		["models/sunabouzu/sonic_the_carthog.mdl"] 	= 90,
 }
 
 local function HandleRollercoasterAnimation( vehicle, ply)

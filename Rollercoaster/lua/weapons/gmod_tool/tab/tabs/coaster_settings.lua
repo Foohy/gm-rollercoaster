@@ -1,3 +1,5 @@
+include("weapons/gmod_tool/tab/tab_utils.lua")
+
 local TAB = {}
 TAB.ClientConVar = {}
 local UNIQUENAME = "track_settings"
@@ -17,12 +19,12 @@ TAB.ClientConVar["tracktype"] = "1"
 function TAB:LeftClick( trace, tool )
 	local ply   = tool:GetOwner()
 
-	local CartNum = self:GetClientNumber("cart_amount", tool )
-	local Powered = self:GetClientNumber("powered", tool)
-	local tracktype = self:GetClientNumber("tracktype", tool)
-	local r = self:GetClientNumber("r", tool) or 255
-	local g = self:GetClientNumber("g", tool) or 255
-	local b = self:GetClientNumber("b", tool) or 255
+	local CartNum = GetClientNumber( self, "cart_amount", tool )
+	local Powered = GetClientNumber( self, "powered", tool)
+	local tracktype = GetClientNumber( self, "tracktype", tool)
+	local r = GetClientNumber( self, "r", tool) or 255
+	local g = GetClientNumber( self, "g", tool) or 255
+	local b = GetClientNumber( self, "b", tool) or 255
 
 	local Ent = trace.Entity
 	
@@ -44,8 +46,8 @@ end
 function TAB:RightClick( trace, tool )
 	local ply   = tool:GetOwner()
 
-	local CartNum = self:GetClientNumber("cart_amount", tool)
-	local Powered = self:GetClientNumber("powered", tool)
+	local CartNum = GetClientNumber( self, "cart_amount", tool)
+	local Powered = GetClientNumber( self, "powered", tool)
 	
 	local Ent 		= trace.Entity
 	
@@ -150,18 +152,6 @@ function TAB:BuildPanel( )
 	//panel:AddControl( "Header", { Text = "#Tool_coaster_settings_name", Description = "#Tool_coaster_settings_desc" }  )
 
 	return panel
-end
-
-/////////////////
-//Util Functions
-/////////////////
-
-function TAB:GetClientNumber( convar, tool)
-	return tool:GetOwner():GetInfoNum("coaster_supertool_tab_" .. self.UniqueName .. "_" .. convar, 0 )
-end
-
-function TAB:GetClientInfo(convar, tool)
-	return tool:GetOwner():GetInfo("coaster_supertool_tab_" .. self.UniqueName .. "_" .. convar )
 end
 
 coastertabmanager.Register( UNIQUENAME, TAB )

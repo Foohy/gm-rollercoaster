@@ -14,11 +14,11 @@ end
 
 
 function LoadClasses()
-	local fileList = file.Find("weapons/gmod_tool/stools/tabs/*", LUA_PATH )
+	local fileList = file.Find("weapons/gmod_tool/tab/tabs/*", LUA_PATH )
 	
 	for _, name in pairs( fileList ) do
 	
-		local loadName = "tabs/" .. name
+		local loadName = "weapons/gmod_tool/tab/tabs/" .. name
 		
 		if !IsLua( loadName ) then continue end
 		if !ValidName( loadName ) then continue end 

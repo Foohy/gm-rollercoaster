@@ -402,10 +402,10 @@ end )
 function TOOL:SpawnTrack()
 	if SinglePlayer() then //I'm seriously sending a usermessage to the client, who is the host. WHY IS LEFTCLICK NOT CALLED ON THE CLIENT IN SINGLEPLAYER
 		umsg.Start("Coaster_spawntrack_sp")
-			umsg.Short(self:GetClientNumber("ID"))
+			umsg.Short(GetClientNumber( self, "ID"))
 		umsg.End()
 	else
-			RunConsoleCommand( "coaster_track_saver_spawntrack", coaster_saver_selectedfilename, self:GetClientNumber("ID"))
+			RunConsoleCommand( "coaster_track_saver_spawntrack", coaster_saver_selectedfilename, GetClientNumber( self, "ID"))
 			print("Building \"" .. coaster_saver_selectedfilename .. "\"")
 	end
 	//print(coaster_saver_selectedfilename)
@@ -418,10 +418,10 @@ function TOOL:SpawnTrack()
 		//Tell the server we want to spawn the track
 		
 		//if !SinglePlayer() && coaster_saver_selectedfilename != nil && CLIENT then	
-			//RunConsoleCommand( "coaster_track_saver_spawntrack", coaster_saver_selectedfilename, self:GetClientNumber("ID"))
+			//RunConsoleCommand( "coaster_track_saver_spawntrack", coaster_saver_selectedfilename, GetClientNumber( self, "ID"))
 			//print("Building \"" .. coaster_saver_selectedfilename .. "\"")
 		//elseif SinglePlayer() && SERVER then
-		//	RunConsoleCommand( "coaster_track_saver_spawntrack_sp", coaster_saver_selectedfilename, self:GetClientNumber("ID"))
+		//	RunConsoleCommand( "coaster_track_saver_spawntrack_sp", coaster_saver_selectedfilename, GetClientNumber( self, "ID"))
 		//end
 	//else
 	//	print("No track in clipboard!")

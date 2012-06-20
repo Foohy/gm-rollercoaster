@@ -1,4 +1,4 @@
-include("weapons/gmod_tool/ghostentity.lua")
+include("weapons/gmod_tool/tab/tab_utils.lua")
 
 local TAB = {}
 TAB.ClientConVar = {}
@@ -26,11 +26,11 @@ TAB.CoolDown 	= 0 //Woah there lil' doggy
 function TAB:LeftClick( trace, tool )
 	local ply   = tool:GetOwner()
 	
-	local Elevation = self:GetClientNumber("elevation", tool )
-	local Bank	 	= self:GetClientNumber("bank", tool )
-	local ID 		= self:GetClientNumber("id", tool )
-	local Type 		= self:GetClientNumber("tracktype", tool )
-	local RelRoll 	= self:GetClientNumber("relativeroll", tool )
+	local Elevation = GetClientNumber( self, "elevation", tool )
+	local Bank	 	= GetClientNumber( self, "bank", tool )
+	local ID 		= GetClientNumber( self, "id", tool )
+	local Type 		= GetClientNumber( self, "tracktype", tool )
+	local RelRoll 	= GetClientNumber( self, "relativeroll", tool )
 
 	local plyAng	= ply:GetAngles()
 			
@@ -109,10 +109,10 @@ end
 function TAB:RightClick( trace, tool )
 	local ply   = tool:GetOwner()
 	
-	local Elevation = self:GetClientNumber("elevation", tool )
-	local Bank	 	= self:GetClientNumber("bank", tool )
-	local ID 		= self:GetClientNumber("id", tool )
-	local Chains	= self:GetClientNumber("trackchains", tool )
+	local Elevation = GetClientNumber( self, "elevation", tool )
+	local Bank	 	= GetClientNumber( self, "bank", tool )
+	local ID 		= GetClientNumber( self, "id", tool )
+	local Chains	= GetClientNumber( self, "trackchains", tool )
 	local plyAng	= ply:GetAngles()
 
 	if SERVER then
@@ -180,8 +180,8 @@ function TAB:Think( tool )
 	if CLIENT then
 		local ply   = tool:GetOwner()
 
-		local Elevation = self:GetClientNumber("elevation", tool )
-		local Slope 	= self:GetClientNumber("slope", tool )
+		local Elevation = GetClientNumber( self, "elevation", tool )
+		local Slope 	= GetClientNumber( self, "slope", tool )
 		local plyAng	= ply:GetAngles()
 
 		local trace = {}
@@ -236,7 +236,7 @@ function TAB:UpdateGhostNode( ent, tool )
 		return
 	end
 
-	local Elevation = self:GetClientNumber("elevation", tool )
+	local Elevation = GetClientNumber( self, "elevation", tool )
 	local newPos = trace.HitPos + Vector( 0, 0, Elevation )
 	local newAng = Angle(0, ply:GetAngles().y, 0) + Angle( 0, 0, 0 )
 
@@ -319,19 +319,5 @@ if CLIENT then
 
 	end )
 end
-
-
-/////////////////
-//Util Functions
-/////////////////
-
-function TAB:GetClientNumber( convar, tool)
-	return tool:GetOwner():GetInfoNum("coaster_supertool_tab_" .. self.UniqueName .. "_" .. convar, 0 )
-end
-
-function TAB:GetClientInfo(convar, tool)
-	return tool:GetOwner():GetInfo("coaster_supertool_tab_" .. self.UniqueName .. "_" .. convar )
-end
-
 
 coastertabmanager.Register( UNIQUENAME, TAB )

@@ -18,12 +18,12 @@ function TOOL:LeftClick(trace)
 	trace.filter = ply
 	trace = util.TraceLine(trace)
 
-	local CartNum = self:GetClientNumber("cart_amount")
-	local Powered = self:GetClientNumber("powered")
-	local tracktype = self:GetClientNumber("tracktype")
-	local r = tonumber(self:GetClientNumber("r")) or 255
-	local g = tonumber(self:GetClientNumber("g")) or 255
-	local b = tonumber(self:GetClientNumber("b")) or 255
+	local CartNum = GetClientNumber( self, "cart_amount")
+	local Powered = GetClientNumber( self, "powered")
+	local tracktype = GetClientNumber( self, "tracktype")
+	local r = tonumber(GetClientNumber( self, "r")) or 255
+	local g = tonumber(GetClientNumber( self, "g")) or 255
+	local b = tonumber(GetClientNumber( self, "b")) or 255
 	
 	local Ent = trace.Entity
 	
@@ -52,8 +52,8 @@ function TOOL:RightClick(trace)
 	trace.filter = ply
 	trace = util.TraceLine(trace)
 
-	local CartNum = self:GetClientNumber("cart_amount")
-	local Powered = self:GetClientNumber("powered")
+	local CartNum = GetClientNumber( self, "cart_amount")
+	local Powered = GetClientNumber( self, "powered")
 	
 	local Ent 		= trace.Entity
 	

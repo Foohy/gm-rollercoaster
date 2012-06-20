@@ -1,3 +1,4 @@
+include("weapons/gmod_tool/tab/tab_utils.lua")
 local TAB = {}
 TAB.ClientConVar = {}
 local UNIQUENAME = "remover"
@@ -81,18 +82,6 @@ function TAB:BuildPanel( )
 	panel:SetText("Coaster Remover")
 
 	return panel
-end
-
-/////////////////
-//Util Functions
-/////////////////
-
-function TAB:GetClientNumber( convar, tool)
-	return tool:GetOwner():GetInfoNum("coaster_supertool_tab_" .. self.UniqueName .. "_" .. convar, 0 )
-end
-
-function TAB:GetClientInfo(convar, tool)
-	return tool:GetOwner():GetInfo("coaster_supertool_tab_" .. self.UniqueName .. "_" .. convar )
 end
 
 coastertabmanager.Register( UNIQUENAME, TAB )

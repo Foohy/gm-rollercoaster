@@ -18,11 +18,11 @@ function TOOL:LeftClick(trace)
 	trace.filter = ply
 	trace = util.TraceLine(trace)
 
-	local CartNum 		= self:GetClientNumber("cart_amount")
-	local Friction 		= self:GetClientNumber("friction")
-	local minSpeed 		= self:GetClientNumber("minSpeed")
-	local allowWeapons	= self:GetClientNumber("allow_weapons")
-	local model 		= self:GetClientInfo("model")
+	local CartNum 		= GetClientNumber( self, "cart_amount")
+	local Friction 		= GetClientNumber( self, "friction")
+	local minSpeed 		= GetClientNumber( self, "minSpeed")
+	local allowWeapons	= GetClientNumber( self, "allow_weapons")
+	local model 		= GetClientInfo( self, "model")
 
 	//if ( !util.IsValidModel( model ) ) then return false end
 	
@@ -56,8 +56,8 @@ function TOOL:RightClick(trace)
 	trace.filter = ply
 	trace = util.TraceLine(trace)
 
-	local CartNum = self:GetClientNumber("cart_amount")
-	local Powered = self:GetClientNumber("powered")
+	local CartNum = GetClientNumber( self, "cart_amount")
+	local Powered = GetClientNumber( self, "powered")
 	
 	local Ent 		= trace.Entity
 	

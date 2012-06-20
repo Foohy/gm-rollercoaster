@@ -46,6 +46,8 @@ ENT.PhysShadowControl.dampfactor       = 1
 ENT.PhysShadowControl.teleportdistance = 0
 ENT.PhysShadowControl.deltatime        = deltatime
 
+ENT.Timer = math.huge
+
 function ENT:Initialize()
 	self:SetModel( self.Model )	
 	self:PhysicsInit(SOLID_VPHYSICS)
@@ -81,6 +83,12 @@ function ENT:Initialize()
 	if self:GetModel() == "models/props_c17/playground_carousel01.mdl" then
 		self.Carousel = true
 	end
+
+	if self:GetModel() == "models/sunabouzu/sonic_the_carthog.mdl" then
+		self.Timer = CurTime() + 24.00
+		self.Enabled = true
+	end
+
 end
 
 //Pop
@@ -120,7 +128,19 @@ function ENT:PhysicsSimulate(phys, deltatime)
 	//Each node has a certain multiplier so the cart travel at a constant speed throughout the track
 	self.Multiplier = self:GetMultiplier(self.CurSegment, self.Percent)
 
+	if CurTime() >= self.Timer && self.Enabled then
+		self.Velocity = self.Velocity + 2
 
+		if self.LastSpark && self.LastSpark < CurTime() then
+			self.LastSpark = CurTime() + 0.01
+
+			self.SparkEffect:SetOrigin( self:GetPos() )
+			local newangles = self:GetAngles() + Angle( 15, 0, 0 )
+			self.SparkEffect:SetNormal( -newangles:Right() + Vector( 0, 0, 0.5) )
+			util.Effect("ManhackSparks", self.SparkEffect )
+		end
+
+	end
 
 	//Check for collisions
 	for k, v in pairs( ents.FindInSphere( self:GetPos(), 150 ) ) do
@@ -205,6 +225,10 @@ function ENT:PhysicsSimulate(phys, deltatime)
 	//Offsets
 	ang.p = -ang.p
 	ang.y = ang.y + 180
+
+	if self:GetModel() == "models/sunabouzu/sonic_the_carthog.mdl" then
+		ang:RotateAroundAxis( ang:Up(), -90 )
+	end
 
 	//If we are a carousel, SPIN
 	if self.Carousel then
@@ -431,11 +455,14 @@ function ENT:PhysicsCollide(data, physobj)
 		explosion:Fire("Explode", 0, 0)
 		explosion:EmitSound( "weapon_AWP.Single", 400, 400 ) 
 	
-		local debris = EffectData()
-			debris:SetOrigin( self:GetPos() )
-		util.Effect( "coaster_cart_debris", debris )
 
-		self:Remove()
+		if !self.Enabled then
+			local debris = EffectData()
+			debris:SetOrigin( self:GetPos() )
+			util.Effect( "coaster_cart_debris", debris )
+
+			self:Remove()
+		end
 	end
 	//print( !self.OffDaRailz )
 	//print( ( IsValid(data.HitEntity) && data.HitEntity:GetClass() == "coaster_cart" ) )
