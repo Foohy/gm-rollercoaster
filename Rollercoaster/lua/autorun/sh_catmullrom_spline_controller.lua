@@ -8,6 +8,7 @@ AddCSLuaFile("autorun/sh_catmullrom_spline_controller.lua")
 
 local Controller = {}
 Controller.STEPS = 20
+Controller.DisableDynamicStep = false //Should the number of steps be goverened by a ConVar?
 
 function Controller:New(host_ent)
 	local obj = {}
@@ -252,8 +253,8 @@ end
 
 function Controller:CalcEntireSpline()
 	local nodecount = #self.PointsList
-	if CLIENT then
-		Controller.STEPS = math.Clamp( GetConVar("coaster_resolution"):GetInt(), 1, 100 )
+	if CLIENT && !self.DisableDynamicStep then
+		self.STEPS = math.Clamp( GetConVar("coaster_resolution"):GetInt(), 1, 100 )
 	end
 
 	if nodecount < 4 then
@@ -263,10 +264,10 @@ function Controller:CalcEntireSpline()
 	local pointcount = 0
 	
 	for index = 2, (nodecount - 2) do
-		for j = 1, Controller.STEPS do
+		for j = 1, self.STEPS do
 			pointcount = pointcount + 1
 			
-			self.Spline[pointcount] = self:Point(index, j / Controller.STEPS)
+			self.Spline[pointcount] = self:Point(index, j / self.STEPS)
 		end
 	end
 end

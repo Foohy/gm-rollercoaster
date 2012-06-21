@@ -4,7 +4,7 @@ include("weapons/gmod_tool/tab/tabmanager.lua")
 include("weapons/gmod_tool/tab/tab_utils.lua")
 
 TOOL.Category   = "Rollercoaster"
-TOOL.Name       = "SUPER TOOL"
+TOOL.Name       = "Rollercoaster SuperTool"
 TOOL.Command    = nil
 TOOL.ConfigName	= nil
 
@@ -212,25 +212,13 @@ function TOOL.BuildCPanel(panel)
 	for k, v in pairs(FixedTable) do
 		local panel = v:BuildPanel()
 		RegisterTabPanel( panel, v.UniqueName )
+		
 		local sheet = PropertySheet:AddSheet( v.Name, panel, v.Icon, false, false, v.Description )	
 		sheet.Tab.Class = v
 	end
 
 	panel:AddItem( PropertySheet )
 	panel.Tabs = PropertySheet
-	 
-	//local SheetItemOne = vgui.Create( "DCheckBoxLabel" )
-	//SheetItemOne:SetText( "Use Props?" )
-	//SheetItemOne:SetValue( 1 )
-	//SheetItemOne:SizeToContents()
-	 
-	//local SheetItemTwo = vgui.Create( "DCheckBoxLabel" , CategoryContentTwo )
-	//SheetItemTwo:SetText( "Use SENTs?" )
-	//SheetItemTwo:SetValue( 1 )
-	//SheetItemTwo:SizeToContents()
-
-	//PropertySheet:AddSheet( "Some Menu", SheetItemOne, "gui/silkicons/user", false, false, "WOW It's a text box!!!" )
-	//PropertySheet:AddSheet( "Super Menu", SheetItemTwo, "gui/silkicons/group", false, false, "Can I haz meh cheezburger now?" )
 
 end
 

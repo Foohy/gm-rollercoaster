@@ -1,4 +1,5 @@
 include("weapons/gmod_tool/tab/tab_utils.lua")
+include("autorun/mesh_beams.lua")
 
 local TAB = {}
 TAB.ClientConVar = {}
@@ -12,15 +13,25 @@ TAB.Icon = "coaster/save"
 TAB.Position = 5 //The position in the series of tabs
 
 TAB.ClientConVar["id"] = "1"
-TAB.ClientConVar["orig_pos"] = "1"
-TAB.ClientConVar["orig_ang"] = "1"
+TAB.ClientConVar["orig_spawn"] = "1"
 
 TAB.GhostModel = Model("models/Combine_Helicopter/helicopter_bomb01.mdl")
 TAB.WaitTime	= 0 //Time to wait to make sure the dtvars are updated
 TAB.CoolDown 	= 0 //For some reason, LeftClick is called four times when pressed once. :/
 
+//Some uniquely named global variables
 coaster_saver_ClipboardTrack = {} //The coaster track loaded into the 'clipboard', to be saved or loaded
 coaster_saver_selectedfilename = "none"
+coaster_saver_preview_trackmesh = nil
+coaster_saver_preview_trackcenter = Vector( 0, 0, 0 )
+coaster_saver_preview_shoulddraw = false
+
+//Generation constants
+coaster_save_preview_material = Material("Models/effects/comball_tape")
+
+//Useful enums
+TRANSFER_TRACKLIST 	= 1
+TRANSFER_PREVIEW	= 2
 
 if SERVER then
 	util.AddNetworkString("Coaster_transferInfo")
@@ -32,6 +43,8 @@ function TAB:LeftClick( trace, tool )
 	if CLIENT || SinglePlayer() then
 		self:SpawnTrack( tool )
 		self.CoolDown = CurTime() + .25
+
+		coaster_saver_preview_shoulddraw = false
 
 		return true
 	end
@@ -68,7 +81,9 @@ end
 
 //Called when our tab is closing or the tool was holstered
 function TAB:Holster()
-
+	if CLIENT then
+		coaster_saver_preview_shoulddraw = false
+	end
 end
 
 //Called when our tab being selected
@@ -90,6 +105,8 @@ function TAB:Equip( tool )
 		end
 
 		UpdateTrackList()
+
+		coaster_saver_preview_shoulddraw = true
 	end
 end
 
@@ -139,14 +156,9 @@ function TAB:BuildPanel( )
 
 	//panel:AddControl("CheckBox", {Label = "Spawn at original position: ", Command = "coaster_track_creator_relativeroll"})
 	local CheckOrigPos = vgui.Create("DCheckBoxLabel", panel )
-	CheckOrigPos:SetText("Spawn at original position")
-	CheckOrigPos:SetConVar("coaster_supertool_tab_saver_orig_pos")
+	CheckOrigPos:SetText("Spawn at original position and angle")
+	CheckOrigPos:SetConVar("coaster_supertool_tab_saver_orig_spawn")
 	panel:AddItem( CheckOrigPos )
-
-	local CheckOrigAng = vgui.Create("DCheckBoxLabel", panel )
-	CheckOrigAng:SetText("Spawn at original angles")
-	CheckOrigAng:SetConVar("coaster_supertool_tab_saver_orig_ang")
-	panel:AddItem( CheckOrigAng )
 
 	local Seperator = vgui.Create("DLabel", panel)
 	Seperator:SetText("______________________________________________")
@@ -168,7 +180,7 @@ function TAB:SpawnTrack( tool )
 			umsg.Short( GetClientNumber( self, "ID", tool ))
 		umsg.End()
 	else
-		RunConsoleCommand( "coaster_supertool_tab_saver_spawntrack", coaster_saver_selectedfilename, GetClientNumber( self, "ID", tool ))
+		RunConsoleCommand( "coaster_supertool_tab_saver_spawntrack", coaster_saver_selectedfilename, GetClientNumber( self, "ID", tool ),  GetClientNumber( self, "orig_spawn", tool ), coaster_saver_preview_trackcenter )
 		print("Building \"" .. coaster_saver_selectedfilename .. "\"")
 	end
 
@@ -405,7 +417,8 @@ function RequestTrackList(ply)
 
 	//Send it to the client
 	net.Start("Coaster_transferInfo")
-	net.WriteTable( tracklist )
+		net.WriteByte( TRANSFER_TRACKLIST )
+		net.WriteTable( tracklist )
 	net.Send( ply )
 
 end
@@ -425,23 +438,109 @@ function LoadSelectedTrack()
 		end
 
 		if line then
-			//if SinglePlayer() then
-			//	print( line:GetValue( 3 ))
-			//	local contents = file.Read( line:GetValue(3) ) //Is there a way to get the full file path of the file?
-			//	local tbl = util.KeyValuesToTable( contents )
+			coaster_saver_selectedfilename = line:GetValue( 1 ) .. ".txt"
+			RunConsoleCommand("coaster_supertool_tab_saver_requestpreview", coaster_saver_selectedfilename )
 
-			//	coaster_saver_ClipboardTrack = tbl //Load the table into our clipboard TODO: make a visualize clipboard function
-			//else
-				coaster_saver_selectedfilename = line:GetValue( 1 ) .. ".txt"
-				print( "selected: " .. tostring(line:GetValue( 1 )))
+			coaster_saver_preview_shoulddraw = true
 
-				print(coaster_saver_selectedfilename)
-			//end
+			print( "selected: " .. tostring(line:GetValue( 1 )))
+
+			print(coaster_saver_selectedfilename)
+
 		else
 			return
 			print("Failed to load track - Line was nil")
 		end
 	end
+end
+
+function GeneratePreview( positions_tbl )
+	if !positions_tbl || #positions_tbl < 4 then return end
+
+	if coaster_saver_preview_trackmesh then 
+		coaster_saver_preview_trackmesh:Destroy()
+		coaster_saver_preview_trackmesh = nil
+	end
+
+	//Create a catmull object to calculate our curve stuff
+	local CatmullRom = CoasterManager.Controller:New( self )
+	CatmullRom:Reset()
+	CatmullRom.DisableDynamicStep = true //Don't let it generate from the chosen slider amount
+	CatmullRom.STEPS = 5
+
+	local AvgVector = Vector( 0, 0, 0 )
+	local highestX = math.huge
+	local highestY = math.huge
+	local lowestX = -math.huge
+	local lowestY = -math.huge
+
+	local lowestZ = math.huge
+
+	//Add all the points to the catmull controller
+	for i=1, #positions_tbl do 
+		CatmullRom:AddPoint( i, Vector( positions_tbl[i] ) )
+
+		//While we're here, average out the center of the coaster
+		if Vector( positions_tbl[i] ).x > lowestX then lowestX = Vector( positions_tbl[i] ).x end
+		if Vector( positions_tbl[i] ).x < highestX then highestX = Vector( positions_tbl[i] ).x end 
+
+		if Vector( positions_tbl[i] ).y > lowestY then lowestY = Vector( positions_tbl[i] ).y end 
+		if Vector( positions_tbl[i] ).y < highestY then highestY = Vector( positions_tbl[i] ).y end
+
+		//Make it so the average isnt in some strange place in the ground
+		if Vector( positions_tbl[i] ).z < lowestZ then 
+			lowestZ = Vector( positions_tbl[i] ).z
+		end
+	end
+	AvgVector.x = ( highestX + lowestX ) / 2
+	AvgVector.y = ( highestY + lowestY ) / 2
+
+	AvgVector.z = lowestZ
+	coaster_saver_preview_trackcenter = AvgVector
+
+	//Calc the entire spline
+	CatmullRom:CalcEntireSpline()
+
+	//Now, build the mesh
+	local Vertices = {} //Create an array that will hold an array of vertices (This is to split up the model)
+	local Meshes = {} 
+	local Radius = 18
+	local modelCount = 1 
+
+	Cylinder.Start( Radius, 6 ) //We're starting up making a beam of cylinders
+
+	local LastAngle = Angle( 0, 0, 0 )
+	local ThisAngle = Angle( 0, 0, 0 )
+
+	local ThisPos = Vector( 0, 0, 0 )
+	local NextPos = Vector( 0, 0, 0 )
+	for i = 1, #CatmullRom.Spline do
+		ThisPos = CatmullRom.Spline[i]
+		NextPos = CatmullRom.Spline[i+1]
+
+		if i==#CatmullRom.Spline then
+			NextPos = CatmullRom.PointsList[#CatmullRom.PointsList-1]
+		end
+		local ThisAngleVector = ThisPos - NextPos
+		ThisAngle = ThisAngleVector:Angle()
+
+		ThisAngle:RotateAroundAxis( ThisAngleVector:Angle():Right(), 90 )
+		ThisAngle:RotateAroundAxis( ThisAngleVector:Angle():Up(), 270 )
+
+		if i==1 then LastAngle = ThisAngle end
+
+		Cylinder.AddBeam(ThisPos, LastAngle, NextPos, ThisAngle, Radius )
+
+		LastAngle = ThisAngle
+	end
+
+	local Verts = Cylinder.EndBeam()
+	print( #Verts )
+
+	coaster_saver_preview_trackmesh = NewMesh()
+	coaster_saver_preview_trackmesh:BuildFromTriangles( Verts )
+
+	print("preview built!")
 end
 
 
@@ -457,11 +556,19 @@ end)
 //Activate things on the server (not really enough to govern a net function)
 if SERVER then
 	local controllernode = nil
-	function SpawnNode( ply, nodeinfo, i, num, filename, id, looped)
+	function SpawnNode( ply, nodeinfo, i, num, filename, id, looped, orig_spawn, TranslateTo, AngleTo, AveragePos)
 
 		local pos = Vector( nodeinfo.pos )
 		local ang = Angle( nodeinfo.ang )
 		local color = Color( nodeinfo.color.r, nodeinfo.color.g, nodeinfo.color.b )
+
+		if !orig_spawn then
+			pos = pos - AveragePos
+			local newPos, newAng = LocalToWorld( pos, ang, TranslateTo, AngleTo )
+
+			pos = newPos
+		end
+
 
 		local node = CoasterManager.CreateNodeSimple(id, pos, ang )
 		node:SetRoll( nodeinfo.roll )
@@ -508,21 +615,57 @@ if SERVER then
 		RequestTrackList(ply)
 	end)
 
+	concommand.Add("coaster_supertool_tab_saver_requestpreview", function(ply, cmd, args)
+		local filename = args[1]
+
+		local directory ="Rollercoasters/Server/"
+		if SinglePlayer() then directory = "Rollercoasters/" end
+
+		if !file.Exists(directory .. filename, "DATA") then print("\"" .. filename .. "\" does not exist!" ) end
+
+		//Load the file
+		local contents = file.Read( directory .. filename )
+		local tbl = util.KeyValuesToTable( contents )
+
+
+		if tbl then
+			//Create the table holding the positions of all the nodes
+			local PreviewTable = {}
+
+			//Loop through all the keys in the table, only extracting the information we need
+			for i=1, tbl.numnodes do
+				local nodeinfo = tbl[i]
+
+				//We ONLY want to send position. this is to cut down on generation time and network latency
+				PreviewTable[i] = nodeinfo.pos
+			end
+
+			//If we have something to actually send, send it
+			if #PreviewTable > 0 then
+
+				//Send it to the client
+				net.Start("Coaster_transferInfo")
+					net.WriteByte( TRANSFER_PREVIEW )
+					net.WriteString( filename )
+					net.WriteTable( PreviewTable )
+				net.Send( ply )
+			end
+		end
+	end )
+
 	concommand.Add("coaster_supertool_tab_saver_spawntrack", function(ply, cmd, args)
 		local filename = args[1]
 		local id = math.Round(tonumber(args[2]) ) or 9
+		local orig_spawn = math.Round(tonumber(args[3] ) ) == 1
+		local TranslateTo = ply:GetEyeTrace().HitPos
+		local AngleTo = ply:GetAngles()
+		local AveragePos = args[4] or Vector( 0, 0, 0 )
+
 
 		local directory ="Rollercoasters/Server/"
 		if SinglePlayer() then directory = "Rollercoasters/" end
 
 		if file.Exists(directory .. filename, "DATA") then
-			//Check if the track exists (Temporary until tracks can be spawned via toolgun)
-			for k, v in pairs( ents.FindByClass("coaster_node") ) do
-				if v.Filename == filename then
-					print("Track: " .. filename .. " already spawned! Aborting...")
-					return
-				end
-			end
 
 			//Load the file
 			local contents = file.Read( directory .. filename )
@@ -544,7 +687,7 @@ if SERVER then
 					//The node was unable to be grabbed by the physgun, despite any settings applied to it
 					//On the bright side, it makes a neat spawn effect
 					timer.Simple( i / 10, function()
-						SpawnNode( ply, nodeinfo, i, tbl.numnodes, filename, id, looped)
+						SpawnNode( ply, nodeinfo, i, tbl.numnodes, filename, id, looped, orig_spawn, TranslateTo, AngleTo, AveragePos )
 					end )
 				end
 
@@ -580,28 +723,76 @@ end
 if CLIENT then
 
 	net.Receive("Coaster_transferInfo", function( length, client )
-		local TrackTable = net.ReadTable()
+		local transferType = net.ReadByte()
 
-		if TrackTable then
-			//and if the panel holding the listview is valid
-			local panel = GetTabPanel( "saver" )
-			if panel && panel.tracklist != nil then
-				panel.tracklist:Clear()
+		if transferType == TRANSFER_TRACKLIST then
+			local TrackTable = net.ReadTable()
 
-				//Add each track name and info
-				for key, value in pairs( TrackTable ) do
-					if key and value then
-						//Add specific info to panel
-						local line = panel.tracklist:AddLine( value.name, value.author )
+			if TrackTable then
+				//and if the panel holding the listview is valid
+				local panel = GetTabPanel( "saver" )
+				if panel && panel.tracklist != nil then
+					panel.tracklist:Clear()
 
-						line:SetValue( 3, "Rollercoasters/Server/" .. key )
-						line:SetValue( 4, true ) //4 means it's serverside
+					//Add each track name and info
+					for key, value in pairs( TrackTable ) do
+						if key and value then
+							//Add specific info to panel
+							local line = panel.tracklist:AddLine( value.name, value.author )
+
+							line:SetValue( 3, "Rollercoasters/Server/" .. key )
+							line:SetValue( 4, true ) //4 means it's serverside
+						end
 					end
 				end
 			end
+		elseif transferType == TRANSFER_PREVIEW then
+			local Filename = net.ReadString()
+			local PreviewTrack = net.ReadTable()
+			print("Preview downloaded: " .. Filename )
+			//PrintTable( PreviewTrack )
+
+			//Build the mesh
+			GeneratePreview( PreviewTrack )
 		end
 	end )
 
+	local matrix = Matrix()
+	hook.Add("PreDrawOpaqueRenderables", "DrawCoasterPreview", function()
+		if !coaster_saver_preview_shoulddraw then return end
+
+		if coaster_saver_preview_trackmesh && coaster_save_preview_material && coaster_saver_preview_trackcenter then
+			local OrigPos = GetConVar("coaster_supertool_tab_saver_orig_spawn"):GetInt()==1
+
+
+			if !matrix then matrix = Matrix() end
+			render.SetMaterial(coaster_save_preview_material)
+
+			local AimPos = LocalPlayer():GetEyeTrace().HitPos - coaster_saver_preview_trackcenter
+			local AimAngle = LocalPlayer():GetAngles().y
+			local curtime = CurTime() * 10
+
+			if OrigPos then 
+				AimPos = Vector( 0, 0, 0 ) 
+				AimAngle = Angle( 0, 0, 0 )
+			end
+
+			matrix:Translate( AimPos )
+			//matrix:Translate( AimPos )
+
+
+			cam.PushModelMatrix( matrix )
+
+				coaster_saver_preview_trackmesh:Draw()
+
+			cam.PopModelMatrix()
+
+			//matrix:Translate( -AimPos )
+			matrix:Translate( -AimPos )
+
+		end
+
+	end )
 end
 
 coastertabmanager.Register( UNIQUENAME, TAB )
