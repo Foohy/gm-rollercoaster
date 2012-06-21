@@ -7,6 +7,7 @@ local UNIQUENAME = "saver"
 TAB.Name = "Save"
 TAB.UniqueName = UNIQUENAME
 TAB.Description = "Save and load tracks "
+TAB.Instructions = "Right click on a coaster to select it to save. Left click to spawn a loaded coaster."
 TAB.Icon = "coaster/save"
 TAB.Position = 5 //The position in the series of tabs
 
@@ -176,8 +177,8 @@ end
 function OpenCoasterSaveMenu()
 
 	local form = vgui.Create( "DFrame" )
-	form:SetSize( 250, 276 )
-	form:SetTitle(" ")
+	form:SetSize( 250, 289 )
+	form:SetTitle("Save Rollercoaster")
 	form:Center()
 	form:SetVisible( true )
 	form:SetDraggable( true )
@@ -187,16 +188,14 @@ function OpenCoasterSaveMenu()
 	
 	local panel = vgui.Create("DForm", form)
 
-	local x = 250
-	local y = 288
-	panel:SetSize( form:GetSize())
+	panel:SetSize(form:GetSize())
 
-	panel:SetPos( 0, 12)
+	panel:SetPos( 0, 25)
 
-	panel:SetName("Save Rollercoaster")
+	panel:SetName("")
 
 
-	local LabelName = vgui.Create("Label", panel)
+	local LabelName = vgui.Create("DLabel", panel)
 	LabelName:SetText("Name:")
 	panel:AddItem( LabelName )
 
@@ -207,7 +206,7 @@ function OpenCoasterSaveMenu()
 	panel:AddItem( DName )
 	panel.DName = DName
 
-	local LabelDesc = vgui.Create("Label", panel)
+	local LabelDesc = vgui.Create("DLabel", panel)
 	LabelDesc:SetText("Description:")
 	panel:AddItem( LabelDesc )
 
@@ -219,17 +218,15 @@ function OpenCoasterSaveMenu()
 	panel:AddItem( DDesc )
 	panel.DDesc = DDesc
 
-
-	local btnCancel = vgui.Create("Button")
-	btnCancel:SetText("Cancel")
-	btnCancel.DoClick = function() form:Close() end
-	panel:AddItem( btnCancel )
-
 	local btnSave = vgui.Create("Button")
 	btnSave:SetText("Save")
 	btnSave.DoClick = function() SaveTrack(DName:GetValue(), DDesc:GetValue()); form:Close(); surface.PlaySound("garrysmod/content_downloaded.wav") end
 	panel:AddItem( btnSave )
 
+	local btnCancel = vgui.Create("Button")
+	btnCancel:SetText("Cancel")
+	btnCancel.DoClick = function() form:Close() end
+	panel:AddItem( btnCancel )
 end
 
 
@@ -238,8 +235,8 @@ function OpenCoasterUploadMenu()
 	local panel = GetTabPanel( "saver" )
 
 	local form = vgui.Create( "DFrame" )
-	form:SetSize( 250, 312 )
-	form:SetTitle(" ")
+	form:SetSize( 250, 325 )
+	form:SetTitle("Upload Track to Server")
 	form:Center()
 	form:SetVisible( true )
 	form:SetDraggable( true )
@@ -250,10 +247,10 @@ function OpenCoasterUploadMenu()
 	local panel = vgui.Create("DForm", form, "coaster_track_saver_uploadpanel")
 	panel:SetSize( form:GetSize())
 	//panel:Center()
-	panel:SetPos( 0, 12)
+	panel:SetPos( 0, 25)
 	//local px, py = panel:GetPos()
 	//panel:SetPos( px - (x / 2), py - (y / 2) )
-	panel:SetName("Upload Track to Server")
+	panel:SetName(" ")
 	print(panel:GetSize())
 
 	//Create the list view listing clientside files

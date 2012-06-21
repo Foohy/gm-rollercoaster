@@ -18,6 +18,7 @@ ENT.Velocity = 4 //Starting velocity
 ENT.Multiplier = 0.99999 //Multiplier to set the same speed per node segment
 ENT.IsOffDaRailz = false
 ENT.Rotation = 0
+ENT.RotationSpeed = 0
 
 //Speedup node options/variables
 ENT.SpeedupForce = 1400 //Force of which to accelerate the car
@@ -232,22 +233,31 @@ function ENT:PhysicsSimulate(phys, deltatime)
 
 	//If we are a carousel, SPIN
 	if self.Carousel then
+		local FixedAngle = Angle( ang.p, ang.y, ang.r )
 		local ang1 = self:AngleAt( self.CurSegment, self.Percent )
-		local p1 = self.Controller.CatmullRom:Point( self.CurSegment , self.Percent )
-		local p2 = self.Controller.CatmullRom:Point( self.CurSegment , self.Percent + 0.01 )
-		local angvec = p2 - p1
-		angvec:Angle()
+		local ang2 = self:AngleAt( self.CurSegment, self.Percent + 0.1 )
+		local angDif = math.AngleDifference( ang1.y, ang2.y )
+		local FakeFriction = 1.0001
 
-		//local angDif = ang1 - ang2
-		self.Rotation = self.Rotation + ( deltatime * angvec.y * 100 )
+		if self:GetCurrentNode():GetType() == COASTER_NODE_BREAKS || self:GetCurrentNode():GetType() == COASTER_NODE_HOME then
+			FakeFriction = 1.04
+		end
+		//Make it so it doesnt rotate with the track
+		FixedAngle:RotateAroundAxis( FixedAngle:Up(), -ang.y )
+
+		self.RotationSpeed = ( self.RotationSpeed + ( angDif * self.Velocity * deltatime  ) ) / FakeFriction //Do-it-yourself friction
+		//calculate how much we should rotate
+		self.Rotation = ( self.Rotation + (self.RotationSpeed * deltatime) ) 
+
 		self.Rotation = math.NormalizeAngle( self.Rotation )
 
 		if ( Coaster_do_bad_things ) then
-			ang:RotateAroundAxis( ang1:Up(), self.Rotation )
+			FixedAngle:RotateAroundAxis( ang1:Up(), self.Rotation )
 		else
-			ang:RotateAroundAxis( ang:Up(), self.Rotation )
+			//Apply the rotation
+			FixedAngle:RotateAroundAxis( FixedAngle:Up(), self.Rotation )
 		end
-		//ang.y = Rotation
+		ang = FixedAngle
 	end
 
 	self.PhysShadowControl.angle = ang

@@ -7,6 +7,7 @@ local UNIQUENAME = "copy_me"
 TAB.Name = "You Should Copy Me"
 TAB.UniqueName = UNIQUENAME
 TAB.Description = "Create new tooltypes by copying this file as an example"
+TAB.Instructions = "Basically what I just said up there ^"
 TAB.Icon = "coaster/settings"
 TAB.Position = 6 //The position in the series of tabs
 

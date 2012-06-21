@@ -2,6 +2,7 @@ AddCSLuaFile( "cl_init.lua" )
 AddCSLuaFile( "shared.lua" )
 AddCSLuaFile( "mesh_beams.lua")
 include( "shared.lua" )
+include( "mesh_physics.lua")
 
 
 ENT.Spacing = 30 //How many units away each wood track is
@@ -11,17 +12,11 @@ ENT.Nodes 			= {} //List of nodes (assuming we are the controller)
 ENT.CoasterID 		= -1 //The rollercoaster ID this node is associated with
 ENT.WasBeingHeld	= false //Was the entity being held just now (by the physgun)
 ENT.ChainSpeed		= 5
-
-concommand.Add("coaster_forcerefresh", function(ply, cmd, args)
-	for _, v in pairs( ents.FindByClass("coaster_node") ) do
-		if IsValid( v ) && v:IsController() then 
-			v:UpdateServerSpline()
-		end
-	end
-end )
+ENT.PhysMeshes		= {}
 
 function ENT:Initialize()
 	self.Nodes = {} //List of nodes (assuming we are the controller)
+	self.PhysMeshes = {}
 	self:SetModel( self.Model )	
 
 	self:PhysicsInit(SOLID_VPHYSICS)
@@ -143,16 +138,6 @@ function ENT:AddTrackNode( ent, ply )
 				//umsg.Short( ent:EntIndex() )
 			umsg.End()
 		end )
-		
-		//Create two more nodes for the second track to create a fully working track
-		//if IsValid( self:GetFirstNode() ) && !IsValid( self:GetFirstNode():GetNextNode() ) then
-		//	local endNode = CoasterManager.CreateNode( self.CoasterID, self:GetPos(), self:GetAngles(), self:HasChains() )
-		//	endNode:SetModel( "models/props_junk/PopCan01a.mdl" )
-		//end
-		
-		//if !IsValid( self:GetFirstNode() ) then
-		//	CoasterManager.CreateNode( self.CoasterID, self:GetPos(), self:GetAngles(), self:HasChains() )
-		//end
 
 	end
 end
@@ -172,10 +157,78 @@ function ENT:UpdateServerSpline()
 	
 	if #controller.CatmullRom.PointsList > 3 then
 		controller.CatmullRom:CalcEntireSpline()
+		//controller:BuildPhysicsMesh()
 	end
 end
 
-//TODO: Fix this up
+//How does ENT:PhysicsFromMesh work?
+function ENT:BuildPhysicsMesh()
+	local Vertices = {} //Create an array that will hold an array of vertices (This is to split up the model)
+	local Meshes = {} 
+	local Radius = 10
+	local modelCount = 1 
+
+	Cylinder.Start( Radius, 2 ) //We're starting up making a beam of cylinders
+
+	local LastAngle = Angle( 0, 0, 0 )
+	local ThisAngle = Angle( 0, 0, 0 )
+
+	local ThisPos = Vector( 0, 0, 0 )
+	local NextPos = Vector( 0, 0, 0 )
+	for i = 1, #self.CatmullRom.Spline do
+		ThisPos = self.CatmullRom.Spline[i]
+		NextPos = self.CatmullRom.Spline[i+1]
+
+		if i==#self.CatmullRom.Spline then
+			NextPos = self.CatmullRom.PointsList[#self.CatmullRom.PointsList]
+		end
+		local ThisAngleVector = ThisPos - NextPos
+		ThisAngle = ThisAngleVector:Angle()
+
+		if i==1 then LastAngle = ThisAngle end
+
+		Cylinder.AddBeam(ThisPos, LastAngle, NextPos, ThisAngle, Radius )
+
+		if #Cylinder.Vertices > 50000 then// some arbitrary limit to split up the verts into seperate meshes
+
+			Vertices[modelCount] = Cylinder.Vertices
+			modelCount = modelCount + 1
+
+			Cylinder.Vertices = {}
+			Cylinder.TriCount = 1
+		end
+
+		LastAngle = ThisAngle
+	end
+
+	local Remaining = Cylinder.EndBeam()
+
+	//Doesn't give "Degenerate Triangle" error, but _doesn't actually work_
+	local tmpTable = {}
+	tmpTable[1] = {}
+	tmpTable[1].pos = self:GetPos() + Vector( 0, -5, 50 )
+	tmpTable[2] = {}
+	tmpTable[2].pos = self:GetPos() + Vector( -50, -5, 0 )
+	tmpTable[3] = {}
+	tmpTable[3].pos = self:GetPos() + Vector( -50, 5, 0 )
+
+	//This _does_ give "Degenerate Triangle" error, but only for certain tris. I don't know why or which ones.
+	Vertices[modelCount] = Remaining
+
+	PrintTable( tmpTable )
+
+	self:PhysicsFromMesh( Vertices[1] ) //THIS MOTHERFUCKER
+
+	//self:PhysicsFromMesh( tmpTable ) //Verticices[i]
+	//for i=1, #Vertices do
+	//	if #Vertices[i] > 2 then
+	//		//Meshes[i] = NewMesh()
+	//		print( #Vertices, #Vertices[i] )
+	//		self:PhysicsFromMesh( Vertices[i] ) //Technically, this'll fuck up if we ever have multiple models. TODO: Figure this out.
+	//	end
+	//end
+end
+
 function ENT:PhysicsUpdate(physobj)
 	if !self:IsPlayerHolding() then
 		physobj:Sleep()
@@ -188,8 +241,11 @@ function ENT:PhysicsUpdate(physobj)
 				umsg.Entity( self:GetController() )
 			umsg.End()
 
-			//timer.Simple(2.5, function() self:SetupTrack() end )//WHAT THE FUCK IS WRONG WITH YOU
-			RunConsoleCommand("coaster_forcerefresh")
+			local controller = Rollercoasters[ self.CoasterID ]
+
+			if IsValid( controller ) then
+				controller:UpdateServerSpline()
+			end
 		end
 	else
 		if self.WasBeingHeld == false then

@@ -83,6 +83,14 @@ function TOOL:Think()
 
 		if class then
 			class:Equip( self )
+
+			//Update the header HUD
+			if CLIENT then
+				//print(class.Name)
+				//language.remove("Tool_coaster_supertool_name")
+				//language.Add( "Tool_coaster_supertool_name", class.Name )
+				//language.Add( "Tool_coaster_supertool_desc", class.Description )
+			end
 		end
 
 		self.CurrentClass = class
@@ -109,6 +117,70 @@ function TOOL:GetCurrentTab()
 		return Class
 	end
 end
+
+//Yoinked from garry's tool HUD rendering code.
+function TOOL:DrawHUD()
+	if ( !GetConVar("gmod_drawhelp"):GetBool() ) then return end
+       
+	local class = self:GetCurrentTab()
+   
+    local x, y = 50, 40
+    local w, h = 0, 0
+   
+    local TextTable = {}
+    local QuadTable = {}
+   
+    TextTable.font = "GModToolName"
+    TextTable.color = Color( 240, 240, 240, 255 )
+    TextTable.pos = { x, y }
+    TextTable.text = class.Name or "None"
+   
+    w, h = draw.TextShadow( TextTable, 3 )
+    y = y + h
+
+    TextTable.font = "GModToolSubtitle"
+    TextTable.pos = { x, y }
+    TextTable.text = class.Description or "None"
+    w, h = draw.TextShadow( TextTable, 2 )
+
+    y = y + h + 11
+   
+    TextTable.font = "GModToolHelp"
+    TextTable.pos = { x + 24, y  }
+    TextTable.text = class.Instructions or "None"
+    w, h = draw.TextShadow( TextTable, 2 )
+end
+
+local function DrawScrollingText( text, y, texwide )
+
+	local w, h = surface.GetTextSize( text )
+	w = w + 64
+
+	local x = math.fmod( CurTime() * 400, w ) * -1;
+
+	while ( x < texwide ) do
+
+		surface.SetTextColor( 0, 0, 0, 255 )
+		surface.SetTextPos( x + 3, y + 3 )
+		surface.DrawText( text )
+          
+		surface.SetTextColor( 255, 255, 255, 255 )
+		surface.SetTextPos( x, y )
+		surface.DrawText( text )
+       
+		x = x + w
+           
+	end
+end
+
+function TOOL:DrawToolScreen( TEX_SIZE )
+	local class = self:GetCurrentTab()
+
+	surface.SetFont("GModToolScreen")
+	DrawScrollingText( class.Name or "None", 64, TEX_SIZE )
+end
+
+
 
 //THANKS ZAAAAAAK
 function toSortedTable(T, mbr)
@@ -166,9 +238,9 @@ end
 
 if CLIENT then
 
-	language.Add( "Tool_coaster_supertool_name", "MEGA SUPER TOOL ABLJBLASDJBASOGOF08ASOXCSALDJBASJB" )
-	language.Add( "Tool_coaster_supertool_desc", "IT DOES EVERYTHING" )
-	language.Add( "Tool_coaster_supertool_0", "EEVVEERRYYYTHIIINNGGGGGGGGGGGG" )
+	language.Add( "Tool_coaster_supertool_name", "" )
+	language.Add( "Tool_coaster_supertool_desc", "" )
+	language.Add( "Tool_coaster_supertool_0", "" )
 
 end
 

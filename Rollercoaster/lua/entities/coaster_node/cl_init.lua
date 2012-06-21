@@ -278,12 +278,9 @@ end
 //It should really be recoded
 function ENT:UpdateClientMesh()
 	print("Building clientside mesh...")
-	local StrutOffset = 2 //Space between coaster struts
-	local Offset = 20  //Downwards offset of large center beam
-	local RailOffset = 25 //Distance track beams away from eachother
-	local Radius = 10 	//radius of the circular track beams
-	local PointCount = 7 //how many points make the cylinder of the track mesh
-	local modelCount = 1 //how many models the mesh has been split into
+
+	//Make sure we have the most up to date version of the track
+	self:RefreshClientSpline()
 
 	if #self.CatmullRom.PointsList > 3 then
 		self.BuildingMesh = true //Tell the mesh to stop drawing because we're gonna rebuild it
@@ -764,7 +761,7 @@ function ENT:DrawSpeedupModels( segment )
 	Percent = ( Percent + ( Multiplier * 2 ) ) / 2 //move ourselves one half forward, so the wheels are between track struts
 
 	while Percent < 1 do
-		if numwheels > GetConVar("coaster_maxwheels"):GetInt() then return end
+		if numwheels >= GetConVar("coaster_maxwheels"):GetInt() then return end
 
 		ang = self:AngleAt( segment, Percent)
 
@@ -823,7 +820,7 @@ function ENT:DrawBreakModels( segment )
 	Percent = ( Percent + ( Multiplier * 2 ) ) / 2 //move ourselves one half forward, so the wheels are between track struts
 
 	while Percent < 1 do
-		if numwheels > GetConVar("coaster_maxwheels"):GetInt() then return end
+		if numwheels >= GetConVar("coaster_maxwheels"):GetInt() then return end
 
 		ang = self:AngleAt( segment, Percent)
 

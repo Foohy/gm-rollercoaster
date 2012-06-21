@@ -252,7 +252,10 @@ end
 
 function Controller:CalcEntireSpline()
 	local nodecount = #self.PointsList
-	
+	if CLIENT then
+		Controller.STEPS = math.Clamp( GetConVar("coaster_resolution"):GetInt(), 1, 100 )
+	end
+
 	if nodecount < 4 then
 		return ErrorNoHalt("Not enough nodes given, I need four and was given ", nodecount, ".\n")
 	end
@@ -267,25 +270,5 @@ function Controller:CalcEntireSpline()
 		end
 	end
 end
-
-function Controller:AngleAt(i, perc )
-	local AngVec = Vector(0,0,0)
-	local curSpline = self:GetCurrentSpline( i, perc )
-
-	if #self.Spline > curSpline + 1 then
-
-		AngVec = self.Spline[curSpline] - self.Spline[curSpline + 1]
-		AngVec:Normalize()
-	end
-	
-	return AngVec:Angle()
-end
-
-function Controller:GetCurrentSpline(i, perc)	
-	local spline = (i - 2) * self.STEPS + (self.STEPS * perc)
-	//print(math.floor(spline))
-	return math.Clamp( math.floor(spline), 1, #self.Spline)
-end
-
 
 CoasterManager.Controller = Controller

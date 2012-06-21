@@ -123,6 +123,7 @@ if CLIENT then
 	CreateClientConVar("coaster_previews", 1, false, false )
 	CreateClientConVar("coaster_motionblur", 1, false, false )
 	CreateClientConVar("coaster_maxwheels", 15, false, false)
+	CreateClientConVar("coaster_resolution", 15, false, false)
 
 	//Motion blur
 	local function GetMotionBlurValues( x, y, fwd, spin )

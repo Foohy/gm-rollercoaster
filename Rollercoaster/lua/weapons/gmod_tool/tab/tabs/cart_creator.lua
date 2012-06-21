@@ -7,6 +7,7 @@ local UNIQUENAME = "cart_creator"
 TAB.Name = "Carts"
 TAB.UniqueName = UNIQUENAME
 TAB.Description = "Create trains that travel along a track."
+TAB.Instructions = "Click on an active rollercoaster to set/reset train. Right click to remove all trains from a coaster"
 TAB.Icon = "coaster/cart"
 TAB.Position = 2
 
@@ -139,10 +140,14 @@ function TAB:BuildPanel()
 	panel:AddItem( FrictionSlider )
 
 	//panel:AddControl("CheckBox", {Label = "Use weapons while in cart", Description = "Aim and shoot weapons while in the cart.", Command = "coaster_cart_creator_allow_weapons"})
+
+	//Commented out for now, feature doesn't exist and it's sounding like it's gonna be a pain in the ass
+	/*
 	local CheckWeapons = vgui.Create("DCheckBoxLabel", panel )
 	CheckWeapons:SetText("Use weapons while in cart")
 	CheckWeapons:SetConVar("coaster_supertool_tab_cart_creator_allow_weapons")
 	panel:AddItem( CheckWeapons )
+	*/
 
 
 	//panel:AddControl( "Header", { Text = "#Tool_coaster_cart_creator_name", Description = "#Tool_track_cart_desc" }  )

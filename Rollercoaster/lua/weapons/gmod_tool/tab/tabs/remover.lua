@@ -6,6 +6,7 @@ local UNIQUENAME = "remover"
 TAB.Name = "Remove"
 TAB.UniqueName = UNIQUENAME
 TAB.Description = "Remove entire rollercoasters"
+TAB.Instructions = "Click on any node of a track to remove the entire thing"
 TAB.Icon = "coaster/remover"
 TAB.Position = 4
 

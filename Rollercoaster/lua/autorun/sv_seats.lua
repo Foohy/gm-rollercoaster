@@ -174,6 +174,7 @@ hook.Add("KeyRelease", "EnterSeat", function(ply, key)
 	local trace = util.TraceLine({start=eye, endpos=eye+ply:GetAimVector()*100, filter=ply})
 
 	if !IsValid(trace.Entity) then return end
+	if trace.Entity:GetClass() != "coaster_cart" then return end //Don't mess with anyone else's shit
 
 	local model = trace.Entity:GetModel()
 

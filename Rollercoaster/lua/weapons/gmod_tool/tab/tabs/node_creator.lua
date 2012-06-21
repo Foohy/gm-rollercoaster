@@ -7,6 +7,7 @@ local UNIQUENAME = "node_creator"
 TAB.Name = "Track"
 TAB.UniqueName = UNIQUENAME
 TAB.Description = "Create specific track nodes"
+TAB.Instructions = "Left click on the world to create a node. Click on an existing node to update it's settings. Right click on any node to loop the track. Reload to retrieve a node's settings."
 TAB.Icon = "coaster/track"
 TAB.Position = 1
 
@@ -296,9 +297,17 @@ function TAB:BuildPanel( )
 	end
 
 	panel:AddItem( ComboBox )
+
+	local Seperator = vgui.Create("DLabel", panel)
+	Seperator:SetText("______________________________________________")
+	panel:AddItem( Seperator )
 	
+	local NoteLabel = vgui.Create("DLabel", panel)
+	NoteLabel:SetText("Note: Building the mesh is not realtime.")
+	panel:AddItem( NoteLabel )
+
 	local buildBtn = vgui.Create("DButton", panel)
-	buildBtn:SetText("BUILD COASTER MESH (CAUTION: THIS _WILL_ MOMENTARILY FREEZE YOUR GAME!!)")
+	buildBtn:SetText("Build Mesh")
 	buildBtn:SetConsoleCommand("update_mesh")
 	panel:AddItem( buildBtn )
 	//panel:AddControl("CheckBox", {Label = "Relative Roll: ", Description = "Roll of the cart is relative to the tracks angle (LOOPDY LOOP HEAVEN)", Command = "coaster_track_creator_relativeroll"})

@@ -7,6 +7,7 @@ local UNIQUENAME = "track_settings"
 TAB.Name = "Settings"
 TAB.UniqueName = UNIQUENAME
 TAB.Description = "Change track-wide and addon-wide settings"
+TAB.Instructions = "Click on any node of a rollercoaster to update its settings. Alternatively, adjust clientside settings for all rollercoasters"
 TAB.Icon = "coaster/settings"
 TAB.Position = 6
 
@@ -161,6 +162,21 @@ function TAB:BuildPanel( )
 	MaxWheels:SetMax( 100 )
 	MaxWheels:SetConVar( "coaster_maxwheels")
 	AllSettingsPanel:AddItem( MaxWheels )
+
+	local TrackResolution = vgui.Create("DNumSlider", AllSettingsPanel )
+	TrackResolution:SetText("Track Resolution: ")
+	TrackResolution:SetDecimals( 0 )
+	TrackResolution:SetMin( 1 )
+	TrackResolution:SetMax( 100 )
+	TrackResolution:SetConVar( "coaster_resolution")
+	TrackResolution.OnValueChanged = function() //See the effects in realtime
+		for _, v in pairs( ents.FindByClass("coaster_node") ) do
+			if IsValid( v ) && v:IsController() then 
+				v:UpdateClientSpline()
+			end
+		end
+	end
+	AllSettingsPanel:AddItem( TrackResolution )
 
 	local TrackPreviews = vgui.Create("DCheckBoxLabel", AllSettingsPanel )
 	TrackPreviews:SetText("Draw track previews")

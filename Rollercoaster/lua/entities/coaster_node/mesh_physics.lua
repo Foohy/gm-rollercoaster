@@ -40,7 +40,6 @@ function Cylinder.AddBeam( Pos1, Ang1, Pos2, Ang2, Radius )
 		local pos = Pos1 + (ang:Up() * Cylinder.Radius)
 
 		Cylinder.CurVerts[i].pos = pos
-		Cylinder.CurVerts[i].norm = ang:Up()
 	end
 
 	//Calculate the positions of the next vertices
@@ -52,15 +51,7 @@ function Cylinder.AddBeam( Pos1, Ang1, Pos2, Ang2, Radius )
 		local pos = Pos2 + (ang:Up() * Cylinder.Radius)
 
 		Cylinder.NextVerts[i].pos = pos
-		Cylinder.NextVerts[i].norm = ang:Up()
 	end
-
-	//Variable to keep track of our triangle count
-	local OldU  	= Cylinder.TotalU
-	Cylinder.TotalU = Cylinder.TotalU + (Cylinder.CurVerts[1].pos:Distance( Cylinder.NextVerts[1].pos )) / 32//Get the distance so we can set the UV effectively
-
-
-	local NewV      = Cylinder.TotalV
 
 
 	//put them into proper triangle format
@@ -88,58 +79,38 @@ function Cylinder.AddBeam( Pos1, Ang1, Pos2, Ang2, Radius )
 
 		Cylinder.Vertices[Cylinder.TriCount] = { 
 			pos = CurRight.pos, 
-			normal = CurRight.norm, 
-			u = OldU,
-			v = Cylinder.TotalV,
 		}
 		Cylinder.TriCount = Cylinder.TriCount + 1
 
 		Cylinder.Vertices[Cylinder.TriCount] = { 
 			pos = CurLeft.pos, 
-			normal = CurLeft.norm, 
-			u = OldU,
-			v = OldV,
 		}
 		Cylinder.TriCount = Cylinder.TriCount + 1
 
 		Cylinder.Vertices[Cylinder.TriCount] = { 
 			pos = NextLeft.pos, 
-			normal = NextLeft.norm, 
-			u = Cylinder.TotalU,
-			v = OldV,
 		}
 		Cylinder.TriCount = Cylinder.TriCount + 1
 
 		//Second tri
 		Cylinder.Vertices[Cylinder.TriCount] = { 
 			pos = NextLeft.pos, 
-			normal = NextLeft.norm, 
-			u = Cylinder.TotalU,
-			v = OldV,
 		}
 		Cylinder.TriCount = Cylinder.TriCount + 1
 
 		Cylinder.Vertices[Cylinder.TriCount] = { 
 			pos = NextRight.pos, 
-			normal = NextRight.norm, 
-			u = Cylinder.TotalU,
-			v = Cylinder.TotalV,
 		}
+
 		Cylinder.TriCount = Cylinder.TriCount + 1
 
 		Cylinder.Vertices[Cylinder.TriCount] = { 
 			pos = CurRight.pos, 
-			normal = CurRight.norm, 
-			u = OldU,
-			v = Cylinder.TotalV,
 		}
 		Cylinder.TriCount = Cylinder.TriCount + 1
-
-		OldV = NewV
-		
+	
 	end
-	Cylinder.TotalV = NewV
-	//Cylinder.TotalU = 0
+
 end
 
 function Cylinder.EndBeam()
