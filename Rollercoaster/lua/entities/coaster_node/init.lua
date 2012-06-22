@@ -417,9 +417,11 @@ function ENT:OnRemove()
 		end
 	end
 
-	//Update the track
-	cont:CheckForInvalidNodes()
-	cont:UpdateServerSpline() 
+	if !self.SafeDeleted then
+		//Update the track
+		cont:CheckForInvalidNodes()
+		cont:UpdateServerSpline() 
+	end
 
 
 

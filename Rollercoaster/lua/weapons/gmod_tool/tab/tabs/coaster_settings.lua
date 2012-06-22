@@ -171,7 +171,7 @@ function TAB:BuildPanel( )
 	TrackResolution:SetConVar( "coaster_resolution")
 	TrackResolution.OnValueChanged = function() //See the effects in realtime
 		for _, v in pairs( ents.FindByClass("coaster_node") ) do
-			if IsValid( v ) && v:IsController() then 
+			if IsValid( v ) && !v.IsSpawning && v.IsController && v:IsController() then 
 				v:UpdateClientSpline()
 			end
 		end

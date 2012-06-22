@@ -439,7 +439,13 @@ function LoadSelectedTrack()
 
 		if line then
 			coaster_saver_selectedfilename = line:GetValue( 1 ) .. ".txt"
-			RunConsoleCommand("coaster_supertool_tab_saver_requestpreview", coaster_saver_selectedfilename )
+
+			if !line.PreviewTable then
+				RunConsoleCommand("coaster_supertool_tab_saver_requestpreview", coaster_saver_selectedfilename )
+			else
+				print("Preview already downloaded! Using that.")
+				GeneratePreview( line.PreviewTable )
+			end
 
 			coaster_saver_preview_shoulddraw = true
 
@@ -539,8 +545,6 @@ function GeneratePreview( positions_tbl )
 
 	coaster_saver_preview_trackmesh = NewMesh()
 	coaster_saver_preview_trackmesh:BuildFromTriangles( Verts )
-
-	print("preview built!")
 end
 
 
@@ -582,12 +586,14 @@ if SERVER then
 			controllernode = node 
 			controllernode:SetLooped( looped )
 			controllernode:SetOwner( ply )
+			controllernode.IsSpawning = true
 		end
 
 		if i==num && IsValid( controllernode ) then
 			node:SetModel( "models/props_junk/PopCan01a.mdl" ) //Hide very last node
 
 			controllernode:UpdateServerSpline()
+			controllernode.IsSpawning = false
 			timer.Simple( 0.2 , function() //Final delay in case any nodes were missed
 				umsg.Start("Coaster_AddNode")
 					umsg.Short( controllernode:EntIndex() )
@@ -601,9 +607,8 @@ if SERVER then
 			undo.Finish()
 		end
 
-		//Force the server and client to update the spline
+		//Force the client to update the spline
 		if IsValid( controllernode ) then
-			controllernode:UpdateServerSpline()
 
 			umsg.Start("Coaster_AddNode")
 				umsg.Short( controllernode:EntIndex() )
@@ -749,11 +754,23 @@ if CLIENT then
 		elseif transferType == TRANSFER_PREVIEW then
 			local Filename = net.ReadString()
 			local PreviewTrack = net.ReadTable()
-			print("Preview downloaded: " .. Filename )
-			//PrintTable( PreviewTrack )
 
 			//Build the mesh
 			GeneratePreview( PreviewTrack )
+
+			//Associate that preview with that line
+			local panel = GetTabPanel( "saver" )
+			if panel && panel.tracklist != nil then
+				local lines = panel.tracklist:GetLines()
+
+				for k, v in pairs( lines ) do
+
+					if ( v:GetValue( 1 ) .. ".txt" ) == Filename then 
+						v.PreviewTable = PreviewTrack
+						break;
+					end
+				end
+			end
 		end
 	end )
 
@@ -774,12 +791,11 @@ if CLIENT then
 
 			if OrigPos then 
 				AimPos = Vector( 0, 0, 0 ) 
-				AimAngle = Angle( 0, 0, 0 )
+				AimAngle = 0
 			end
 
+			//halp howdorotate
 			matrix:Translate( AimPos )
-			//matrix:Translate( AimPos )
-
 
 			cam.PushModelMatrix( matrix )
 
@@ -787,7 +803,6 @@ if CLIENT then
 
 			cam.PopModelMatrix()
 
-			//matrix:Translate( -AimPos )
 			matrix:Translate( -AimPos )
 
 		end

@@ -766,7 +766,7 @@ function ENT:DrawSpeedupModels( segment )
 		ang = self:AngleAt( segment, Percent)
 
 		//Change the roll depending on the track
-		Roll = -Lerp( Percent, ThisSegment:GetRoll(), NextSegment:GetRoll())	
+		Roll = -Lerp( Percent, math.NormalizeAngle( ThisSegment:GetRoll() ), NextSegment:GetRoll())	
 		
 		//Set the roll for the current track peice
 		ang.r = Roll
@@ -825,7 +825,7 @@ function ENT:DrawBreakModels( segment )
 		ang = self:AngleAt( segment, Percent)
 
 		//Change the roll depending on the track
-		Roll = -Lerp( Percent, ThisSegment:GetRoll(), NextSegment:GetRoll())	
+		Roll = -Lerp( Percent, math.NormalizeAngle( ThisSegment:GetRoll() ), NextSegment:GetRoll())	
 		
 		//Set the roll for the current track peice
 		ang.r = Roll
@@ -892,7 +892,7 @@ function ENT:DrawSideRail( segment, offset )
 				//Get the percent along this node
 				perc = (i % self.CatmullRom.STEPS) / self.CatmullRom.STEPS
 				//local Roll = Lerp( perc, ThisSegment:GetAngles().r,NextSegment:GetAngles().r )	
-				local Roll = -Lerp( perc, ThisSegment:GetRoll(),NextSegment:GetRoll())	
+				local Roll = -Lerp( perc, math.NormalizeAngle( ThisSegment:GetRoll() ),NextSegment:GetRoll())	
 				ang:RotateAroundAxis( AngVec, Roll ) //Segment:GetAngles().r
 			end
 		end
@@ -946,7 +946,7 @@ function ENT:DrawRail(offset)
 			//Get the percent along this node
 			perc = (i % self.CatmullRom.STEPS) / self.CatmullRom.STEPS
 			//local Roll = Lerp( perc, ThisSegment:GetAngles().r,NextSegment:GetAngles().r )	
-			local Roll = -Lerp( perc, ThisSegment:GetRoll(),NextSegment:GetRoll())	
+			local Roll = -Lerp( perc, math.NormalizeAngle( ThisSegment:GetRoll() ),NextSegment:GetRoll())	
 			ang:RotateAroundAxis( AngVec, Roll ) //Segment:GetAngles().r
 		end
 			

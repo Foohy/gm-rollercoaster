@@ -55,7 +55,7 @@ function TRACK:Generate( controller )
 			//Get the percent along this node
 			local perc = controller:PercAlongNode( i )
 
-			local Roll = -Lerp( perc, ThisSegment:GetRoll(),NextSegment:GetRoll())	
+			local Roll = -Lerp( perc, math.NormalizeAngle( ThisSegment:GetRoll() ) ,NextSegment:GetRoll())	
 			if ThisSegment:RelativeRoll() then
 				Roll = Roll - ( ang.p - 180 )
 			end
@@ -63,7 +63,7 @@ function TRACK:Generate( controller )
 
 			//For shits and giggles get it for this one too
 			local perc2 = controller:PercAlongNode( i + 1, true )
-			local Roll2 = -Lerp( perc2, ThisSegment:GetRoll(), NextSegment:GetRoll() )
+			local Roll2 = -Lerp( perc2, math.NormalizeAngle( ThisSegment:GetRoll() ), NextSegment:GetRoll() )
 			if ThisSegment:RelativeRoll() then
 				Roll2 = Roll2 - ( ang2.p - 180 )
 			end
@@ -146,7 +146,7 @@ function TRACK:Generate( controller )
 		local ang = controller:AngleAt(CurSegment, Percent)
 
 		//Change the roll depending on the track
-		local Roll = -Lerp( Percent, CurNode:GetRoll(), NextNode:GetRoll())	
+		local Roll = -Lerp( Percent, math.NormalizeAngle( CurNode:GetRoll() ), NextNode:GetRoll())	
 		
 		//Set the roll for the current track peice
 		ang.r = Roll

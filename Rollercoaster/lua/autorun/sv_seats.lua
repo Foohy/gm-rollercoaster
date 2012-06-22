@@ -1,3 +1,6 @@
+//NOTE WHEN ADDING NEW TRAINS
+//if there are any uppercases in the filename, change them to be lowercase or else it will not work
+
 ChairOffsets = {
 	["models/xqm/coastertrain2seat.mdl"] = {
 		Vector(8.8, 10.5, 19.4), -- front left
@@ -16,7 +19,7 @@ ChairOffsets = {
 		Vector(-43, 43, 20.2), //Angle( 0, 140, 0 )
 		Vector(-43, -43, 20.2), //Angle( 0, -140, 0 )
 	},
-	["models/xqm/CoasterTrack/train_2.mdl"] = {
+	["models/xqm/coastertrack/train_2.mdl"] = {
 		Vector(30.7, -14, 20.8), 
 		Vector(-30.7, -14, 20.2), 
 	},
@@ -206,16 +209,6 @@ hook.Add("KeyRelease", "EnterSeat", function(ply, key)
 	usetable[pos] = true
 	trace.Entity.UseTable = usetable
 
-	if trace.Entity:GetClass() == "coaster_cart" then
-		if !trace.Entity.Occupants then
-			trace.Entity.Occupants = {}
-		end
-		table.insert( trace.Entity.Occupants, ply )
-
-		trace.Entity:UpdateMass()
-
-	end
-
 
 	ply.EntryPoint = ply:GetPos()
 	ply.EntryAngles = ply:EyeAngles()
@@ -273,15 +266,6 @@ end
 
 local function PlayerLeaveVehice( vehicle, ply )
 	if vehicle:GetClass() != "prop_vehicle_prisoner_pod" then return end
-
-	local parent = vehicle:GetParent()
-	if IsValid( parent ) && parent:GetClass() == "coaster_cart" && parent.Occupants && #parent.Occupants > 0 then
-		for k, v in pairs( parent.Occupants ) do
-			if v == ply then table.remove( parent.Occupants, k ) end
-		end
-
-		parent:UpdateMass()
-	end
 
 	if !IsValid(ply.SeatEnt) then
 		return true

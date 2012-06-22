@@ -170,6 +170,7 @@ function ENT:PhysicsSimulate(phys, deltatime)
 	//Manage moving between nodes/looping around
 	if self.Percent > 1 then
 		self.CurSegment = self.CurSegment + 1
+
 		if self.CurSegment > #self.Controller.Nodes - 2 then 
 		
 			//If the track isn't looped, it's OFF DA RAILZ
@@ -207,6 +208,11 @@ function ENT:PhysicsSimulate(phys, deltatime)
 		self.Percent = 1
 		
 	end
+
+	//Update current and next nodes with the most up to date segment
+	CurNode = self.Controller.Nodes[self.CurSegment]
+	NextNode = self.Controller.Nodes[ self.CurSegment + 1]
+
 	
 	phys:Wake()
 
@@ -216,7 +222,7 @@ function ENT:PhysicsSimulate(phys, deltatime)
 	//Change the roll depending on the track
 	local Roll = 0
 	if IsValid( CurNode ) && IsValid( NextNode ) then
-		Roll = -Lerp( self.Percent, CurNode:GetRoll(), NextNode:GetRoll())	
+		Roll = -Lerp( self.Percent, math.NormalizeAngle( CurNode:GetRoll() ), NextNode:GetRoll())	
 	end
 	
 	//Set the roll for the current track peice
@@ -237,7 +243,7 @@ function ENT:PhysicsSimulate(phys, deltatime)
 		local ang1 = self:AngleAt( self.CurSegment, self.Percent )
 		local ang2 = self:AngleAt( self.CurSegment, self.Percent + 0.1 )
 		local angDif = math.AngleDifference( ang1.y, ang2.y )
-		local FakeFriction = 1.0001
+		local FakeFriction = 1.0003
 
 		if self:GetCurrentNode():GetType() == COASTER_NODE_BREAKS || self:GetCurrentNode():GetType() == COASTER_NODE_HOME then
 			FakeFriction = 1.04
@@ -246,6 +252,8 @@ function ENT:PhysicsSimulate(phys, deltatime)
 		FixedAngle:RotateAroundAxis( FixedAngle:Up(), -ang.y )
 
 		self.RotationSpeed = ( self.RotationSpeed + ( angDif * self.Velocity * deltatime  ) ) / FakeFriction //Do-it-yourself friction
+		self.RotationSpeed = math.Clamp( self.RotationSpeed, -1000, 1000 )
+
 		//calculate how much we should rotate
 		self.Rotation = ( self.Rotation + (self.RotationSpeed * deltatime) ) 
 
@@ -418,6 +426,8 @@ function ENT:GetMultiplier(i, perc)
 end
 
 //Adjust cart mass based on it's current occupants
+//Disabled for now. Really isn't very realistic
+/*
 function ENT:UpdateMass()
 	if self.Occupants && #self.Occupants > 0 then
 		local mass = self.InitialMass
@@ -430,6 +440,7 @@ function ENT:UpdateMass()
 		self:GetPhysicsObject():SetMass( self.InitialMass )
 	end
 end
+*/
 
 //Get the current spline we are on from a percent along a specific segment
 function ENT:GetCurrentSpline(i, perc)
