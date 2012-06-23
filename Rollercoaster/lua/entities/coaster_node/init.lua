@@ -5,8 +5,6 @@ include( "shared.lua" )
 include( "mesh_physics.lua")
 
 
-ENT.Spacing = 30 //How many units away each wood track is
-
 ENT.TrackEnts		= {} //List of all the track entities
 ENT.Nodes 			= {} //List of nodes (assuming we are the controller)
 ENT.CoasterID 		= -1 //The rollercoaster ID this node is associated with

@@ -151,6 +151,23 @@ function ENT:OnRemove()
 end
 
 
+//There isn't a way to equip a swep while in a vehicle
+//And there isn't a way to hook into mouse pressing for none-HUD things
+hook.Add("PlayerBindPress", "Coaster_cart_events", function( ply, bind, pressed )
+	if !IsValid( ply ) || !ply:InVehicle() then return end
+
+	local pod = ply:GetVehicle()
+	if !IsValid( pod ) || !IsValid( pod:GetParent() ) || pod:GetParent():GetClass() != "coaster_cart" then return end
+
+	if string.find(bind, "+attack2") then
+		RunConsoleCommand("coaster_cart_click", "2")
+	elseif string.find(bind, "+attack") then
+		RunConsoleCommand("coaster_cart_click", "1")
+	end
+end )
+
+
+
 //Debris effect
 //TODO: It kinda sucks for this. Make something better
 local EFFECT = {};

@@ -43,7 +43,7 @@ function TAB:LeftClick( trace, tool )
 
 			if IsValid( controller ) then
 				print("Creating train for "..tostring(controller))
-				print( tostring( model ) )
+
 				local train = controller:SetTrain( ply, model, CartNum )
 				train.WheelFriction = Friction
 				train.AllowWeapons = allowWeapons==1

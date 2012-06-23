@@ -201,11 +201,11 @@ end
 
 
 function TOOL.BuildCPanel(panel)	
-	panel:AddControl( "Header", { Text = "#Tool_coaster_supertool_name", Description = "#Tool_coaster_supertool_desc" }  )
+	//panel:AddControl( "Header", { Text = "#Tool_coaster_supertool_name", Description = "#Tool_coaster_supertool_desc" }  )
 
 	local PropertySheet = vgui.Create( "DPropertySheet", panel )
-	PropertySheet:SetPos( 5, 30 )
-	PropertySheet:SetSize( 340, 600 )
+	PropertySheet:SetPos( 0, 0 )
+	PropertySheet:SetSize( 340, 600 ) //340, 600
 
 	local FixedTable = toSortedTable( coastertabmanager.List, "Position")
 

@@ -553,62 +553,44 @@ function ENT:DrawTrack()
 	if self.CatmullRom == nil then return end //Shit
 
 	if #self.CatmullRom.PointsList > 3 then
-		local CTime = CurTime()
-		
-		for i = 2, (#self.CatmullRom.PointsList - 2) do
-			if IsValid( self.Nodes[i] ) then
-				if self.Nodes[i]:GetType() == COASTER_NODE_CHAINS then
-					render.SetMaterial( mat_chain ) //mat_chain
-					self:DrawSegment( i, CTime )
 
-				elseif self.Nodes[i]:GetType() == COASTER_NODE_SPEEDUP then
-					self:DrawSpeedupModels(i)
-				elseif self.Nodes[i]:GetType() == COASTER_NODE_BREAKS then
-					self:DrawBreakModels( i )
-				end
-			end 
-		end
-		
-		/*
-		render.StartBeam(#self.CatmullRom.Spline)
-		render.AddBeam(self.CatmullRom.PointsList[2], 10, CTime, Color( 64, 255, 64, 255 ))
-		*
-		for i = 1, #self.CatmullRom.Spline do*/
-			/*
-			if IsValid(self.Nodes[self:GetSplineSegment( i )]) &&self.Nodes[self:GetSplineSegment( i )].HasChains then
-				render.SetMaterial( Chain )
-				render.DrawSprite( self.CatmullRom.Spline[i], 16, 16, color_white )
-				render.SetMaterial( MatLaser )
-			else
-				render.SetColorModulation( 1, 1, 1 )
-			end
-			*//*
-			render.AddBeam(self.CatmullRom.Spline[i], 10, CTime, Color(64,255,64,255) )
-		end	
-		render.AddBeam(self.CatmullRom.PointsList[#self.CatmullRom.PointsList], 10, CTime, Color(64, 255, 64, 255 ))
-		render.EndBeam()
-		render.SetColorModulation( 1, 1, 1 )
-		*/
-		
-		
-		//Draw the actual tracks
-
-
-
-		//self:DrawRail( 25 )
-		//self:DrawRail( -25 )
 
 		render.SetMaterial( mat_debug )
 		self:DrawRailMesh()
 
-		render.SetMaterial( MatLaser )
-		self:DrawInvalidNodes()		
 
 		//Draw the supports
 		self:DrawSupports()
 
 	end
 
+end
+
+//Draws track supports, track preview beams, track mesh
+function ENT:DrawTrackTranslucents()
+	if self.CatmullRom == nil then return end //Shit
+	if #self.CatmullRom.PointsList < 4 then return end
+
+	local CTime = CurTime()
+		
+	for i = 2, (#self.CatmullRom.PointsList - 2) do
+		if IsValid( self.Nodes[i] ) then
+			if self.Nodes[i]:GetType() == COASTER_NODE_CHAINS then
+				render.SetMaterial( mat_chain ) //mat_chain
+				self:DrawSegment( i, CTime )
+
+			elseif self.Nodes[i]:GetType() == COASTER_NODE_SPEEDUP then
+				self:DrawSpeedupModels(i)
+
+			elseif self.Nodes[i]:GetType() == COASTER_NODE_BREAKS then
+				self:DrawBreakModels( i )
+				
+			end
+		end 
+	end
+
+	render.SetMaterial( MatLaser )
+	self:DrawInvalidNodes()		
 end
 
 //Draw invalid nodes, otherwise known as track preview
@@ -628,8 +610,7 @@ end
 function ENT:DrawSegment(segment)
 	if not (segment > 1 && (#self.CatmullRom.PointsList > segment )) then return end
 	if self.CatmullRom.Spline == nil or #self.CatmullRom.Spline < 1 then return end
-	
-	local MULTIPLIER = 4
+
 	local node = (segment - 2) * self.CatmullRom.STEPS
 	local Dist = 0
 	//Draw the main Rail
@@ -700,16 +681,16 @@ function ENT:DrawSupports()
 			//Draw the first pole
 			self.SupportModelStart:SetRenderOrigin( trace.HitPos + Vector( 0, 0, self.BaseHeight ) ) //Add 64 units so it's right on top of the base
 
-			local height = math.Clamp( Distance, 1, self.PoleHeight + self.BaseHeight )
-			self.SupportModelStart:SetModelScale( Vector( 1, 1, height / self.PoleHeight ) )
+			local height = math.Clamp( Distance, 1, self.PoleHeight - self.BaseHeight )
+			self.SupportModelStart:SetModelScale( Vector( 1, 1, height / (self.PoleHeight  ) ) )
 			self.SupportModelStart:SetAngles( Angle( 0, v:GetAngles().y, 0 ) )
 			//self.SupportModelStart:SetupBones()
 			self.SupportModelStart:DrawModel()
 				
 			//Draw the second pole (if applicable)
-			if Distance > self.PoleHeight + self.BaseHeight then
-				self.SupportModel:SetRenderOrigin( trace.HitPos + Vector(0, 0, self.PoleHeight + self.BaseHeight ))
-				self.SupportModel:SetModelScale( Vector( 1, 1, ((Distance - self.PoleHeight) / self.PoleHeight)   ) )
+			if Distance > self.PoleHeight - self.BaseHeight then
+				self.SupportModel:SetRenderOrigin( trace.HitPos + Vector(0, 0, self.PoleHeight  ))
+				self.SupportModel:SetModelScale( Vector( 1, 1, ( (Distance - self.PoleHeight + self.BaseHeight) / self.PoleHeight)   ) )
 				self.SupportModel:SetAngles( Angle( 0, v:GetAngles().y, 0 ) )				
 				//self.SupportModel:SetupBones()	
 				self.SupportModel:DrawModel()
@@ -859,55 +840,61 @@ function ENT:DrawBreakModels( segment )
 	self.WheelModel:SetNoDraw( true )
 end
 
-//Draw a rail of a segment with a given offset
 function ENT:DrawSideRail( segment, offset )
 	if not (segment > 1 && (#self.CatmullRom.PointsList > segment )) then return end
-	if not self.CatmullRom || !self.CatmullRom.Spline then return end
+	if self.CatmullRom.Spline == nil or #self.CatmullRom.Spline < 1 then return end
 
 	local node = (segment - 2) * self.CatmullRom.STEPS
-	local NextSegment = self.Nodes[ segment + 1 ]
-	local ThisSegment = self.Nodes[ segment ]
-	self.RailU = self.RailU or 0
+	local Dist = CurTime() * 200
 	local AngVec = Vector(0,0,0)
 	local ang = Angle( 0, 0, 0 )
-	render.StartBeam( self.CatmullRom.STEPS + 1 )
+	local NextSegment = self.Nodes[ segment + 1 ]
+	local ThisSegment = self.Nodes[ segment ]
+	local Roll = 0
 
 	//Very first beam position
-	AngVec = self.CatmullRom.PointsList[segment] - self.CatmullRom.Spline[1]
+	AngVec = self.CatmullRom.Spline[node + 1] - self.CatmullRom.PointsList[segment] 
 	AngVec:Normalize()
-	
-	self.RailU = self.RailU + self.CatmullRom.PointsList[segment]:Distance( self.CatmullRom.Spline[1] )
-	render.AddBeam( self.CatmullRom.PointsList[segment] + AngVec:Angle():Right() * -offset, 10, self.RailU*0.05, Color( 255, 0, 0 ) )
-	
-	//Draw the beams in between
-	for i=1, self.CatmullRom.STEPS do
-		if i < self.CatmullRom.STEPS then
-			AngVec = self.CatmullRom.Spline[node + i] - self.CatmullRom.Spline[node + i + 1]
-			AngVec:Normalize()
-			ang = AngVec:Angle()
+	ang = AngVec:Angle()
 
-			self.RailU = self.RailU + self.CatmullRom.Spline[node + i]:Distance( self.CatmullRom.Spline[node + i + 1] )
+	ang:RotateAroundAxis( AngVec, math.NormalizeAngle( ThisSegment:GetRoll() ) )
 
-			if IsValid( ThisSegment ) && IsValid( NextSegment ) then
-				//Get the percent along this node
-				perc = (i % self.CatmullRom.STEPS) / self.CatmullRom.STEPS
-				//local Roll = Lerp( perc, ThisSegment:GetAngles().r,NextSegment:GetAngles().r )	
-				local Roll = -Lerp( perc, math.NormalizeAngle( ThisSegment:GetRoll() ),NextSegment:GetRoll())	
-				ang:RotateAroundAxis( AngVec, Roll ) //Segment:GetAngles().r
-			end
+	//Draw the main Rail
+	render.StartBeam( self.CatmullRom.STEPS + 1 )
+	render.AddBeam(self.CatmullRom.PointsList[segment] + ( ang:Right() * offset ), 10, Dist*0.05, color_white) 
+
+	for i = 1, (self.CatmullRom.STEPS) do
+		if i==1 then
+			Dist = Dist - self.CatmullRom.Spline[node + 1]:Distance( self.CatmullRom.PointsList[segment] ) 
+			AngVec = self.CatmullRom.Spline[node + 1] - self.CatmullRom.PointsList[segment] 
+		else
+			AngVec = self.CatmullRom.Spline[node + i] - self.CatmullRom.Spline[node + i - 1]
+
+			Dist = Dist - self.CatmullRom.Spline[node + i]:Distance( self.CatmullRom.Spline[node + i - 1] ) 
 		end
+		AngVec:Normalize()
+		ang = AngVec:Angle()
 
-		render.AddBeam(self.CatmullRom.Spline[node + i] + ang:Right() * offset, 10, self.RailU*0.05, Color( 255, 0, 0 ) )
+		Roll = Lerp( i / self.CatmullRom.STEPS, math.NormalizeAngle( ThisSegment:GetRoll() ),NextSegment:GetRoll())
+
+		ang:RotateAroundAxis( AngVec, Roll )
+
+		render.AddBeam( self.CatmullRom.Spline[node + i] + ( ang:Right() * offset ) ,10, Dist*0.05, color_white)
 	end
-	
-	//Draw the final beam pos
-	//AngVec = self.CatmullRom.PointsList[segment + 1] - self.CatmullRom.Spline[self.CatmullRom.STEPS]
-	//AngVec:Normalize()
-	//render.AddBeam( self.CatmullRom.PointsList[segment + 1] + AngVec:Angle():Right() * offset, 10, 1, color_white  )	
 
+	AngVec = self.CatmullRom.PointsList[segment + 1] - self.CatmullRom.Spline[ node + self.CatmullRom.STEPS ]
+	AngVec:Normalize()
+	ang = AngVec:Angle()
+
+	ang:RotateAroundAxis( AngVec,  NextSegment:GetRoll()  )
+
+	Dist = Dist - self.CatmullRom.PointsList[segment + 1]:Distance( self.CatmullRom.Spline[ node + self.CatmullRom.STEPS ] )
+	render.AddBeam(self.CatmullRom.PointsList[segment + 1] + (ang:Right() * offset ), 10, Dist*0.05, color_white)
 	render.EndBeam()
-	//local pos = self.CatmullRom.Spline[i] + AngVec:Angle():Right() * -nOffset
+
+
 end
+
 
 //Draw the pre-generated rail mesh
 //I can't easily set the color :( )
@@ -979,9 +966,19 @@ end
 
 //Draw the node
 function ENT:Draw()
-	if !LocalPlayer():InVehicle() then
-		self:DrawModel()
+
+	// Don't draw if we're taking pictures
+	local wep = LocalPlayer():GetActiveWeapon()
+	if wep:IsValid() && wep:GetClass() == "gmod_camera" then
+		return
 	end
+
+	//If we're in a vehicle ( cart ), don't draw
+	if LocalPlayer():InVehicle() then
+		return
+	end
+
+	self:DrawModel()
 end
 
 //Update the node's spline if our velocity (and thus position) changes

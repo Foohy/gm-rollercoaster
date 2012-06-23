@@ -137,11 +137,20 @@ if CLIENT then
 	end
 	hook.Add( "GetMotionBlurValues", "Coaster_motionblur", GetMotionBlurValues )
 
-	//Track rendering. Renders EVERYTHING-- mesh, previews, support beams, etc.
+	//Track rendering. Renders meshes
 	hook.Add( "PreDrawOpaqueRenderables", "CoasterDrawTrack", function()
 		for k, v in pairs( ents.FindByClass( "coaster_node" ) ) do
 			if IsValid( v ) && v:IsController() then
 				v:DrawTrack()
+			end
+		end
+	end )
+
+	//Track rendering. Renders previews/beams/transluecent
+	hook.Add( "PostDrawTranslucentRenderables", "CoasterDrawTrackTranslucents", function()
+		for k, v in pairs( ents.FindByClass( "coaster_node" ) ) do
+			if IsValid( v ) && v:IsController() then
+				v:DrawTrackTranslucents()
 			end
 		end
 	end )

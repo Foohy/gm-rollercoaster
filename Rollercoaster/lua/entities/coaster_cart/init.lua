@@ -2,12 +2,41 @@ AddCSLuaFile( "cl_init.lua" )
 AddCSLuaFile( "shared.lua" )
 include( "shared.lua" )
 
+//General Cart Stuff
 ENT.CoasterID 	= -1 //Unique ID of the coaster this cart is attached to
 ENT.NumCarts 	= 1 //Length of the train of carts
 ENT.Powered 	= false //If powered, never slow beyond a certain speed. Basically silent always-on chains
 ENT.MinSpeed 	= 0 //minimum speed to travel at. 0 means dont touch shit.
 ENT.Controller 	= nil //Controller
 ENT.IsOffDaRailz  = false 
+ENT.Occupants = {} //List of people sitting in this seat
+
+//Barfing/Screaming
+ENT.AccumulateChance = 1
+ENT.BarfThinkTime = 0
+ENT.Barfdebug = true //spew barf facts
+ENT.Screams = {
+		"vo/npc/male01/help01.wav",
+		"vo/npc/male01/no02.wav",
+		"vo/npc/male01/ohno.wav",
+		"vo/npc/male01/pain01.wav",
+		"vo/npc/male01/pain07.wav",
+		"vo/npc/male01/pain08.wav",
+		"vo/npc/male01/startle01.wav",
+		"vo/npc/male01/startle02.wav",
+		"vo/npc/male01/yeah02.wav",
+		"vo/npc/Barney/ba_yell.wav",
+		"vo/npc/female01/ohno.wav",
+		"vo/npc/female01/startle01.wav",
+		"vo/npc/female01/yeah02.wav"
+}
+ 
+ENT.BarfVoices = {
+		"vo/npc/male01/whoops01.wav",
+		"vo/npc/female01/uhoh.wav",
+		"vo/npc/female01/whoops01.wav",
+		"vo/npc/male01/yeah02.wav" //lol
+}
 
 //Physics stuff
 ENT.GRAVITY = 9.8
@@ -15,6 +44,7 @@ ENT.InitialMass = 100
 ENT.WheelFriction = 0.04 //Coeffecient for mechanical friction (NOT drag) (no idea what the actual mew is for a rollercoaster, ~wild guesses~)
 ENT.Restitution = 0.9
 ENT.Velocity = 4 //Starting velocity
+ENT.LastVelocity = 4 //Velocity of the previous frame
 ENT.Multiplier = 0.99999 //Multiplier to set the same speed per node segment
 ENT.IsOffDaRailz = false
 ENT.Rotation = 0
@@ -113,6 +143,9 @@ function ENT:PhysicsSimulate(phys, deltatime)
 	if !IsValid( CurNode ) || !IsValid( NextNode ) then self.CurSegment = #Rollercoasters[self.CoasterID].Nodes end
 	self:SetCurrentNode( CurNode )
 
+	//Set the previous velocity
+	self.LastVelocity = self.Velocity
+
 	//Forces that are always being applied to the cart
 	self.Velocity = self.Velocity - self:CalcFrictionalForce(self.CurSegment, self.Percent, deltatime)
 	self.Velocity = self.Velocity - self:CalcChangeInVelocity( self.CurSegment, self.Percent, deltatime )
@@ -123,7 +156,9 @@ function ENT:PhysicsSimulate(phys, deltatime)
 	self:BreakThink(deltatime)
 	self:MinSpeedThink()
 	self:HomeStationThink(deltatime)
-	
+	//self:AccumulateSickness( deltatime )
+
+
 	self.PhysShadowControl.pos = self.Controller.CatmullRom:Point(self.CurSegment, self.Percent)
 	
 	//Each node has a certain multiplier so the cart travel at a constant speed throughout the track
@@ -268,14 +303,37 @@ function ENT:PhysicsSimulate(phys, deltatime)
 		ang = FixedAngle
 	end
 
-	self.PhysShadowControl.angle = ang
+	self:BarfThink()
 
+	self.PhysShadowControl.angle = ang
 	self.PhysShadowControl.pos = self.PhysShadowControl.pos + ang:Up() * 10
 
 
 	self.PhysShadowControl.deltatime = deltatime	
 	//print( tostring( self:EntIndex() ) .. ": " .. tostring( self.Velocity ) )
 	return phys:ComputeShadowControl(self.PhysShadowControl)
+end
+
+function ENT:BarfThink( deltatime )
+	if CurTime() < self.BarfThinkTime then return end
+	self.BarfThinkTime = CurTime() + 0.10
+
+	if self.Occupants && #self.Occupants > 0 then
+		for k, v in pairs( self.Occupants ) do	
+			if math.Rand( 1, 25000 ) == 42 then
+				v:Puke()
+			end
+		end
+	end
+end
+
+function ENT:PlayerLeave( ply )
+	if math.Rand(1, 42 ) != 42 then return end 
+
+	timer.Simple( math.Rand( 2, 5 ), function() 
+		ply:Puke()
+	end	)
+
 end
 
 //Calculate the frictional force experienced on the cart's wheels
@@ -527,9 +585,30 @@ function ENT:OnRemove()
 
 end
 
-if SERVER then
-	concommand.Add("coaster_fuckyou", function( ply, cmd, args ) 
-		Coaster_do_bad_things = args[1]=="1"
-		print("Unknown command \"coaster_fuckyou\"")
-	end )
-end
+concommand.Add("coaster_fuckyou", function( ply, cmd, args ) 
+	Coaster_do_bad_things = args[1]=="1"
+	print("Unknown command \"coaster_fuckyou\"")
+end )
+
+concommand.Add("coaster_cart_click", function( ply, cmd, args )
+	if !IsValid( ply ) || !ply:InVehicle() then return end
+	local pod = ply:GetVehicle()
+	if !IsValid( pod ) || !IsValid( pod:GetParent() ) || pod:GetParent():GetClass() != "coaster_cart" then return end
+
+	//Mouse1 = scream
+	if tonumber(args[1]) == 1 then
+		if !ply.ScreamCooldown || ply.ScreamCooldown < CurTime() then 
+			ply.ScreamCooldown = CurTime() + 5
+			ply:Scream()
+		end
+
+	//Mouse2 = barf
+	else 
+		if !ply.BarfCooldown || ply.BarfCooldown < CurTime() then 
+			ply.BarfCooldown = CurTime() + 30 
+			ply:Puke()
+		end
+	end
+
+end )
+

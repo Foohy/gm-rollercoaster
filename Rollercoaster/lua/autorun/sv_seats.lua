@@ -179,6 +179,12 @@ hook.Add("KeyRelease", "EnterSeat", function(ply, key)
 	if !IsValid(trace.Entity) then return end
 	if trace.Entity:GetClass() != "coaster_cart" then return end //Don't mess with anyone else's shit
 
+	//Store a list of occupants on the cart
+	if !trace.Entity.Occupants then
+		trace.Entity.Occupants = {}
+	end
+	table.insert( trace.Entity.Occupants, ply )
+
 	local model = trace.Entity:GetModel()
 
 	local offsets = ChairOffsets[string.lower(model)]
@@ -266,6 +272,17 @@ end
 
 local function PlayerLeaveVehice( vehicle, ply )
 	if vehicle:GetClass() != "prop_vehicle_prisoner_pod" then return end
+
+	//Remove them from the list of occupants
+	local parent = vehicle:GetParent()
+	if IsValid( parent ) && parent:GetClass() == "coaster_cart" && parent.Occupants && #parent.Occupants > 0 then
+
+		for k, v in pairs( parent.Occupants ) do
+			if v == ply then table.remove( parent.Occupants, k ) end
+			parent:PlayerLeave( ply )
+		end
+	end
+
 
 	if !IsValid(ply.SeatEnt) then
 		return true

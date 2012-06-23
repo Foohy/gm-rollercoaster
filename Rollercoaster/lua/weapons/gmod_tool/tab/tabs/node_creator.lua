@@ -276,6 +276,7 @@ function TAB:BuildPanel( )
 	BankSlider:SetMax( 180 )
 	BankSlider:SetConVar("coaster_supertool_tab_node_creator_bank")
 	panel:AddItem( BankSlider )
+	BankSlider:SetValue( 0 )
 
 	//panel:AddControl("Slider",   {Label = "ID: ",    Description = "The ID of the specific rollercoaster (Change the ID if you want to make a seperate coaster)",       Type = "Int", Min = "1", Max = "8", Command = "coaster_track_creator_id"})
 	//panel:AddControl("Slider",   {Label = "Elevation: ",    Description = "The height of the track node",       Type = "Float", Min = "0.00", Max = "5000", Command = "coaster_track_creator_elevation"})
