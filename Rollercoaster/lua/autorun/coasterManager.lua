@@ -5,7 +5,7 @@ include("trackmanager.lua")
 
 Rollercoasters = {} //Holds all the rollercoasters
 CoasterManager = {} //Holds all the methods and variables for rollercoasters
-Controller	   = {}
+//Controller	   = {}
 
 
 //Some content (Remove these lines if you don't want clients to download)
@@ -40,7 +40,7 @@ if SERVER then
 	//Because rollercoaster can go faster than what source allows, change what source allows.
 	hook.Add("InitPostEntity", "CoasterSetPerfSettings", function()
 		CoasterManager.Settings = {}
-		CoasterManager.Settings.MaxVelocity = 600000 //Let's hope this doesn't break things
+		CoasterManager.Settings.MaxVelocity = 6000000 //Let's hope this doesn't break things
 		physenv.SetPerformanceSettings(CoasterManager.Settings)
 		
 
@@ -118,12 +118,16 @@ end
 
 if CLIENT then
 	CoasterBlur = 0.00003 //Blur multiplier
+
 	//Perfomance settings
 	CreateClientConVar("coaster_supports", 1, false, false )
 	CreateClientConVar("coaster_previews", 1, false, false )
 	CreateClientConVar("coaster_motionblur", 1, false, false )
 	CreateClientConVar("coaster_maxwheels", 15, false, false)
 	CreateClientConVar("coaster_resolution", 15, false, false)
+
+	//Misc Settings
+	CreateClientConVar("coaster_cart_spin_override", 0, false, true) //Override cart spawning to make it spin like the carousel
 
 	//Motion blur
 	local function GetMotionBlurValues( x, y, fwd, spin )

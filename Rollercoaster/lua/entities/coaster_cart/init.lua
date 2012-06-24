@@ -10,33 +10,10 @@ ENT.MinSpeed 	= 0 //minimum speed to travel at. 0 means dont touch shit.
 ENT.Controller 	= nil //Controller
 ENT.IsOffDaRailz  = false 
 ENT.Occupants = {} //List of people sitting in this seat
+ENT.MaxOBBSize = 400 //Maximum size a model can be for the cart
 
 //Barfing/Screaming
-ENT.AccumulateChance = 1
 ENT.BarfThinkTime = 0
-ENT.Barfdebug = true //spew barf facts
-ENT.Screams = {
-		"vo/npc/male01/help01.wav",
-		"vo/npc/male01/no02.wav",
-		"vo/npc/male01/ohno.wav",
-		"vo/npc/male01/pain01.wav",
-		"vo/npc/male01/pain07.wav",
-		"vo/npc/male01/pain08.wav",
-		"vo/npc/male01/startle01.wav",
-		"vo/npc/male01/startle02.wav",
-		"vo/npc/male01/yeah02.wav",
-		"vo/npc/Barney/ba_yell.wav",
-		"vo/npc/female01/ohno.wav",
-		"vo/npc/female01/startle01.wav",
-		"vo/npc/female01/yeah02.wav"
-}
- 
-ENT.BarfVoices = {
-		"vo/npc/male01/whoops01.wav",
-		"vo/npc/female01/uhoh.wav",
-		"vo/npc/female01/whoops01.wav",
-		"vo/npc/male01/yeah02.wav" //lol
-}
 
 //Physics stuff
 ENT.GRAVITY = 9.8
@@ -81,6 +58,15 @@ ENT.Timer = math.huge
 
 function ENT:Initialize()
 	self:SetModel( self.Model )	
+
+	//Check if it's some ungodly large prop
+	if self:Size() >= self.MaxOBBSize then
+		self:SetModel("models/XQM/coastertrain2seat.mdl")
+		self.Model = "models/XQM/coastertrain2seat.mdl"
+
+		print("Someone tried to spawn a massive model!")
+	end
+
 	self:PhysicsInit(SOLID_VPHYSICS)
 	self:SetMoveType(MOVETYPE_VPHYSICS)
 	self:SetSolid(SOLID_VPHYSICS)
@@ -111,7 +97,7 @@ function ENT:Initialize()
 	self.SparkEffect = EffectData()
 	self.SparkEffect:SetEntity( self )
 
-	if self:GetModel() == "models/props_c17/playground_carousel01.mdl" then
+	if self:GetModel() == "models/props_c17/playground_carousel01.mdl" || Coaster_do_bad_things then
 		self.Carousel = true
 	end
 
@@ -119,6 +105,7 @@ function ENT:Initialize()
 		self.Timer = CurTime() + 24.00
 		self.Enabled = true
 	end
+
 
 end
 
@@ -301,6 +288,8 @@ function ENT:PhysicsSimulate(phys, deltatime)
 			FixedAngle:RotateAroundAxis( FixedAngle:Up(), self.Rotation )
 		end
 		ang = FixedAngle
+	else
+		self.RotationSpeed = 0
 	end
 
 	self:BarfThink()
@@ -320,7 +309,9 @@ function ENT:BarfThink( deltatime )
 
 	if self.Occupants && #self.Occupants > 0 then
 		for k, v in pairs( self.Occupants ) do	
-			if math.Rand( 1, 25000 ) == 42 then
+			local rand = math.Clamp( math.Round( 25000 - (math.abs(self.RotationSpeed*67)) ),42, 25000 )
+
+			if math.random( 1, rand ) == 42 then
 				v:Puke()
 			end
 		end
@@ -328,7 +319,7 @@ function ENT:BarfThink( deltatime )
 end
 
 function ENT:PlayerLeave( ply )
-	if math.Rand(1, 42 ) != 42 then return end 
+	if math.random(1, 42 ) != 42 then return end 
 
 	timer.Simple( math.Rand( 2, 5 ), function() 
 		ply:Puke()
@@ -508,6 +499,32 @@ function ENT:GetCurrentSpline(i, perc)
 	//print(math.floor(spline))
 	return math.Clamp( math.floor(spline), 1, #self.Controller.CatmullRom.Spline)
 end
+//find the largest dimension of the entity, giving preference to x, then y, over z.
+function ENT:Size()
+	local min = self:OBBMins()
+	local max = self:OBBMaxs()
+	local xabs = math.abs(max.x-min.x)
+	local yabs = math.abs(max.y-min.y)
+	local zabs = math.abs(max.z-min.z)
+	local size = 0
+
+	if xabs >= yabs then
+		if xabs >= zabs then
+			size = xabs
+		else
+			size = zabs
+		end
+	else
+		if yabs >= zabs then
+			size = yabs
+		else
+			size = zabs
+		end
+	end
+
+	return size
+end
+
 
 //This sounds like something we might want
 function ENT:UpdateTransmitState()
@@ -586,7 +603,14 @@ function ENT:OnRemove()
 end
 
 concommand.Add("coaster_fuckyou", function( ply, cmd, args ) 
+	if !IsValid( ply ) || !ply:IsSuperAdmin() then return end
+
 	Coaster_do_bad_things = args[1]=="1"
+
+	for k, v in pairs( ents.FindByClass("coaster_cart") ) do
+		v.Carousel = true
+	end
+
 	print("Unknown command \"coaster_fuckyou\"")
 end )
 

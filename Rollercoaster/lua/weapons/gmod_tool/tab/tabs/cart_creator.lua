@@ -32,6 +32,7 @@ function TAB:LeftClick( trace, tool )
 	local minSpeed 		= GetClientNumber( self, "minSpeed", tool)
 	local allowWeapons	= GetClientNumber( self, "allow_weapons", tool)
 	local model 		= GetClientInfo( self, "model", tool)
+	local spin_override = tool:GetOwner():GetInfoNum("coaster_cart_spin_override")
 
 	//if ( !util.IsValidModel( model ) ) then return false end
 	
@@ -48,6 +49,11 @@ function TAB:LeftClick( trace, tool )
 				train.WheelFriction = Friction
 				train.AllowWeapons = allowWeapons==1
 				train.MinSpeed = minSpeed
+
+				//Only set it if it's true.
+				if spin_override==1 then
+					train.Carousel = true
+				end
 			end
 		end
 	

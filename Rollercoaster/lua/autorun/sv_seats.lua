@@ -179,12 +179,6 @@ hook.Add("KeyRelease", "EnterSeat", function(ply, key)
 	if !IsValid(trace.Entity) then return end
 	if trace.Entity:GetClass() != "coaster_cart" then return end //Don't mess with anyone else's shit
 
-	//Store a list of occupants on the cart
-	if !trace.Entity.Occupants then
-		trace.Entity.Occupants = {}
-	end
-	table.insert( trace.Entity.Occupants, ply )
-
 	local model = trace.Entity:GetModel()
 
 	local offsets = ChairOffsets[string.lower(model)]
@@ -211,6 +205,12 @@ hook.Add("KeyRelease", "EnterSeat", function(ply, key)
 	else
 		return
 	end
+
+	//Store a list of occupants on the cart
+	if !trace.Entity.Occupants then
+		trace.Entity.Occupants = {}
+	end
+	table.insert( trace.Entity.Occupants, ply )
 
 	usetable[pos] = true
 	trace.Entity.UseTable = usetable
