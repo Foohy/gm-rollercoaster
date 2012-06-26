@@ -45,14 +45,26 @@ function TAB:LeftClick( trace, tool )
 			if IsValid( controller ) then
 				print("Creating train for "..tostring(controller))
 
-				local train = controller:SetTrain( ply, model, CartNum )
-				train.WheelFriction = Friction
-				train.AllowWeapons = allowWeapons==1
-				train.MinSpeed = minSpeed
+				local trains = controller:SetTrain( ply, model, CartNum )
+				if trains then 
+					undo.Create("Coaster Cart")
+					undo.SetPlayer( ply )
+					undo.SetCustomUndoText("Undone Train")
 
-				//Only set it if it's true.
-				if spin_override==1 then
-					train.Carousel = true
+
+					for k, train in pairs( trains ) do 
+						undo.AddEntity( train )
+
+						train.WheelFriction = Friction
+						train.AllowWeapons = allowWeapons==1
+						train.MinSpeed = minSpeed
+
+						//Only set it if it's true.
+						if spin_override==1 then
+							train.Carousel = true
+						end
+					end
+					undo.Finish()
 				end
 			end
 		end

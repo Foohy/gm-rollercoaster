@@ -15,16 +15,6 @@ ENT.Timer = math.huge
 
 ENT.RenderGroup 	= RENDERGROUP_TRANSLUCENT
 
-//Update with the controller node. Currently has no use
-usermessage.Hook("coaster_train_fullupdate", function(um)
-	local self = um:ReadEntity()
-	local controller = um:ReadEntity()
-	
-	self.Controller = controller
-
-end )
-
-
 //Create the sounds
 function ENT:Initialize()
 	self.CoastSound = CreateSound( self, "coaster_ride.wav" )
@@ -73,7 +63,7 @@ function ENT:Think()
 
 
 	local CurrentNode = self:GetCurrentNode()
-	if IsValid( CurrentNode ) && CurrentNode:EntIndex() != 1 && CurrentNode:GetType() == COASTER_NODE_CHAINS then
+	if IsValid( CurrentNode ) && CurrentNode:EntIndex() != 1 && CurrentNode.GetType && CurrentNode:GetType() == COASTER_NODE_CHAINS then
 		if self.ChainSound then
 			if !self.ChainSound:IsPlaying() then
 				self.ChainSound:PlayEx(1, 100)
@@ -179,7 +169,7 @@ function EFFECT:Init( data )
 	local normal = data:GetNormal() * -1
 	local pos = data:GetOrigin()
 
-	local numdebris = math.random( 5, 14 )
+	local numdebris = math.random( 5, 6 )
 	local DebrisModels = {
 		Model( "models/gibs/manhack_gib01.mdl" ), Model( "models/gibs/manhack_gib02.mdl" ),
 		Model( "models/gibs/manhack_gib04.mdl" ), Model( "models/gibs/metal_gib1.mdl" ),

@@ -7,7 +7,7 @@ TRACK.Name = "Metal Track"
 TRACK.Description = "A nice metal coaster"
 TRACK.Material = Material("phoenix_storms/dome")
 
-local StrutOffset = 2 //Space between coaster struts
+local StrutOffset = 1 //Space between coaster struts
 local Offset = 20  //Downwards offset of large center beam
 local RailOffset = 25 //Distance track beams away from eachother
 local Radius = 10 	//radius of the circular track beams

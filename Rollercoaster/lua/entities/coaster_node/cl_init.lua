@@ -339,7 +339,7 @@ end
 function ENT:GetMultiplier(i, perc)
 	local Dist = 1
 	local Vec1 = self.CatmullRom:Point( i, perc )
-	local Vec2 = self.CatmullRom:Point( i, perc + 0.03 )
+	local Vec2 = self.CatmullRom:Point( i, perc + 0.01 )
 
 	Dist = Vec1:Distance( Vec2 )
 	
@@ -844,12 +844,17 @@ function ENT:DrawSideRail( segment, offset )
 	if not (segment > 1 && (#self.CatmullRom.PointsList > segment )) then return end
 	if self.CatmullRom.Spline == nil or #self.CatmullRom.Spline < 1 then return end
 
+	local NextSegment = self.Nodes[ segment + 1 ]
+	local ThisSegment = self.Nodes[ segment ]
+
+	if !IsValid( NextSegment ) || !IsValid( ThisSegment ) then return end
+	if !NextSegment.GetRoll || !ThisSegment.GetRoll then return end
+
 	local node = (segment - 2) * self.CatmullRom.STEPS
 	local Dist = CurTime() * 200
 	local AngVec = Vector(0,0,0)
 	local ang = Angle( 0, 0, 0 )
-	local NextSegment = self.Nodes[ segment + 1 ]
-	local ThisSegment = self.Nodes[ segment ]
+
 	local Roll = 0
 
 	//Very first beam position
@@ -874,7 +879,6 @@ function ENT:DrawSideRail( segment, offset )
 		end
 		AngVec:Normalize()
 		ang = AngVec:Angle()
-
 		Roll = Lerp( i / self.CatmullRom.STEPS, math.NormalizeAngle( ThisSegment:GetRoll() ),NextSegment:GetRoll())
 
 		ang:RotateAroundAxis( AngVec, Roll )

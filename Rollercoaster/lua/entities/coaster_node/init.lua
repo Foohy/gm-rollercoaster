@@ -9,8 +9,22 @@ ENT.TrackEnts		= {} //List of all the track entities
 ENT.Nodes 			= {} //List of nodes (assuming we are the controller)
 ENT.CoasterID 		= -1 //The rollercoaster ID this node is associated with
 ENT.WasBeingHeld	= false //Was the entity being held just now (by the physgun)
-ENT.ChainSpeed		= 5
 ENT.PhysMeshes		= {}
+
+//Chain
+ENT.ChainSpeed		= 5
+
+//Speedup node options/variables
+ENT.SpeedupForce = 1400 //Force of which to accelerate the car
+ENT.MaxSpeed = 3600 //The maximum speed to which accelerate the car
+
+//Home station options/variables
+ENT.HomeStage = 0
+ENT.StopTime = 5 //Time to stop and wait for people to leave/board
+
+//Break node options/variables
+ENT.BreakForce = 1400 //Force of which to deccelerate the car
+ENT.BreakSpeed = 3 //The minimum speed of the car when in break zone
 
 function ENT:Initialize()
 	self.Nodes = {} //List of nodes (assuming we are the controller)
@@ -156,6 +170,7 @@ function ENT:UpdateServerSpline()
 	if #controller.CatmullRom.PointsList > 3 then
 		controller.CatmullRom:CalcEntireSpline()
 		//controller:BuildPhysicsMesh()
+		self:UpdateTrackLength()
 	end
 end
 
@@ -297,7 +312,61 @@ function ENT:Invalidate(minimal)
 	umsg.End()
 end
 
-//Return the main controller in charge of me, the node
+function ENT:UpdateTrackLength()
+	//update length()
+	//update length for other appropriate nodes too
+	//print("invalidating")
+	local controller = Rollercoasters[self.CoasterID]
+	if !IsValid( controller ) or !IsValid( self ) then /*print("returning1")*/ return end
+	if #controller.Nodes < 1 then /*print("returning2")*/ return end
+	
+	controller.TotalTrackLength = 0
+	for k, v in pairs(controller.Nodes) do
+		if k > 1 && k < #controller.Nodes-1 then
+			v:GetSegmentLength()
+			if v.SegLength != nil then
+				controller.TotalTrackLength = controller.TotalTrackLength+v.SegLength
+			else /*print("NIL")*/ end
+		end
+	end
+	//print("track length: "..controller.TotalTrackLength)
+end
+
+function ENT:GetSegmentLength()
+	
+	local segment = nil
+	for k, v in pairs(Rollercoasters[self.CoasterID].Nodes) do
+		if v == self then segment = k end
+	end
+
+	//if not self:IsController() then print("fail1") return end
+	//print("segment: "..segment)
+	//print("otherthing: "..#Rollercoasters[self.CoasterID].CatmullRom.PointsList)
+	if not (segment > 1 && (#Rollercoasters[self.CoasterID].CatmullRom.PointsList > segment )) then /*print("fail2")*/ return end
+	if Rollercoasters[self.CoasterID].CatmullRom.Spline == nil or #Rollercoasters[self.CoasterID].CatmullRom.Spline < 1 then /*print("fail3")*/ return end
+
+
+	local node = (segment - 2) * Rollercoasters[self.CoasterID].CatmullRom.STEPS
+	local Dist = 0
+	
+	if Rollercoasters[self.CoasterID].CatmullRom.Spline[node + 1] == nil then /*print("fail4")*/ return end
+	if Rollercoasters[self.CoasterID].CatmullRom.PointsList[segment] == nil then /*print("fail5")*/ return end
+
+	for i = 1, (Rollercoasters[self.CoasterID].CatmullRom.STEPS) do
+		if i==1 then
+			Dist = Dist + Rollercoasters[self.CoasterID].CatmullRom.Spline[node + 1]:Distance( Rollercoasters[self.CoasterID].CatmullRom.PointsList[segment] ) 
+		else
+			Dist = Dist + Rollercoasters[self.CoasterID].CatmullRom.Spline[node + i]:Distance( Rollercoasters[self.CoasterID].CatmullRom.Spline[node + i - 1] ) 
+		end
+	end
+
+	Dist = Dist + Rollercoasters[self.CoasterID].CatmullRom.PointsList[segment + 1]:Distance( Rollercoasters[self.CoasterID].CatmullRom.Spline[ node + Rollercoasters[self.CoasterID].CatmullRom.STEPS ] )
+
+	//print( "foohy segment"..segment.." dist"..Dist )
+	self.SegLength = Dist
+end
+
+//Return the controller in charge of this node, which is also a node
 function ENT:GetController()
 	return Rollercoasters[self.CoasterID]
 end
@@ -309,27 +378,105 @@ function ENT:SetTrain(ply, model, cartnum)
 		umsg.End()
 		return
 	end
-	local train			= ents.Create( "coaster_cart")
-	train.Model = model 
-	//train:SetModel(model)
-	train.NumCarts = cartnum
-	train.Powered 	= powered
-	train.CoasterID = self.CoasterID
-	train.Controller = self
-	
-	train:SetPos(self:GetPos())
-	train:Spawn()
-	train:Activate()
-	train:SetAngles( Angle( 0, 180, 0 ) )
 
-	undo.Create("Coaster Train")
-		undo.AddEntity( train )
-		undo.SetPlayer( ply )
-		undo.SetCustomUndoText("Undone Train")
-	undo.Finish()
+	if RCCartGroups == nil then RCCartGroups = 1 end
+
+	if !_G["CartTable_" .. RCCartGroups] then
+		_G["CartTable_" .. RCCartGroups] = {}
+	end
+	local cartgroup = _G["CartTable_" .. RCCartGroups]
+	RCCartGroups = RCCartGroups + 1
+
+	local Segment = 2
+	local Multiplier = 1
+	local Position = Vector( 0, 0, 0 )
+	local Percent = 0
+	local createdCarts = 1
+	local Offset = 1
+
+	local Train = {}
+	while Percent < 1 do
+		if createdCarts > cartnum then 
+			RollercoasterUpdateCartTable(cartgroup)
+			return Train
+		end
+
+		Position = self.CatmullRom:Point(Segment, Percent)
+		Multiplier = self:GetMultiplier(Segment, Percent)
+
+		//Create a dummy cart for bletotum's code for fixing up cart spacing
+		if createdCarts == 1 then
+			local dummy			= ents.Create( "coaster_cart")
+			dummy.Model 		= model 
+			dummy.NumCarts 		= cartnum
+			dummy.CoasterID 	= self.CoasterID
+			dummy.Controller 	= self
+			dummy.IsDummy 		= true
+			table.insert( Train, dummy )
 
 
-	return train
+			table.insert( cartgroup, dummy )
+			dummy.CartTable = cartgroup
+			
+			dummy:Spawn()
+			dummy:Activate()
+			dummy.Percent = Percent
+			dummy.CurSegment = Segment
+			
+
+			//Get the offset relative to the size of the cart
+			Offset = dummy:Size("x") / 32
+
+			//Move ourselves forward along the track
+			Percent = Percent + ( Multiplier * Offset )
+
+			Position = self.CatmullRom:Point(Segment, Percent)
+			Multiplier = self:GetMultiplier(Segment, Percent)
+
+		end
+
+		//Create the cart
+		local cart			= ents.Create( "coaster_cart")
+		cart.Model 			= model 
+		cart.NumCarts 		= cartnum
+		cart.CoasterID 		= self.CoasterID
+		cart.Controller 	= self
+		cart.IsDummy		= false
+		table.insert( Train, cart )
+
+
+		table.insert( cartgroup, cart )
+		cart.CartTable = cartgroup
+		
+		cart:Spawn()
+		cart:Activate()
+		
+		//Set their percent and segment
+		cart:SetPos( Position )
+		cart.Percent = Percent
+		cart.CurSegment = Segment
+
+
+		//Get the offset relative to the size of the cart
+		Offset = cart:Size("x") / 32
+
+		//Move ourselves forward along the track
+		Percent = Percent + ( Multiplier * Offset )
+
+		createdCarts = createdCarts + 1
+	end	
+	RollercoasterUpdateCartTable(cartgroup)
+	return Train
+end
+
+//Get the multiplier for the current spline (to make things smooth )
+function ENT:GetMultiplier(i, perc)
+	local Dist = 1
+	local Vec1 = self.CatmullRom:Point( i, perc  )
+	local Vec2 = self.CatmullRom:Point( i, perc + 0.03 )
+
+	Dist = Vec1:Distance( Vec2 )
+	return 1 / Dist 
 end
 
 function ENT:ClearTrains()

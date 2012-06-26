@@ -44,9 +44,15 @@ function CreateConVars( tab )
 	if !tab.ClientConVar then return end
 
 	for cvar, default in pairs( tab.ClientConVar ) do
-               
-		CreateClientConVar( "coaster_supertool_tab_" .. tab.UniqueName .. "_" .. cvar, default, true, true )
+       	if CLIENT then
+			CreateClientConVar( "coaster_supertool_tab_" .. tab.UniqueName .. "_" .. cvar, default, true, true )
+		end
 
+	end
+
+	//Not implemented yet, but might as well have it
+	if SERVER then
+		CreateConVar( "tab_allow_" .. tab.UniqueName, 1, FCVAR_NOTIFY )
 	end
 
 end

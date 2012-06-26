@@ -10,13 +10,13 @@ ENT.MinSpeed 	= 0 //minimum speed to travel at. 0 means dont touch shit.
 ENT.Controller 	= nil //Controller
 ENT.IsOffDaRailz  = false 
 ENT.Occupants = {} //List of people sitting in this seat
-ENT.MaxOBBSize = 400 //Maximum size a model can be for the cart
+ENT.MaxOBBSize = 400 //Maximum size a model can be for the cart, in any dimension
 
 //Barfing/Screaming
 ENT.BarfThinkTime = 0
 
 //Physics stuff
-ENT.GRAVITY = 9.8
+ENT.GRAVITY = 9.81
 ENT.InitialMass = 100
 ENT.WheelFriction = 0.04 //Coeffecient for mechanical friction (NOT drag) (no idea what the actual mew is for a rollercoaster, ~wild guesses~)
 ENT.Restitution = 0.9
@@ -57,20 +57,20 @@ ENT.PhysShadowControl.deltatime        = deltatime
 ENT.Timer = math.huge
 
 function ENT:Initialize()
-	self:SetModel( self.Model )	
-
 	//Check if it's some ungodly large prop
 	if self:Size() >= self.MaxOBBSize then
 		self:SetModel("models/XQM/coastertrain2seat.mdl")
 		self.Model = "models/XQM/coastertrain2seat.mdl"
 
 		print("Someone tried to spawn a massive model!")
+	else
+		self:SetModel( self.Model )	
 	end
 
 	self:PhysicsInit(SOLID_VPHYSICS)
 	self:SetMoveType(MOVETYPE_VPHYSICS)
 	self:SetSolid(SOLID_VPHYSICS)
-	self:SetCollisionGroup(COLLISION_GROUP_PROJECTILE)
+	self:SetCollisionGroup(COLLISION_GROUP_NONE)
 	
 	//Spawn at the beginning second node, where the curve starts
 	self.CurSegment = 2
@@ -78,15 +78,6 @@ function ENT:Initialize()
 	
 	//Start simulating our own physics
 	self:StartMotionController()
-	
-	//Tell the client of our owner
-	//Currently has no use
-	timer.Simple( 0, function()
-		umsg.Start("coaster_train_fullupdate")
-			umsg.Entity( self )
-			umsg.Entity( self.Controller )
-		umsg.End()
-	end )
 	
 	//more random guesses
 	if IsValid( self:GetPhysicsObject() ) then
@@ -106,23 +97,171 @@ function ENT:Initialize()
 		self.Enabled = true
 	end
 
-
+	if self.IsDummy then
+		self:SetNoDraw( true )
+		self:SetCollisionGroup(COLLISION_GROUP_WORLD)
+	end
+	
+	self.Occupants = {}
 end
 
 //Pop
-function ENT:OffDaRailz()
+function ENT:OffDaRailz(safemode)
+	if self.IsOffDaRailz then return end
 	self.IsOffDaRailz = true
-
+	
 	self:SetCurrentNode( Entity( 1 ) ) //Basically set the entity to something improper to show we have no current node
 	
-	self:EmitSound("coaster_offdarailz.wav", 100, 100 )
+	if !self.IsDummy then self:EmitSound("coaster_offdarailz.wav", 100, 100 ) end
 	self:SetCollisionGroup(COLLISION_GROUP_NONE)
 	self:GetPhysicsObject():SetMass( 500 ) //If this is wrong I don't wanna be right
+	if self.CartTable != nil then
+		if self.IsDummy then
+			if self.CartTable != nil then
+				for z, x in pairs(self.CartTable) do
+					x:OffDaRailz(true)
+				end
+			end
+			if self.CartTable != nil then //must be separate from the above loop stuff
+				for z, x in pairs(self.CartTable) do
+					table.remove(self.CartTable,z)
+					RollercoasterUpdateCartTable(self.CartTable)
+				end
+			end
+			self:Remove()
+		end
+		if self.CartTable != nil then
+			for k, v in pairs(self.CartTable) do
+				if v == self then
+					if safemode != true then
+						table.remove(self.CartTable,k)
+						RollercoasterUpdateCartTable(self.CartTable)
+					end
+				end
+			end
+			if #self.CartTable == 1 then 
+				self.CartTable[1]:Remove() 
+			end
+			self.CartTable = nil
+		end
+	end
+end
+
+
+local function UCT(ctable,x)
+	//this supplements the working of RollercoasterUpdateCartTable()
+	//print("checking for lead")
+	for k, v in pairs(ctable) do
+		//print("check b")
+		if x != v then
+			if v.Velocity >= 0 then
+				if v.CurSegment < x.CurSegment then
+					//x is not the lead
+					//print("returned false 1a")
+					return false
+				elseif v.CurSegment == x.CurSegment then
+					if v.Percent < x.Percent then
+						//print("returned false 1b")
+						return false
+					elseif v.Percent == x.Percent then
+						//print("returned nil 1")
+						return nil
+					end
+				end
+			else
+				if v.CurSegment > x.CurSegment then
+					//print("returned false 2a")
+					return false
+				elseif v.CurSegment == x.CurSegment then
+					if v.Percent > x.Percent then
+						//print("returned false 2b")
+						return false
+					elseif v.Percent == x.Percent then
+						//print("returned nil 2")
+						return nil
+					end
+				end
+			end
+		end
+	end
+
+	return true
+end
+
+function RollercoasterUpdateCartTable(ctable)
+	//determine the leader of this cart table in here
+	//call this function whenever anything happens that might change the cart setup on the track
+	//this updates cart.IsTableLead for every cart in the table, for use in ENT:PhysicsSimulate()
+	if ctable == nil then return nil end //alarm for debugging
+	for k, v in pairs(ctable) do
+		//print("check a")
+		v.IsTableLead = UCT(ctable,v)
+		//if v.IsTableLead == nil then return nil end //alarm for debugging
+	end
+end
+
+local function CalcAverageCartFriction(ctable,dt)
+	if ctable == nil then return nil end if dt == nil then return nil end
+	local total = 0
+	for k, v in pairs(ctable) do
+		if k > 1 then
+			total = total + v:CalcFrictionalForce(v.CurSegment,v.Percent,dt)
+		end
+	end
+	return (total/(table.Count(ctable)-1))
+end
+
+local function CalcAverageCartSlopeVelocity(ctable,dt)
+	if ctable == nil then return nil end if dt == nil then return nil end
+	local total = 0
+	for k, v in pairs(ctable) do
+		if k > 1 then
+			total = total + v:CalcChangeInVelocity(v.CurSegment,v.Percent,dt)
+		end
+	end
+	return (total/(table.Count(ctable)-1))
+end
+
+local function NoCartHoldOrFreeze(ctable)
+	local notheld = true
+	for k, v in pairs(ctable) do
+		if v:IsPlayerHolding() then
+			notheld = false
+			return notheld
+		end
+		if !v:GetPhysicsObject():IsMotionEnabled() then
+			notheld = false
+			return notheld
+		end
+	end
+	return notheld
+end
+
+function ENT:DATPATUpdate()
+	//Percent Across Track Update (also gets total track distance progress, DAT)
+	//local nwt = #Rollercoasters[self.CoasterID].Nodes-2 //total nodes with track, excluding #1. 
+	//NOT the number of total nodes with track, but something representing the total nodes to
+	//call on by segment number that have track.
+	
+	local disttrav = 0
+	//print("0="..self.CurSegment)
+	//print("1="..Rollercoasters[self.CoasterID])
+	//print("2="..Rollercoasters[self.CoasterID].Nodes[self.CurSegment])
+	local curseglength = Rollercoasters[self.CoasterID].Nodes[self.CurSegment].SegLength
+	if !curseglength then return end
+
+	for i = 2, self.CurSegment-1 do
+		disttrav = disttrav + curseglength
+	end
+	local cursegdisttrav = curseglength*self.Percent
+	disttrav = disttrav + cursegdisttrav
+	self.DAT = disttrav //Distance Across Track
+	self.PAT = self.DAT/Rollercoasters[self.CoasterID].TotalTrackLength
 end
 
 //Calculate our movement along the curve
 function ENT:PhysicsSimulate(phys, deltatime)
-	if self.IsOffDaRailz then return SIM_NOTHING end
+	if self.IsOffDaRailz or self.CartTable == nil then return SIM_NOTHING end
 
 	local CurPos  = self:GetPos()
 	local CurNode = self.Controller.Nodes[self.CurSegment]
@@ -134,16 +273,30 @@ function ENT:PhysicsSimulate(phys, deltatime)
 	self.LastVelocity = self.Velocity
 
 	//Forces that are always being applied to the cart
-	self.Velocity = self.Velocity - self:CalcFrictionalForce(self.CurSegment, self.Percent, deltatime)
-	self.Velocity = self.Velocity - self:CalcChangeInVelocity( self.CurSegment, self.Percent, deltatime )
+	if self.CartTable[1] == self then
+		if NoCartHoldOrFreeze(self.CartTable) then
+			local friction = CalcAverageCartFriction(self.CartTable,deltatime)
+			local slopelev = CalcAverageCartSlopeVelocity(self.CartTable,deltatime)
+			for k, v in pairs(self.CartTable) do
+				v.Velocity = v.Velocity - friction
+				v.Velocity = v.Velocity - slopelev
+			end
 
-	//Node specific forces
-	self:ChainThink()
-	self:SpeedupThink(deltatime)
-	self:BreakThink(deltatime)
+			//Node specific forces
+			self:ChainThink()
+			self:SpeedupThink(deltatime)
+			self:BreakThink(deltatime)
+		else
+			for k, v in pairs(self.CartTable) do
+				v.Velocity = 0
+			end
+		end
+	end
+	
+
+
 	self:MinSpeedThink()
 	self:HomeStationThink(deltatime)
-	//self:AccumulateSickness( deltatime )
 
 
 	self.PhysShadowControl.pos = self.Controller.CatmullRom:Point(self.CurSegment, self.Percent)
@@ -151,9 +304,12 @@ function ENT:PhysicsSimulate(phys, deltatime)
 	//Each node has a certain multiplier so the cart travel at a constant speed throughout the track
 	self.Multiplier = self:GetMultiplier(self.CurSegment, self.Percent)
 
+	//average this into the cart trains as well
 	if CurTime() >= self.Timer && self.Enabled then
-		self.Velocity = self.Velocity + 2
-
+		for k, v in pairs(self.CartTable) do
+			v.Velocity = v.Velocity + (2/table.Count(self.CartTable))
+		end
+		
 		if self.LastSpark && self.LastSpark < CurTime() then
 			self.LastSpark = CurTime() + 0.01
 
@@ -165,7 +321,7 @@ function ENT:PhysicsSimulate(phys, deltatime)
 
 	end
 
-	//Check for collisions
+	/*Check for collisions
 	for k, v in pairs( ents.FindInSphere( self:GetPos(), 150 ) ) do
 		if !self.IsOffDaRailz && ( IsValid(v) && v:GetClass() == "coaster_cart" ) && v.Velocity then
 			local ourmass = self:GetPhysicsObject():GetMass()
@@ -184,7 +340,7 @@ function ENT:PhysicsSimulate(phys, deltatime)
 			//v.Velocity = TheirVelocity
 
 		end
-	end
+	end*/
 
 	//Move ourselves forward along the track
 	self.Percent = self.Percent + (deltatime * self.Multiplier * self.Velocity )
@@ -207,8 +363,11 @@ function ENT:PhysicsSimulate(phys, deltatime)
 			local newPos = self.Controller.Nodes[ self.CurSegment ]:GetPos()
 			//self:SetPos( newPos ) //Teleport us to the first 'real' node
 			self.PhysShadowControl.pos = newPos
+			//self:CorrectCartSpacing(1)
+			
 		end	
 		self.Percent = 0
+		self:CorrectCartSpacing(1)
 		
 	elseif self.Percent < 0 then
 		self.CurSegment = self.CurSegment - 1
@@ -226,8 +385,10 @@ function ENT:PhysicsSimulate(phys, deltatime)
 			local newPos = self.Controller.Nodes[ self.CurSegment ]:GetPos()
 			//self:SetPos( newPos ) //Teleport us to the last 'real' node
 			self.PhysShadowControl.pos = newPos
+			//self:CorrectCartSpacing(-1)
 		end
 		self.Percent = 1
+		self:CorrectCartSpacing(-1)
 		
 	end
 
@@ -260,7 +421,7 @@ function ENT:PhysicsSimulate(phys, deltatime)
 	end
 
 	//If we are a carousel, SPIN
-	if self.Carousel then
+	if self.Carousel && !self.IsDummy then
 		local FixedAngle = Angle( ang.p, ang.y, ang.r )
 		local ang1 = self:AngleAt( self.CurSegment, self.Percent )
 		local ang2 = self:AngleAt( self.CurSegment, self.Percent + 0.1 )
@@ -293,14 +454,61 @@ function ENT:PhysicsSimulate(phys, deltatime)
 	end
 
 	self:BarfThink()
+	self:DATPATUpdate()
 
 	self.PhysShadowControl.angle = ang
 	self.PhysShadowControl.pos = self.PhysShadowControl.pos + ang:Up() * 10
 
 
 	self.PhysShadowControl.deltatime = deltatime	
-	//print( tostring( self:EntIndex() ) .. ": " .. tostring( self.Velocity ) )
+
 	return phys:ComputeShadowControl(self.PhysShadowControl)
+end
+
+function ENT:CorrectCartSpacing(dir)
+	if dir == nil then return end
+	
+	//before continuing, check that all carts are on the same segment
+	local proceed = true
+	for k, v in pairs(self.CartTable) do
+		if proceed then
+			if self.CartTable[1].CurSegment != self.CartTable[k].CurSegment then
+				proceed = false
+			end
+		end
+	end
+	
+	if proceed then
+		if dir == 1 then
+			if self == self.CartTable[1] then
+				//print("train back, passing, all carts on segment")
+				self:CCS()
+			end
+		elseif dir == -1 then
+			if self == self.CartTable[table.Count(self.CartTable)] then
+				//print("train front, passing, all carts on segment")
+				self:CCS()
+			end
+		end
+	end
+end
+
+function ENT:CCS()
+	//supplements the use of ENT:CorrectCartSpacing()
+	local prevpercent = 0
+	for i = 1, table.Count(self.CartTable) do
+		if self.CartTable[i].CartTable[i-1] != nil && self.CartTable[i].CartTable[i-1].CurSegment == self.CurSegment then 
+			prevpercent = self.CartTable[i].CartTable[i-1].Percent
+			if i != 1 then 
+				local targperc = prevpercent + (self:GetMultiplier(self.CurSegment,prevpercent)*(self:Size("x")/32))
+				if targperc > 0 and targperc < 1 then self.CartTable[i].Percent = targperc else self.CartTable[i].Percent = self.CartTable[i].Percent end
+			else
+				self.CartTable[i].Percent = self.CartTable[i].Percent
+			end
+		else
+			self.CartTable[i].Percent = self.CartTable[i].Percent
+		end
+	end
 end
 
 function ENT:BarfThink( deltatime )
@@ -309,9 +517,9 @@ function ENT:BarfThink( deltatime )
 
 	if self.Occupants && #self.Occupants > 0 then
 		for k, v in pairs( self.Occupants ) do	
-			local rand = math.Clamp( math.Round( 25000 - (math.abs(self.RotationSpeed*67)) ),42, 25000 )
+			local rotate = math.Clamp( math.Round( 25000 - (math.abs(self.RotationSpeed*67)) ),42, 25000 )
 
-			if math.random( 1, rand ) == 42 then
+			if math.random( 1, rotate ) == 42 then
 				v:Puke()
 			end
 		end
@@ -319,9 +527,9 @@ function ENT:BarfThink( deltatime )
 end
 
 function ENT:PlayerLeave( ply )
-	if math.random(1, 42 ) != 42 then return end 
+	if math.random(1,42) != 42 then return end 
 
-	timer.Simple( math.Rand( 2, 5 ), function() 
+	timer.Simple( math.Rand(2,5), function() 
 		ply:Puke()
 	end	)
 
@@ -373,23 +581,86 @@ function ENT:MinSpeedThink()
 end
 
 function ENT:SpeedupThink(dt)
-	if self:GetCurrentNode():GetType() == COASTER_NODE_SPEEDUP && self.Velocity < self.MaxSpeed then
-		local Acceleration = self.SpeedupForce / self:GetPhysicsObject():GetMass() //F = MA. thus, (F / M) = A
-		local Velocity = Acceleration * dt //A = VelocityChange / TimeChange. thus, V = AT
+	local OnSpeedup = false
+	local SpeedupForce = 0
+	local MaxSpeed = 0
+	local NumOnSpeedup = 0
 
-		self.Velocity = self.Velocity + Velocity
-
-		if self.LastSpark && self.LastSpark < CurTime() then
-			self.LastSpark = CurTime() + 0.01
-
-			self.SparkEffect:SetOrigin( self:GetPos() )
-			local newangles = self:GetAngles() + Angle( 15, 0, 0 )
-			self.SparkEffect:SetNormal( -newangles:Forward() + Vector( 0, 0, 0.5) )
-			util.Effect("ManhackSparks", self.SparkEffect )
+	if self.CartTable[1] == self then
+		for k, v in pairs(self.CartTable) do
+			if k > 1 then
+				local node = v:GetCurrentNode()
+				if IsValid( node ) && node:GetType() == COASTER_NODE_SPEEDUP then
+					OnSpeedup = true
+					SpeedupForce = node.SpeedupForce
+					MaxSpeed = node.MaxSpeed
+					NumOnSpeedup = NumOnSpeedup + 1
+				end
+			end
 		end
 	end
+
+	if OnSpeedup && self.Velocity < MaxSpeed  then //We can get away with using our velocity because all the carts are going the same speed anyway
+		local Acceleration = ( SpeedupForce / self:GetPhysicsObject():GetMass() ) * (NumOnSpeedup / (#self.CartTable-1) ) //F = MA. thus, (F / M) = A
+		local Velocity = Acceleration * dt //A = VelocityChange / TimeChange. thus, V = AT
+		local newVelocity = (self.Velocity + Velocity )
+
+		for k, v in pairs(self.CartTable) do
+			v.Velocity = newVelocity
+			if k > 1 then
+				//Play The Sparks
+				if v.LastSpark && v.LastSpark < CurTime() then
+					v.LastSpark = CurTime() + 0.01
+
+					v.SparkEffect:SetOrigin( v:GetPos() )
+					local newangles = v:GetAngles() + Angle( 15, 0, 0 )
+					v.SparkEffect:SetNormal( -newangles:Forward() + Vector( 0, 0, 0.5) )
+					util.Effect("ManhackSparks", v.SparkEffect )
+				end
+			end
+		end
+	end
+
 end
 
+function ENT:BreakThink(dt)
+	local OnBreaks = false
+	local BreakForce = 0
+	local MinSpeed = 0
+	local NumOnBreaks = 0
+
+	if self.CartTable[1] == self then
+		for k, v in pairs(self.CartTable) do
+			if k > 1 then
+				local node = v:GetCurrentNode()
+				if IsValid( node ) && node:GetType() == COASTER_NODE_BREAKS then
+					OnBreaks = true
+					BreakForce = node.BreakForce
+					MinSpeed = node.BreakSpeed
+					NumOnBreaks = NumOnBreaks + 1
+				end
+			end
+		end
+	end
+
+	if OnBreaks && self.Velocity > MinSpeed  then //We can get away with using our velocity because all the carts are going the same speed anyway
+		local Acceleration = ( BreakForce / self:GetPhysicsObject():GetMass() ) * (NumOnBreaks / (#self.CartTable-1) ) //F = MA. thus, (F / M) = A
+		local Velocity = Acceleration * dt //A = VelocityChange / TimeChange. thus, V = AT
+		local newVelocity = (self.Velocity - Velocity )
+
+		for k, v in pairs(self.CartTable) do
+			v.Velocity = newVelocity
+		end
+	elseif OnBreaks then
+		//Go at at least as slow as the breaks (no slower)
+		for k, v in pairs(self.CartTable) do
+			v.Velocity = MinSpeed
+		end
+	end
+
+end
+
+/*
 //Basically the exact opposite of speedup
 function ENT:BreakThink(dt)
 	if self:GetCurrentNode():GetType() == COASTER_NODE_BREAKS && self.Velocity > self.BreakSpeed then
@@ -397,29 +668,32 @@ function ENT:BreakThink(dt)
 		local Velocity = Acceleration * dt //A = VelocityChange / TimeChange. thus, V = AT
 
 		self.Velocity = self.Velocity - Velocity
-
-		/*
-		if self.LastSpark && self.LastSpark < CurTime() then
-			self.LastSpark = CurTime() + 0.01
-
-			self.SparkEffect:SetOrigin( self:GetPos() )
-			local newangles = self:GetAngles() + Angle( 15, 0, 0 )
-			self.SparkEffect:SetNormal( -newangles:Forward() + Vector( 0, 0, 0.5) )
-			util.Effect("ManhackSparks", self.SparkEffect )
-		end
-		*/
 	end
 end
+*/
 
 function ENT:ChainThink()
-	if self:GetCurrentNode():GetType() == COASTER_NODE_CHAINS then
-		local CurNode = self:GetCurrentNode()
+	local OnChain = false
+	local ChainSpeed = 0
 
-		if self.Velocity < CurNode.ChainSpeed then
-			self.Velocity = CurNode.ChainSpeed //- 0.5
+	if self.CartTable[1] == self then
+		for k, v in pairs(self.CartTable) do
+
+			local node = v:GetCurrentNode()
+			if IsValid( node ) && node:GetType() == COASTER_NODE_CHAINS then
+				OnChain = true
+				ChainSpeed = node.ChainSpeed
+				break
+			end
 		end
-		
 	end
+
+	if OnChain && self.Velocity < ChainSpeed  then //We can get away with using our velocity because all the carts are going the same speed anyway
+		for k, v in pairs(self.CartTable) do
+			v.Velocity = ChainSpeed
+		end
+	end
+
 end
 
 function ENT:HomeStationThink(dt)
@@ -467,8 +741,9 @@ end
 //Get the multiplier for the current spline (to make things smooth )
 function ENT:GetMultiplier(i, perc)
 	local Dist = 1
-	local Vec1 = self.Controller.CatmullRom:Point( i, perc )
-	local Vec2 = self.Controller.CatmullRom:Point( i, perc + 0.03 )
+	local Vec1 = self.Controller.CatmullRom:Point( i, perc ) // + 0
+	local Vec2 = self.Controller.CatmullRom:Point( i, perc + 0.03 ) // + 0.03
+
 
 	Dist = Vec1:Distance( Vec2 )
 	return 1 / Dist 
@@ -499,14 +774,22 @@ function ENT:GetCurrentSpline(i, perc)
 	//print(math.floor(spline))
 	return math.Clamp( math.floor(spline), 1, #self.Controller.CatmullRom.Spline)
 end
-//find the largest dimension of the entity, giving preference to x, then y, over z.
-function ENT:Size()
+
+//find the largest dimension of the entity, giving preference to x, then y, over z, unless otherwise specified
+function ENT:Size(axis)
 	local min = self:OBBMins()
 	local max = self:OBBMaxs()
 	local xabs = math.abs(max.x-min.x)
 	local yabs = math.abs(max.y-min.y)
 	local zabs = math.abs(max.z-min.z)
 	local size = 0
+
+	//Return specific axis length if specified
+	if axis then
+		if string.lower(axis) == "x" then return xabs end
+		if string.lower(axis) == "y"  then return yabs end
+		if string.lower(axis) == "z"  then return zabs end
+	end
 
 	if xabs >= yabs then
 		if xabs >= zabs then
@@ -525,7 +808,6 @@ function ENT:Size()
 	return size
 end
 
-
 //This sounds like something we might want
 function ENT:UpdateTransmitState()
 	return TRANSMIT_ALWAYS
@@ -534,36 +816,46 @@ end
 //Remove the velocity if the player grabs it with the physgun
 //TODO: be able to move/fling cart with the physgun
 function ENT:PhysicsUpdate(physobj)
-	if self:IsPlayerHolding() then
+	if self:IsPlayerHolding() or !self:GetPhysicsObject():IsMotionEnabled() then
 		self.Velocity = 0
+		if self.CartTable != nil then
+			for k, v in pairs(self.CartTable) do
+				if self != v then
+					v.Velocity = 0
+				end
+			end
+		end
+	end
+end
+
+function ENT:CartExplode()
+	local explosion = ents.Create ("env_explosion")
+	explosion:SetPos(self:GetPos())
+	explosion:SetOwner( self )
+	explosion:Spawn()
+	explosion:SetKeyValue( "iMagnitude", 220)
+	explosion:Fire("Explode", 0, 0)
+
+	if !self.Enabled then
+		local debris = EffectData()
+		debris:SetOrigin( self:GetPos() )
+		util.Effect( "coaster_cart_debris", debris )
+		
+		self:Remove()
 	end
 end
 
 //Explode if they are off the rails
 function ENT:PhysicsCollide(data, physobj)
 	if data.Speed > 60 && self.IsOffDaRailz && ( (IsValid(data.HitEntity) && data.HitEntity:GetClass() != "coaster_cart" ) || !IsValid( data.HitEntity )) then
-	
-		local explosion = ents.Create ("env_explosion")
-		explosion:SetPos(self:GetPos())
-		explosion:SetOwner( self )
-		explosion:Spawn()
-		explosion:SetKeyValue( "iMagnitude", 220)
-		explosion:Fire("Explode", 0, 0)
-		explosion:EmitSound( "weapon_AWP.Single", 400, 400 ) 
-	
-
-		if !self.Enabled then
-			local debris = EffectData()
-			debris:SetOrigin( self:GetPos() )
-			util.Effect( "coaster_cart_debris", debris )
-
-			self:Remove()
-		end
+		
+		self:CartExplode()
+		
 	end
 	//print( !self.OffDaRailz )
 	//print( ( IsValid(data.HitEntity) && data.HitEntity:GetClass() == "coaster_cart" ) )
 	//print( data.HitEntity.Velocity )
-	if !self.IsOffDaRailz && ( IsValid(data.HitEntity) && data.HitEntity:GetClass() == "coaster_cart" ) && data.HitEntity.Velocity then
+	/*if !self.IsOffDaRailz && ( IsValid(data.HitEntity) && data.HitEntity:GetClass() == "coaster_cart" ) && data.HitEntity.Velocity then
 		local ourmass = physobj:GetMass()
 		local theirmass = data.HitEntity:GetPhysicsObject():GetMass()
 
@@ -586,20 +878,62 @@ function ENT:PhysicsCollide(data, physobj)
 		//print("heyo guess what")
 		//print( self.Velocity )
 
+	end*/
+	if !self.IsOffDaRailz&&IsValid(data.HitEntity)&&data.HitEntity:GetClass()=="coaster_cart" then
+		if self.CartTable != data.HitEntity.CartTable then
+			if math.random(1,2) == 1 then
+				self:OffDaRailz()
+			else
+				self:CartExplode()
+			end
+		end
 	end
 end
+
+hook.Add("ShouldCollide","RollercoasterShouldCartCollide",function(ent1,ent2)
+	if ent1:GetClass() != "coaster_cart" or ent2:GetClass() != "coaster_cart" then return end
+	if ent1.CartTable == nil or ent2.CartTable == nil then return false end
+	if ent1.CartTable[1] == ent1 then return false end
+	if ent2.CartTable[1] == ent2 then return false end
+	if ent1.CartTable == ent2.CartTable then return false else return true end
+end)
 
 function ENT:Think()
 	//Make it so changing the actual gravity affects the coaster
 	local Grav = GetConVar( "sv_gravity" ):GetInt()
-	self.GRAVITY = (Grav / 61.2244) or 9.8
+	self.GRAVITY = (Grav / 61.2244) or 9.81
 
 	self:NextThink( CurTime() + 1 ) //This doesn't need to happen constantly
 	return true
 end
 
 function ENT:OnRemove()
-
+	//print("removed cart from table")
+	if self.CartTable != nil then
+		if self.IsDummy then
+			if self.CartTable != nil then
+				for z, x in pairs(self.CartTable) do
+					x:OffDaRailz(true)
+				end
+			end
+			if self.CartTable != nil then //must be separate from the above loop stuff
+				for z, x in pairs(self.CartTable) do
+					table.remove(self.CartTable,z)
+					RollercoasterUpdateCartTable(self.CartTable)
+				end
+			end
+			self:Remove()
+		end
+		if self.CartTable != nil then
+			for k, v in pairs(self.CartTable) do
+				if v == self then
+					table.remove(self.CartTable,k)
+					RollercoasterUpdateCartTable(self.CartTable)
+				end
+			end
+			self.CartTable = nil
+		end
+	end
 end
 
 concommand.Add("coaster_fuckyou", function( ply, cmd, args ) 
