@@ -35,7 +35,7 @@ function ENT:Initialize()
 	self:SetMoveType(MOVETYPE_VPHYSICS)
 	self:SetSolid(SOLID_VPHYSICS)
 	
-	self:DrawShadow(false)
+	//self:DrawShadow(false)
 	
 	self:SetCollisionGroup(COLLISION_GROUP_WORLD)
 
@@ -169,8 +169,12 @@ function ENT:UpdateServerSpline()
 	
 	if #controller.CatmullRom.PointsList > 3 then
 		controller.CatmullRom:CalcEntireSpline()
-		//controller:BuildPhysicsMesh()
-		self:UpdateTrackLength()
+		controller:BuildPhysicsMesh()
+
+		//if self:IsController() then
+		//	local node = self.Nodes[3]
+			//controller:UpdateTrackLength()
+		//end
 	end
 end
 
@@ -197,6 +201,9 @@ function ENT:BuildPhysicsMesh()
 		end
 		local ThisAngleVector = ThisPos - NextPos
 		ThisAngle = ThisAngleVector:Angle()
+
+		ThisAngle:RotateAroundAxis( ThisAngleVector:Angle():Right(), 90 )
+		ThisAngle:RotateAroundAxis( ThisAngleVector:Angle():Up(), 270 )
 
 		if i==1 then LastAngle = ThisAngle end
 
@@ -225,11 +232,8 @@ function ENT:BuildPhysicsMesh()
 	tmpTable[3] = {}
 	tmpTable[3].pos = self:GetPos() + Vector( -50, 5, 0 )
 
-	//This _does_ give "Degenerate Triangle" error, but only for certain tris. I don't know why or which ones.
 	Vertices[modelCount] = Remaining
-
-	PrintTable( tmpTable )
-
+	self:GetPhysicsObject():Wake()
 	self:PhysicsFromMesh( Vertices[1] ) //THIS MOTHERFUCKER
 
 	//self:PhysicsFromMesh( tmpTable ) //Verticices[i]

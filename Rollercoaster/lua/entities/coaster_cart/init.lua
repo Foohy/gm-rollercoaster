@@ -100,6 +100,7 @@ function ENT:Initialize()
 	if self.IsDummy then
 		self:SetNoDraw( true )
 		self:SetCollisionGroup(COLLISION_GROUP_WORLD)
+		self:SetNotSolid( true )
 	end
 	
 	self.Occupants = {}

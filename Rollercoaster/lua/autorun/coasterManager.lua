@@ -113,6 +113,33 @@ if SERVER then
 			end
 		end )
 	end )
+
+	hook.Add("Think", "RemoveGhostedDummies", function() 
+		if !CoasterManager.NextThink || CoasterManager.NextThink < CurTime() then
+			CoasterManager.NextThink = CurTime() + 2
+
+			for k, v in pairs( ents.FindByClass("coaster_cart") ) do
+				if IsValid( v ) && v.IsDummy then
+					local remove = true
+
+					if v.CartTable then
+						for _, ent in pairs( v.CartTable ) do
+
+							if IsValid( ent ) && ent != v then 
+								remove = false 
+								break
+							end
+							
+						end
+					end
+
+					if remove then
+						v:Remove()
+					end
+				end
+			end
+		end
+	end )
 end
 
 
