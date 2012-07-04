@@ -123,6 +123,17 @@ function TOOL:DrawHUD()
 	if ( !GetConVar("gmod_drawhelp"):GetBool() ) then return end
        
 	local class = self:GetCurrentTab()
+
+	//Default names in case the class didn't define them
+	local Name = "None"
+	local Desc = "None"
+	local Instructions = "None"
+
+	if class then
+		if class.Name then Name = class.Name end
+		if class.Description then Desc = class.Description end
+		if class.Instructions then Instructions = class.Instructions end
+	end
    
     local x, y = 50, 40
     local w, h = 0, 0
@@ -133,21 +144,21 @@ function TOOL:DrawHUD()
     TextTable.font = "GModToolName"
     TextTable.color = Color( 240, 240, 240, 255 )
     TextTable.pos = { x, y }
-    TextTable.text = class.Name or "None"
+    TextTable.text = Name
    
     w, h = draw.TextShadow( TextTable, 3 )
     y = y + h
 
     TextTable.font = "GModToolSubtitle"
     TextTable.pos = { x, y }
-    TextTable.text = class.Description or "None"
+    TextTable.text = Desc
     w, h = draw.TextShadow( TextTable, 2 )
 
     y = y + h + 11
    
     TextTable.font = "GModToolHelp"
     TextTable.pos = { x + 24, y  }
-    TextTable.text = class.Instructions or "None"
+    TextTable.text = Instructions
     w, h = draw.TextShadow( TextTable, 2 )
 end
 
@@ -175,9 +186,11 @@ end
 
 function TOOL:DrawToolScreen( TEX_SIZE )
 	local class = self:GetCurrentTab()
+	local text = "None"
+	if class && class.Name then text = class.Name end
 
 	surface.SetFont("GModToolScreen")
-	DrawScrollingText( class.Name or "None", 64, TEX_SIZE )
+	DrawScrollingText( text, 64, TEX_SIZE )
 end
 
 
@@ -226,9 +239,9 @@ end
 
 if CLIENT then
 
-	language.Add( "Tool_coaster_supertool_name", "" )
-	language.Add( "Tool_coaster_supertool_desc", "" )
-	language.Add( "Tool_coaster_supertool_0", "" )
+	language.Add( "tool.coaster_supertool.name", "" )
+	language.Add( "tool.coaster_supertool.desc", "" )
+	language.Add( "tool.coaster_supertool.0", "" )
 
 end
 

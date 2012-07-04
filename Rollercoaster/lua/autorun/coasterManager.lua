@@ -102,7 +102,7 @@ if SERVER then
 	end
 
 
-	hook.Add( "PlayerInitialSpawn", "UpdateWithAllTracks", function( ply )
+	hook.Add( "PlayerInitialSpawn", "UpdateWitAllTracks", function( ply )
 		timer.Simple( 5, function() //is there a hook when the player is able to receive umsgs?
 			for k, v in pairs( ents.FindByClass("coaster_node") ) do
 				if IsValid( v ) && v:IsController() then
@@ -112,6 +112,27 @@ if SERVER then
 				end
 			end
 		end )
+	end )
+
+	//Manage cart collisions (So trains don't collide with themselves, but collide with other trains)
+	hook.Add("ShouldCollide","RollercoasterShouldCartCollide",function(ent1,ent2)
+		//Prevent carts from colliding with the physics mesh of the tracks
+		if ent1:GetClass() == "coaster_cart" and ent2:GetClass() == "coaster_physmesh" then return false end
+		if ent2:GetClass() == "coaster_cart" and ent1:GetClass() == "coaster_physmesh" then return false end
+
+		//Prevent trains from colliding with itself but collide them with other trains
+		if ent1:GetClass() != "coaster_cart" or ent2:GetClass() != "coaster_cart" then return end
+		if ent1.CartTable == nil or ent2.CartTable == nil then return false end
+
+		//the first entry in the cart table is ALWAYS the dummy cart. don't fuck that up.
+		if ent1.CartTable[1] == ent1 then return false end
+		if ent2.CartTable[1] == ent2 then return false end
+
+		if ent1.CartTable == ent2.CartTable then return false else return true end
+	end )
+
+	hook.Add("PhysgunPickup", "PreventCoasterMeshPickup", function( ply, ent ) 
+		if ent:GetClass() == "coaster_physmesh" then return false end
 	end )
 
 	hook.Add("Think", "RemoveGhostedDummies", function() 
@@ -129,7 +150,7 @@ if SERVER then
 								remove = false 
 								break
 							end
-							
+
 						end
 					end
 

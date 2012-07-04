@@ -680,19 +680,22 @@ function ENT:DrawSupports()
 
 			//Draw the first pole
 			self.SupportModelStart:SetRenderOrigin( trace.HitPos + Vector( 0, 0, self.BaseHeight ) ) //Add 64 units so it's right on top of the base
-
+			render.ResetModelLighting()
+			render.SetLightingOrigin( trace.HitPos + Vector( 0, 0, self.BaseHeight ) )
 			local height = math.Clamp( Distance, 1, self.PoleHeight - self.BaseHeight )
 			self.SupportModelStart:SetModelScale( Vector( 1, 1, height / (self.PoleHeight  ) ) )
 			self.SupportModelStart:SetAngles( Angle( 0, v:GetAngles().y, 0 ) )
-			//self.SupportModelStart:SetupBones()
+			self.SupportModelStart:SetupBones()
 			self.SupportModelStart:DrawModel()
 				
 			//Draw the second pole (if applicable)
 			if Distance > self.PoleHeight - self.BaseHeight then
 				self.SupportModel:SetRenderOrigin( trace.HitPos + Vector(0, 0, self.PoleHeight  ))
+				//render.ResetModelLighting()
+				render.SetLightingOrigin( trace.HitPos + Vector(0, 0, self.PoleHeight  ))
 				self.SupportModel:SetModelScale( Vector( 1, 1, ( (Distance - self.PoleHeight + self.BaseHeight) / self.PoleHeight)   ) )
 				self.SupportModel:SetAngles( Angle( 0, v:GetAngles().y, 0 ) )				
-				//self.SupportModel:SetupBones()	
+				self.SupportModel:SetupBones()	
 				self.SupportModel:DrawModel()
 			end
 				
@@ -702,6 +705,8 @@ function ENT:DrawSupports()
 			render.SetColorModulation( 1, 1, 1 )
 			self.SupportModelBase:SetSkin( skin or 1 )
 			self.SupportModelBase:SetRenderOrigin( trace.HitPos )
+			//render.ResetModelLighting()
+			render.SetLightingOrigin( trace.HitPos )
 			self.SupportModelBase:SetAngles( Angle( 0, v:GetAngles().y, 0 ) )
 			self.SupportModelBase:SetupBones()
 			self.SupportModelBase:DrawModel()
@@ -716,7 +721,7 @@ function ENT:DrawSupports()
 end
 
 
-local WheelOffset = 4
+local WheelOffset = 1
 
 function ENT:DrawSpeedupModels( segment )
 	if not (segment > 1 && (#self.CatmullRom.PointsList > segment )) then return end
@@ -739,7 +744,8 @@ function ENT:DrawSpeedupModels( segment )
 	Multiplier = self:GetMultiplier(segment, Percent)
 
 	//Move ourselves forward along the track
-	Percent = ( Percent + ( Multiplier * 2 ) ) / 2 //move ourselves one half forward, so the wheels are between track struts
+	//Percent = ( Percent + ( Multiplier * 2 ) ) / 2 //move ourselves one half forward, so the wheels are between track struts
+	Percent = Multiplier / 2
 
 	while Percent < 1 do
 		if numwheels >= GetConVar("coaster_maxwheels"):GetInt() then return end
@@ -763,6 +769,7 @@ function ENT:DrawSpeedupModels( segment )
 		Multiplier = self:GetMultiplier(segment, Percent)
 
 		self.WheelModel:SetRenderOrigin( Position )
+		render.SetLightingOrigin( Position )
 		self.WheelModel:SetAngles( ang )
 		self.WheelModel:SetupBones()
 		self.WheelModel:DrawModel()
@@ -798,7 +805,7 @@ function ENT:DrawBreakModels( segment )
 	Multiplier = self:GetMultiplier(segment, Percent)
 
 	//Move ourselves forward along the track
-	Percent = ( Percent + ( Multiplier * 2 ) ) / 2 //move ourselves one half forward, so the wheels are between track struts
+	Percent = Multiplier / 2 //move ourselves one half forward, so the wheels are between track struts
 
 	while Percent < 1 do
 		if numwheels >= GetConVar("coaster_maxwheels"):GetInt() then return end
@@ -822,11 +829,13 @@ function ENT:DrawBreakModels( segment )
 		Multiplier = self:GetMultiplier(segment, Percent)
 
 		self.WheelModel:SetRenderOrigin( PositionL )
+		render.SetLightingOrigin( PositionL )
 		self.WheelModel:SetAngles( ang )
 		self.WheelModel:SetupBones()
 		self.WheelModel:DrawModel()
 
 		self.WheelModel:SetRenderOrigin( PositionR )
+		render.SetLightingOrigin( PositionR )
 		//self.WheelModel:SetAngles( ang )
 		self.WheelModel:SetupBones()
 		self.WheelModel:DrawModel()

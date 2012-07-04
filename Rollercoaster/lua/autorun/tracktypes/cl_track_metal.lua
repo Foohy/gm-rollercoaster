@@ -197,6 +197,7 @@ function TRACK:Draw( controller, Meshes )
 
 	for k, v in pairs( Meshes ) do
 		render.SetMaterial(self.Material)
+		render.SetLightingOrigin( controller:GetPos() )
 		if v then 
 			v:Draw() //TODO: I think IMesh resets color modulation upon drawing. Figure out a way around this?
 		end

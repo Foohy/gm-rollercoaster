@@ -202,7 +202,7 @@ function TAB:Think( tool )
 			SelectSingleNode( trace.Entity, Color( 180 - math.random( 0, 120 ), 220 - math.random( 0, 150 ), 255, 255 ))
 
 			local toolText = "Rollercoaster Node"
-			if trace.Entity:IsController() then 
+			if trace.Entity.IsController && trace.Entity:IsController() then 
 				toolText = toolText .. " (Controller)" 
 				toolText = toolText .. "\nLooped: " .. tostring( trace.Entity:Looped() )
 			end

@@ -698,14 +698,28 @@ function ENT:ChainThink()
 end
 
 function ENT:HomeStationThink(dt)
-	if self:GetCurrentNode():GetType() == COASTER_NODE_HOME then
+	local OnHome = false
+	local HomeWaitTime = 0
+
+	if self.CartTable[1] == self then
+		for k, v in pairs(self.CartTable) do
+
+			local node = v:GetCurrentNode()
+			if IsValid( node ) && node:GetType() == COASTER_NODE_HOME then
+				OnHome = true
+				HomeWaitTime = node.StopTime
+				break
+			end
+		end
+	end
+
+
+	if OnHome then
 
 		if self.HomeStage == 0 then //Moving to center
-			if self.Percent < 0.4 || self.Percent > 0.6 then
-				if self.Percent > 0.6 then
-					self.Velocity = -4
-				else
-					self.Velocity = 4
+			if self.CartTable[#self.CartTable].Percent < 0.9 then //The head car is actually the very last car
+				for k, v in pairs(self.CartTable) do
+					v.Velocity = 4
 				end
 			else
 				self.HomeStage = 1
@@ -713,13 +727,20 @@ function ENT:HomeStationThink(dt)
 			end
 
 		elseif self.HomeStage == 1 then //Stopped and waiting
-			self.Velocity = 0
+			for k, v in pairs(self.CartTable) do
+				v.Velocity = 0
+			end
 
 			if self.TimeToStart && self.TimeToStart < CurTime() then 
 				self.HomeStage = 2 
 			end
 		else //Moving to next node
-			if self.Velocity < 5 then self.Velocity = 5 end
+
+			if self.Velocity < 5 then
+				for k, v in pairs(self.CartTable) do
+					v.Velocity = 5
+				end
+			end
 		end
 
 	else
@@ -891,13 +912,6 @@ function ENT:PhysicsCollide(data, physobj)
 	end
 end
 
-hook.Add("ShouldCollide","RollercoasterShouldCartCollide",function(ent1,ent2)
-	if ent1:GetClass() != "coaster_cart" or ent2:GetClass() != "coaster_cart" then return end
-	if ent1.CartTable == nil or ent2.CartTable == nil then return false end
-	if ent1.CartTable[1] == ent1 then return false end
-	if ent2.CartTable[1] == ent2 then return false end
-	if ent1.CartTable == ent2.CartTable then return false else return true end
-end)
 
 function ENT:Think()
 	//Make it so changing the actual gravity affects the coaster
@@ -909,7 +923,7 @@ function ENT:Think()
 end
 
 function ENT:OnRemove()
-	//print("removed cart from table")
+
 	if self.CartTable != nil then
 		if self.IsDummy then
 			if self.CartTable != nil then

@@ -23,6 +23,10 @@ function ENT:SetupDataTables()
 	self:DTVar("Vector", 1, "SupportColor")
 end
 
+function ENT:Initialize()
+	self:EnableCustomCollisions( true )
+end
+
 function ENT:SetController(bController)
 	self.dt.IsController = bController
 end

@@ -19,7 +19,6 @@ ENT.SpeedupForce = 1400 //Force of which to accelerate the car
 ENT.MaxSpeed = 3600 //The maximum speed to which accelerate the car
 
 //Home station options/variables
-ENT.HomeStage = 0
 ENT.StopTime = 5 //Time to stop and wait for people to leave/board
 
 //Break node options/variables
@@ -34,10 +33,8 @@ function ENT:Initialize()
 	self:PhysicsInit(SOLID_VPHYSICS)
 	self:SetMoveType(MOVETYPE_VPHYSICS)
 	self:SetSolid(SOLID_VPHYSICS)
-	
-	//self:DrawShadow(false)
-	
-	self:SetCollisionGroup(COLLISION_GROUP_WORLD)
+
+	self:SetCollisionGroup( COLLISION_GROUP_WORLD)
 
 	local phys = self:GetPhysicsObject()
 
@@ -169,7 +166,15 @@ function ENT:UpdateServerSpline()
 	
 	if #controller.CatmullRom.PointsList > 3 then
 		controller.CatmullRom:CalcEntireSpline()
-		controller:BuildPhysicsMesh()
+
+		print( #controller.Nodes )
+		for k, v in pairs( controller.Nodes ) do
+			if k > 1 && k < #controller.Nodes - 1 then
+				v:BuildSegmentMesh()
+				print("Built mesh for segment " .. k )
+			end
+		end
+		//controller:BuildPhysicsMesh()
 
 		//if self:IsController() then
 		//	local node = self.Nodes[3]
@@ -178,27 +183,96 @@ function ENT:UpdateServerSpline()
 	end
 end
 
-//How does ENT:PhysicsFromMesh work?
-function ENT:BuildPhysicsMesh()
+concommand.Add("update_physmesh", function()
+	for k, v in pairs( ents.FindByClass("coaster_node")) do
+		if IsValid( v ) && v:IsController() then
+			v:UpdateServerSpline()
+		end
+	end
+end )
+
+//Build the mesh for the specific segment
+//This function is NOT controller only, call it on the segment you want to update the mesh on
+function ENT:BuildSegmentMesh()
+	local Segment = -1
+	local controller = Rollercoasters[ self.CoasterID ]
+
+	//Find our proper segment
+	if IsValid( controller ) && controller.Nodes && #controller.Nodes > 3 then
+		for k, v in pairs( controller.Nodes ) do
+			if v == self then Segment = k end
+		end
+	else
+		return //get the fuck out
+	end
+
+	if Segment < 2 or Segment >= #controller.Nodes - 1 then 
+		if IsValid( self.PhysMesh ) then
+			self.PhysMesh:Remove()
+		end
+		return
+	end
+
+	if IsValid( self.PhysMesh ) then
+		//Make sure it's information is up to date
+		self.PhysMesh.Segment = Segment
+		self.PhysMesh.Controller = controller
+	else
+		//Create the physics mesh entity
+		local physmesh = ents.Create("coaster_physmesh")
+		physmesh:SetPos( self:GetPos() )
+		physmesh:SetAngles( Angle( 0, 0, 0 ) )
+
+		//Give the entity some nice information about it
+		physmesh.Segment		= Segment
+		physmesh.Controller 	= controller
+
+		//Spawn it and store it
+		physmesh:Spawn()
+		physmesh:Activate()
+		self.PhysMesh = physmesh
+
+
+	end
+
+	//Build meshhhhhhhhes
+	self.PhysMesh:BuildMesh()
+
+
+	/*
 	local Vertices = {} //Create an array that will hold an array of vertices (This is to split up the model)
 	local Meshes = {} 
-	local Radius = 10
+	local Radius = 35
 	local modelCount = 1 
+	local Resolution = 10 //how many 'splines' in the catmull to do
+	local Segment = 2
+	local controller = Rollercoasters[ self.CoasterID ]
 
-	Cylinder.Start( Radius, 2 ) //We're starting up making a beam of cylinders
+	//Find our proper segment
+	if IsValid( controller ) && controller.Nodes && #controller.Nodes > 3 then
+		for k, v in pairs( controller.Nodes ) do
+			if v == self then Segment = k end
+		end
+	else
+		return //get the fuck out
+	end
+
+	if Segment < 2 or Segment >= #controller.Nodes - 1 then return end
+
+	Cylinder.Start( Radius, 4 ) //We're starting up making a beam of cylinders
 
 	local LastAngle = Angle( 0, 0, 0 )
 	local ThisAngle = Angle( 0, 0, 0 )
 
 	local ThisPos = Vector( 0, 0, 0 )
 	local NextPos = Vector( 0, 0, 0 )
-	for i = 1, #self.CatmullRom.Spline do
-		ThisPos = self.CatmullRom.Spline[i]
-		NextPos = self.CatmullRom.Spline[i+1]
+	for i = 1, Resolution do
+		ThisPos = controller.CatmullRom:Point(Segment, i/Resolution)
+		NextPos = controller.CatmullRom:Point(Segment, (i+1)/Resolution)
 
-		if i==#self.CatmullRom.Spline then
-			NextPos = self.CatmullRom.PointsList[#self.CatmullRom.PointsList]
-		end
+		//if i==#self.CatmullRom.Spline then
+		//	NextPos = self.CatmullRom.PointsList[#self.CatmullRom.PointsList]
+		//end
 		local ThisAngleVector = ThisPos - NextPos
 		ThisAngle = ThisAngleVector:Angle()
 
@@ -223,31 +297,29 @@ function ENT:BuildPhysicsMesh()
 
 	local Remaining = Cylinder.EndBeam()
 
-	//Doesn't give "Degenerate Triangle" error, but _doesn't actually work_
-	local tmpTable = {}
-	tmpTable[1] = {}
-	tmpTable[1].pos = self:GetPos() + Vector( 0, -5, 50 )
-	tmpTable[2] = {}
-	tmpTable[2].pos = self:GetPos() + Vector( -50, -5, 0 )
-	tmpTable[3] = {}
-	tmpTable[3].pos = self:GetPos() + Vector( -50, 5, 0 )
+	//move all the positions
+	for i=1, #Remaining do
+		Remaining[i].pos = Remaining[i].pos - self:GetPos()
+	end
 
 	Vertices[modelCount] = Remaining
-	self:GetPhysicsObject():Wake()
+	local oldangs = self:GetAngles()
+	self:SetAngles( Angle( 0, 0, 0 ) )
+	self:EnableCustomCollisions( )
 	self:PhysicsFromMesh( Vertices[1] ) //THIS MOTHERFUCKER
+	self:EnableCustomCollisions( )
 
-	//self:PhysicsFromMesh( tmpTable ) //Verticices[i]
-	//for i=1, #Vertices do
-	//	if #Vertices[i] > 2 then
-	//		//Meshes[i] = NewMesh()
-	//		print( #Vertices, #Vertices[i] )
-	//		self:PhysicsFromMesh( Vertices[i] ) //Technically, this'll fuck up if we ever have multiple models. TODO: Figure this out.
-	//	end
-	//end
+	self:GetPhysicsObject():EnableMotion( false )
+	self:SetMoveType(MOVETYPE_NONE)
+	self:SetCollisionGroup( COLLISION_GROUP_NONE)
+	self:SetAngles( oldangs )
+	*/
 end
 
 function ENT:PhysicsUpdate(physobj)
+
 	if !self:IsPlayerHolding() then
+
 		physobj:Sleep()
 		physobj:EnableMotion( false )
 		
@@ -572,7 +644,8 @@ function ENT:OnRemove()
 		cont:UpdateServerSpline() 
 	end
 
-
+	//Remove the physics mesh
+	if IsValid( self.PhysMesh ) then self.PhysMesh:Remove() end
 
 	//Go through and make sure everything is in their proper place
 	if !IsValid( cont ) || !cont.Nodes then return end
