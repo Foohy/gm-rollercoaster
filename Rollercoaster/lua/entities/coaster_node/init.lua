@@ -28,6 +28,7 @@ ENT.BreakSpeed = 3 //The minimum speed of the car when in break zone
 function ENT:Initialize()
 	self.Nodes = {} //List of nodes (assuming we are the controller)
 	self.PhysMeshes = {}
+
 	self:SetModel( self.Model )	
 	self:SetMaterial( self.Material )
 
@@ -42,6 +43,9 @@ function ENT:Initialize()
 	if phys:IsValid() then
 		phys:Sleep()
 	end
+
+	//Mainly to prevent duplicator spamming until I figure out how to correctly spawn nodes from garry's duplicator
+	if !self.CoasterID || self.CoasterID < 1 then self:Remove() end
 	
 	self.CatmullRom = CoasterManager.Controller:New( self )
 	self.CatmullRom:Reset()
@@ -508,6 +512,8 @@ function ENT:Think()
 end
 
 function ENT:OnRemove()	
+	if !self.CoasterID || self.CoasterID < 1 then return end
+
 	local cont = Rollercoasters[self.CoasterID]
 
 	if self:IsController() || (IsValid( cont ) && #cont.Nodes <= 4 )|| (IsValid( cont ) && self == cont.Nodes[2]) then // || (IsValid( cont ) && cont.Nodes[2] == self ) 
