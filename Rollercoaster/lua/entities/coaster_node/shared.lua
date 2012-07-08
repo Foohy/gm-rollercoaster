@@ -9,6 +9,7 @@ ENT.Spawnable		= false
 ENT.AdminSpawnable	= false
 
 ENT.Model			= Model( "models/hunter/misc/sphere075x075.mdl" )
+ENT.Material 		= "hunter/myplastic"
 
 function ENT:SetupDataTables()
 	self:DTVar("Bool", 0, "IsController")
@@ -23,10 +24,6 @@ function ENT:SetupDataTables()
 	self:DTVar("Vector", 1, "SupportColor")
 end
 
-function ENT:Initialize()
-	self:EnableCustomCollisions( true )
-end
-
 function ENT:SetController(bController)
 	self.dt.IsController = bController
 end
@@ -34,14 +31,6 @@ end
 function ENT:IsController()
 	return self.dt.IsController or false
 end
-
-//function ENT:SetChains(bChained)
-//	self.dt.Chained = bChained
-//end
-
-//function ENT:HasChains()
-//	return self.dt.Chained or false
-//end
 
 function ENT:SetRelativeRoll(bRelRoll)
 	self.dt.RelativeRoll = bRelRoll

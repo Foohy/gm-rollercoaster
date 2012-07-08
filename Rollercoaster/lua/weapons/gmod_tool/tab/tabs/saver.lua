@@ -419,7 +419,7 @@ function RequestTrackList(ply)
 
 	//Send it to the client
 	net.Start("Coaster_transferInfo")
-		net.WriteByte( TRANSFER_TRACKLIST )
+		net.WriteInt( TRANSFER_TRACKLIST, 1 )
 		net.WriteTable( tracklist )
 	net.Send( ply )
 
@@ -652,7 +652,7 @@ if SERVER then
 
 				//Send it to the client
 				net.Start("Coaster_transferInfo")
-					net.WriteByte( TRANSFER_PREVIEW )
+					net.WriteInt( TRANSFER_PREVIEW, 1 )
 					net.WriteString( filename )
 					net.WriteTable( PreviewTable )
 				net.Send( ply )
@@ -731,7 +731,7 @@ end
 if CLIENT then
 
 	net.Receive("Coaster_transferInfo", function( length, client )
-		local transferType = net.ReadByte()
+		local transferType = net.ReadInt( 1 )
 
 		if transferType == TRANSFER_TRACKLIST then
 			local TrackTable = net.ReadTable()

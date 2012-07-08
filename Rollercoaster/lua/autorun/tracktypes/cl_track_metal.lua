@@ -191,18 +191,33 @@ end
 /****************************
 Draw function. Draw the mesh
 ****************************/
+local MinLightLevel = 0.81
 function TRACK:Draw( controller, Meshes )
 	if !IsValid( controller ) || !controller:IsController() then return end
 	if !Meshes || #Meshes < 1 then return end
 
+	//Gah I must be doing something wrong. Sometimes at certain angles, the mesh will appear completely black.
+	//Other times it'll render completely normally.
+	//It also does not accept lighting from dynamic lights or projected textures.
+	//Is this an issue with how I'm drawing it or an issue with IMesh?
+	//In addition I tried doing the lighting myself, and just ran into more issues.
+	//render.SuppressEngineLighting( true )
 	for k, v in pairs( Meshes ) do
 		render.SetMaterial(self.Material)
-		render.SetLightingOrigin( controller:GetPos() )
+		//render.SetAmbientLight( 1, 0, 0 )
+		//render.SetColorModulation( 0, 1, 0 )
+		//render.SetLightingOrigin( controller:GetPos() )
+		//local lightvec = render.GetLightColor(controller:GetPos())
+
+		//render.ResetModelLighting( lightvec.x, lightvec.y, lightvec.z )
+
+		//render.SetModelLighting( BOX_TOP, lightvec.x, lightvec.y, lightvec.z )
 		if v then 
-			v:Draw() //TODO: I think IMesh resets color modulation upon drawing. Figure out a way around this?
+			v:Draw()
 		end
 		//render.SetColorModulation( 1, 1, 1)
 	end
+	//render.SuppressEngineLighting( false )
 end
 
 trackmanager.Register( EnumNames.Tracks[COASTER_TRACK_METAL], TRACK )

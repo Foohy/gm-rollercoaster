@@ -851,6 +851,8 @@ function ENT:PhysicsUpdate(physobj)
 end
 
 function ENT:CartExplode()
+	if GetConVarNumber("coaster_cart_explosive_damage") == 0 then return end //wow fuck you
+
 	local explosion = ents.Create ("env_explosion")
 	explosion:SetPos(self:GetPos())
 	explosion:SetOwner( self )

@@ -6,6 +6,48 @@ if !meta then
 
 end
 
+//Return number of active carts this person has spawned
+function meta:NumActiveCarts()
+	local numCarts = 0
+
+	for _, v in pairs(ents.FindByClass("coaster_cart")) do
+		if !v.IsDummy && v.Owner == self then 
+			numCarts = numCarts + 1
+		end
+	end
+
+	return numCarts
+end
+
+//Return number of independent rollercoasters this person has spawned
+function meta:NumCoasters()
+	local numCoasters = 0
+	if Rollercoasters then
+		for _, v in pairs(Rollercoasters) do
+			if IsValid( v ) && v:GetOwner() == self then
+				numCoasters = numCoasters + 1
+			end
+		end
+	end
+
+	return numCoasters
+end
+
+//Return total amount of nodes this person has spawned
+function meta:NumCoasterNodes()
+	local numNodes = 0
+
+	if Rollercoasters then
+		for _, v in pairs(Rollercoasters) do
+			if IsValid( v ) && v:GetOwner() == self && v.Nodes then
+				numNodes = numNodes + (#v.Nodes - 2) //Don't count the controller and very last node
+			end
+		end
+	end
+
+	return numNodes
+end
+
 function meta:Puke()
 	self:ViewPunch( Angle( -5, 0, 0 ) )
 	

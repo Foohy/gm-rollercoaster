@@ -27,24 +27,18 @@ local mat_chain = Material("sunabouzu/old_chain") //sunabouzu/old_chain
 function ENT:Initialize()
 	//Default to being invalidated
 	self.Invalidated = true
-
-	if !self:IsController() then return end //Don't continue executing -- the rest of this stuff is for only the controller
-
-	//Create the client side models
-	//self.TrackMesh   		= NewMesh()
+ 
+ 	//Support models
 	self.SupportModel 		= ClientsideModel( "models/sunabouzu/coaster_pole.mdl" )
 	self.SupportModelStart 	= ClientsideModel( "models/sunabouzu/coaster_pole_start.mdl" )
 	self.SupportModelBase 	= ClientsideModel( "models/sunabouzu/coaster_base.mdl" )
-	self.WheelModel			= ClientsideModel( "models/props_vehicles/carparts_wheel01a.mdl")
-	
-	self.SupportModel:SetPos( Vector( 100000, 10000, -10000000) )
-	self.SupportModelStart:SetPos( Vector( 100000, 10000, -10000000) )
-	self.SupportModelBase:SetPos( Vector( 100000, 10000, -10000000) )
-	self.WheelModel:SetPos( Vector( 100000, 100000, -100000 ) )
-	self.WheelModel:SetModelScale( Vector( 1.6, 1.6, 1.6))
+	self.SupportModel:SetMaterial( mat_chain )
 
-	//Create the index to hold all compiled track meshes
-	self.TrackMeshes = {}
+	//hide them (shh)
+	self.SupportModel:SetNoDraw( true )
+	self.SupportModelStart:SetNoDraw( true )
+	self.SupportModelBase:SetNoDraw( true )
+
 	
 	//Material table, to vary the base skin depending on the type of ground it's on
 	self.MatSkins = {
@@ -52,7 +46,18 @@ function ENT:Initialize()
         [MAT_CONCRETE] 	= 1,
 		[MAT_SAND] 		= 2,
 	}
-	
+
+	if !self:IsController() then return end //Don't continue executing -- the rest of this stuff is for only the controller
+
+	//Other misc. clientside models that are only used by the controller
+	self.WheelModel			= ClientsideModel( "models/props_vehicles/carparts_wheel01a.mdl")
+
+	self.WheelModel:SetPos( Vector( 100000, 100000, -100000 ) )
+	self.WheelModel:SetModelScale( Vector( 1.6, 1.6, 1.6))
+
+	//Create the index to hold all compiled track meshes
+	self.TrackMeshes = {}
+
 	//Track material
 	/*
 	self.TrackMaterial = CreateMaterial( "OBJMaterial", "UnlitGeneric", {
@@ -179,10 +184,18 @@ usermessage.Hook("Coaster_nodeinvalidate", function( um )
 		end
 	end
 
+	controller:UpdateClientsidePhysics()
 end )
 
+function ENT:UpdateClientsidePhysics( )
+	for k, v in pairs( ents.FindByClass("coaster_physmesh") ) do
+		if v.GetController && v:GetController() == self then
+			v:BuildMesh()
+		end
+	end
+end
+
 //Refresh the client spline for track previews and mesh generation
-//TODO: This thing is really unstable. Recode.
 function ENT:RefreshClientSpline()
 
 	//Empty all current splines and nodes
@@ -230,6 +243,9 @@ function ENT:RefreshClientSpline()
 	//If there are enough nodes (4 for catmull-rom), calculate the curve
 	if #self.CatmullRom.PointsList > 3 then
 		self.CatmullRom:CalcEntireSpline()
+
+		//And the clientside mesh
+		self:UpdateClientsidePhysics()
 	end
 end
 
@@ -560,7 +576,7 @@ function ENT:DrawTrack()
 
 
 		//Draw the supports
-		self:DrawSupports()
+		//self:DrawSupports()
 
 	end
 
@@ -642,6 +658,10 @@ function ENT:DrawSupports()
 	if !IsValid(self.SupportModelBase ) then return end
 
 	local controller = nil
+
+	//Suppress engine lighting, we're going to be doing the lighting ourselves
+	render.SuppressEngineLighting( true )
+
 	for k, v in pairs( self.Nodes ) do
 		local cont = true
 		if IsValid( v ) && v:IsController() then controller = v end
@@ -678,10 +698,23 @@ function ENT:DrawSupports()
 			end
 			render.SetColorModulation( color.r / 255, color.g / 255, color.b / 255)
 
+			if v.OverrideMaterial then
+				self.SupportModel:SetMaterial( v.OverrideMaterial )
+				self.SupportModelStart:SetMaterial( v.OverrideMaterial )
+				self.SupportModelBase:SetMaterial( v.OverrideMaterial )
+			else
+				self.SupportModel:SetMaterial( "" )
+				self.SupportModelStart:SetMaterial( "" )
+				self.SupportModelBase:SetMaterial( "" )
+			end
+
+
 			//Draw the first pole
 			self.SupportModelStart:SetRenderOrigin( trace.HitPos + Vector( 0, 0, self.BaseHeight ) ) //Add 64 units so it's right on top of the base
-			render.ResetModelLighting()
+
 			render.SetLightingOrigin( trace.HitPos + Vector( 0, 0, self.BaseHeight ) )
+			local lightvec = render.GetLightColor(trace.HitPos + Vector( 0, 0, self.BaseHeight ))
+			render.ResetModelLighting(lightvec.x, lightvec.y, lightvec.z)
 			local height = math.Clamp( Distance, 1, self.PoleHeight - self.BaseHeight )
 			self.SupportModelStart:SetModelScale( Vector( 1, 1, height / (self.PoleHeight  ) ) )
 			self.SupportModelStart:SetAngles( Angle( 0, v:GetAngles().y, 0 ) )
@@ -691,8 +724,9 @@ function ENT:DrawSupports()
 			//Draw the second pole (if applicable)
 			if Distance > self.PoleHeight - self.BaseHeight then
 				self.SupportModel:SetRenderOrigin( trace.HitPos + Vector(0, 0, self.PoleHeight  ))
-				//render.ResetModelLighting()
 				render.SetLightingOrigin( trace.HitPos + Vector(0, 0, self.PoleHeight  ))
+				local lightvec = render.GetLightColor(trace.HitPos + Vector(0, 0, self.PoleHeight  ))
+				render.ResetModelLighting(lightvec.x, lightvec.y, lightvec.z)
 				self.SupportModel:SetModelScale( Vector( 1, 1, ( (Distance - self.PoleHeight + self.BaseHeight) / self.PoleHeight)   ) )
 				self.SupportModel:SetAngles( Angle( 0, v:GetAngles().y, 0 ) )				
 				self.SupportModel:SetupBones()	
@@ -705,14 +739,21 @@ function ENT:DrawSupports()
 			render.SetColorModulation( 1, 1, 1 )
 			self.SupportModelBase:SetSkin( skin or 1 )
 			self.SupportModelBase:SetRenderOrigin( trace.HitPos )
-			//render.ResetModelLighting()
-			render.SetLightingOrigin( trace.HitPos )
+
 			self.SupportModelBase:SetAngles( Angle( 0, v:GetAngles().y, 0 ) )
 			self.SupportModelBase:SetupBones()
+
+
+			render.SetLightingOrigin( trace.HitPos )
+			local lightvec = render.GetLightColor(trace.HitPos)
+			render.ResetModelLighting( lightvec.x, lightvec.y, lightvec.z )
 			self.SupportModelBase:DrawModel()
 
 		end
 	end
+
+	//Suppress engine lighting, we're going to be doing the lighting ourselves
+	render.SuppressEngineLighting( false )
 	
 	self.SupportModel:SetNoDraw( true )
 	self.SupportModelStart:SetNoDraw( true )
@@ -849,6 +890,14 @@ function ENT:DrawBreakModels( segment )
 	self.WheelModel:SetNoDraw( true )
 end
 
+//Move these variables out to prevent excess garbage collection
+local node = -1
+local Dist = 0
+local AngVec = Vector(0,0,0)
+local ang = Angle( 0, 0, 0 )
+
+local Roll = 0
+
 function ENT:DrawSideRail( segment, offset )
 	if not (segment > 1 && (#self.CatmullRom.PointsList > segment )) then return end
 	if self.CatmullRom.Spline == nil or #self.CatmullRom.Spline < 1 then return end
@@ -859,12 +908,10 @@ function ENT:DrawSideRail( segment, offset )
 	if !IsValid( NextSegment ) || !IsValid( ThisSegment ) then return end
 	if !NextSegment.GetRoll || !ThisSegment.GetRoll then return end
 
-	local node = (segment - 2) * self.CatmullRom.STEPS
-	local Dist = CurTime() * 200
-	local AngVec = Vector(0,0,0)
-	local ang = Angle( 0, 0, 0 )
-
-	local Roll = 0
+	//Set up some variables (these are declared outside this function)
+	node = (segment - 2) * self.CatmullRom.STEPS
+	Dist = CurTime() * 200
+	Roll = 0
 
 	//Very first beam position
 	AngVec = self.CatmullRom.Spline[node + 1] - self.CatmullRom.PointsList[segment] 
@@ -904,8 +951,71 @@ function ENT:DrawSideRail( segment, offset )
 	Dist = Dist - self.CatmullRom.PointsList[segment + 1]:Distance( self.CatmullRom.Spline[ node + self.CatmullRom.STEPS ] )
 	render.AddBeam(self.CatmullRom.PointsList[segment + 1] + (ang:Right() * offset ), 10, Dist*0.05, color_white)
 	render.EndBeam()
+end
+
+function ENT:DrawSideRail2( segment, offset )
+	if not (segment > 1 && (#self.CatmullRom.PointsList > segment )) then return end
+	if self.CatmullRom.Spline == nil or #self.CatmullRom.Spline < 1 then return end
+
+	local NextSegment = self.Nodes[ segment + 1 ]
+	local ThisSegment = self.Nodes[ segment ]
+	local ThisPos = Vector( 0, 0, 0 )
+	local NextPos = Vector( 0, 0, 0 )
+
+	if !IsValid( NextSegment ) || !IsValid( ThisSegment ) then return end
+	if !NextSegment.GetRoll || !ThisSegment.GetRoll then return end
+
+	//Set up some variables (these are declared outside this function)
+	node = (segment - 2) * self.CatmullRom.STEPS
+	Dist = CurTime() * 200
+	Roll = 0
 
 
+
+	//Very first beam position
+	//AngVec = self.CatmullRom.Point(node, 0.01) - self.CatmullRom.Point(node, 0)
+	//AngVec:Normalize()
+	//ang = AngVec:Angle()
+
+	//ang:RotateAroundAxis( AngVec, math.NormalizeAngle( ThisSegment:GetRoll() ) )
+
+	//Draw the main Rail
+	render.StartBeam( self.CatmullRom.STEPS + 1)
+	//render.AddBeam(self.CatmullRom.Point(node, 0) + ( ang:Right() * offset ), 10, Dist*0.05, color_white) 
+
+	//NOTE: this starts at 0 so the beam begins at the node, not a little bit after the node
+	for i = 0, (self.CatmullRom.STEPS) do
+
+		ThisPos = self.CatmullRom:Point(segment, i/self.CatmullRom.STEPS)
+		NextPos = self.CatmullRom:Point(segment, (i+1)/self.CatmullRom.STEPS)
+
+		//if i==1 then
+		//	Dist = Dist - self.CatmullRom.Point(node, i/self.CatmullRom.STEPS):Distance( self.CatmullRom.Point(node, 0) ) 
+		//	AngVec = self.CatmullRom.Point(node, i/self.CatmullRom.STEPS) - self.CatmullRom.Point(node, 0)
+		//else
+		AngVec = ThisPos - NextPos
+
+		Dist = Dist - ThisPos:Distance( NextPos ) 
+		//end
+
+		AngVec:Normalize()
+		ang = AngVec:Angle()
+		Roll = Lerp( i / self.CatmullRom.STEPS, math.NormalizeAngle( ThisSegment:GetRoll() ),NextSegment:GetRoll())
+
+		ang:RotateAroundAxis( AngVec, Roll )
+
+		render.AddBeam( ThisPos + ( ang:Right() * offset ), 10, Dist*0.05, color_white)
+	end
+
+	//AngVec = self.CatmullRom.PointsList[segment + 1] - self.CatmullRom.Spline[ node + self.CatmullRom.STEPS ]
+	//AngVec:Normalize()
+	//ang = AngVec:Angle()
+
+	//ang:RotateAroundAxis( AngVec,  NextSegment:GetRoll()  )
+
+	//Dist = Dist - self.CatmullRom.PointsList[segment + 1]:Distance( self.CatmullRom.Spline[ node + self.CatmullRom.STEPS ] )
+	//render.AddBeam(self.CatmullRom.PointsList[segment + 1] + (ang:Right() * offset ), 10, Dist*0.05, color_white)
+	render.EndBeam()
 end
 
 
@@ -980,6 +1090,95 @@ end
 //Draw the node
 function ENT:Draw()
 
+	//Draw ourselves a support beam
+	if LocalPlayer():GetInfoNum("coaster_supports") != 0 then
+		if IsValid(self.SupportModel ) && IsValid(self.SupportModelStart ) && IsValid(self.SupportModelBase ) then
+
+			
+			local cont = true
+			local controller = self:GetController()
+			if IsValid( controller ) then
+				if self:IsController() || controller.Nodes[ #controller.Nodes ] == self then cont = false end //Don't draw the controller or the very last (unconnected) node
+				if math.NormalizeAngle(self:GetRoll()) > 90 || math.NormalizeAngle(self:GetRoll()) < -90 then cont = false end //If a track is upside down, don't draw the supports
+				if controller:Looped() && controller.Nodes[ 2 ] == self then cont = false end //Don't draw the supports for the second node ONLY if the track is looped
+			else
+				cont = false 
+			end
+			if cont then
+				local dist = 100000
+				trace = {}
+
+					trace.start  = self:GetPos()
+					trace.endpos = self:GetPos() - Vector( 0, 0, dist ) //Trace straight down
+					trace.filter = self
+					trace.mask = MASK_SOLID_BRUSHONLY
+					trace = util.TraceLine(trace)
+					
+				local Distance = self:GetPos():Distance( trace.HitPos + Vector( 0, 0, self.BaseHeight) )
+				//Set their colors
+				local color = self:GetColor()
+				
+				if self.Invalidated then
+					color.r = 255
+					color.g = 0
+					color.b = 0
+				end
+				render.SetColorModulation( color.r / 255, color.g / 255, color.b / 255)
+
+				if self.OverrideMaterial then
+					self.SupportModel:SetMaterial( self.OverrideMaterial )
+					self.SupportModelStart:SetMaterial( self.OverrideMaterial )
+					self.SupportModelBase:SetMaterial( self.OverrideMaterial )
+				else
+					self.SupportModel:SetMaterial( "" )
+					self.SupportModelStart:SetMaterial( "" )
+					self.SupportModelBase:SetMaterial( "" )
+				end
+
+
+				//Draw the first pole
+				self.SupportModelStart:SetRenderOrigin( trace.HitPos + Vector( 0, 0, self.BaseHeight ) ) //Add 64 units so it's right on top of the base
+
+				render.SetLightingOrigin( trace.HitPos + Vector( 0, 0, self.BaseHeight ) )
+				local lightvec = render.GetLightColor(trace.HitPos + Vector( 0, 0, self.BaseHeight ))
+				render.ResetModelLighting(lightvec.x, lightvec.y, lightvec.z)
+				local height = math.Clamp( Distance, 1, self.PoleHeight - self.BaseHeight )
+				self.SupportModelStart:SetModelScale( Vector( 1, 1, height / (self.PoleHeight  ) ) )
+				self.SupportModelStart:SetAngles( Angle( 0, self:GetAngles().y, 0 ) )
+				self.SupportModelStart:SetupBones()
+				self.SupportModelStart:DrawModel()
+					
+				//Draw the second pole (if applicable)
+				if Distance > self.PoleHeight - self.BaseHeight then
+					self.SupportModel:SetRenderOrigin( trace.HitPos + Vector(0, 0, self.PoleHeight  ))
+					render.SetLightingOrigin( trace.HitPos + Vector(0, 0, self.PoleHeight  ))
+					local lightvec = render.GetLightColor(trace.HitPos + Vector(0, 0, self.PoleHeight  ))
+					render.ResetModelLighting(lightvec.x, lightvec.y, lightvec.z)
+					self.SupportModel:SetModelScale( Vector( 1, 1, ( (Distance - self.PoleHeight + self.BaseHeight) / self.PoleHeight)   ) )
+					self.SupportModel:SetAngles( Angle( 0, self:GetAngles().y, 0 ) )				
+					self.SupportModel:SetupBones()	
+					self.SupportModel:DrawModel()
+				end
+					
+				local skin = self.MatSkins[trace.MatType]
+				//render.SetMaterial( skin or table.GetFirstValue(self.MatSkins) )
+				//print( trace.MatType )
+				render.SetColorModulation( 1, 1, 1 )
+				self.SupportModelBase:SetSkin( skin or 1 )
+				self.SupportModelBase:SetRenderOrigin( trace.HitPos )
+
+				self.SupportModelBase:SetAngles( Angle( 0, self:GetAngles().y, 0 ) )
+				self.SupportModelBase:SetupBones()
+
+
+				render.SetLightingOrigin( trace.HitPos )
+				local lightvec = render.GetLightColor(trace.HitPos)
+				render.ResetModelLighting( lightvec.x, lightvec.y, lightvec.z )
+				self.SupportModelBase:DrawModel()
+			end
+		end
+	end
+
 	// Don't draw if we're taking pictures
 	local wep = LocalPlayer():GetActiveWeapon()
 	if wep:IsValid() && wep:GetClass() == "gmod_camera" then
@@ -996,12 +1195,48 @@ end
 
 //Update the node's spline if our velocity (and thus position) changes
 function ENT:Think()
+	if !self.FirstBoundsCheck then
+		//Update their render bounds so it draws the supports too
+		trace = {}
+
+			trace.start  = self:GetPos()
+			trace.endpos = self:GetPos() - Vector( 0, 0, 100000 ) //Trace straight down
+			trace.filter = self
+			trace.mask = MASK_SOLID_BRUSHONLY
+			trace = util.TraceLine(trace)
+
+		self:SetRenderBoundsWS( trace.StartPos + Vector( 0, 0, 20), trace.HitPos - Vector( 0, 0, 20) )
+
+		self.FirstBoundsCheck = true
+	end
+
+
+	if self.Material != self:GetMaterial() then
+		self.OverrideMaterial = Material( self:GetMaterial() )
+	else
+		self.OverrideMaterial = nil
+	end
+
+
 	if !self:IsController() then return end
+
 
 	for k, v in pairs( self.Nodes ) do	
 		if IsValid( v ) && v:GetVelocity():Length() > 0 then
-			self:UpdateClientSpline() //So we can see the beams move while me move a node
-			//self:UpdateClientMesh() //Update the mesh itself
+
+			//So we can see the beams move while me move a node
+			self:UpdateClientSpline() 
+
+			//Update it's render bounds
+			trace = {}
+
+				trace.start  = v:GetPos()
+				trace.endpos = v:GetPos() - Vector( 0, 0, 100000 ) //Trace straight down
+				trace.filter = v
+				trace.mask = MASK_SOLID_BRUSHONLY
+				trace = util.TraceLine(trace)
+
+			v:SetRenderBoundsWS( trace.StartPos + Vector( 0, 0, 20), trace.HitPos - Vector( 0, 0, 20) )
 			break
 		end
 	end
@@ -1012,7 +1247,7 @@ function ENT:OnRemove()
 		self:UpdateClientSpline()
 
 		//Remove models
-		if IsValid( self.SupportModel  ) then self.SupportModel :Remove() end
+		if IsValid( self.SupportModel  ) then self.SupportModel:Remove() end
 		if IsValid( self.SupportModelStart ) then self.SupportModelStart:Remove() end
 		if IsValid( self.SupportModelBase ) then self.SupportModelBase:Remove() end
 		if IsValid( self.WheelModel ) then self.WheelModel:Remove() end

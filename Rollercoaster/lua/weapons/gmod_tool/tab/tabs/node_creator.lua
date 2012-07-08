@@ -13,7 +13,7 @@ TAB.Position = 1
 
 TAB.ClientConVar["id"] = "1"
 
-TAB.ClientConVar["elevation"] = "500"
+TAB.ClientConVar["elevation"] = "150"
 TAB.ClientConVar["bank"] = "0"
 TAB.ClientConVar["tracktype"] = "1"
 
@@ -40,7 +40,6 @@ function TAB:LeftClick( trace, tool )
 	
 	if SERVER then
 		if IsValid( trace.Entity ) && trace.Entity:GetClass() == "coaster_node" then //Update an existing node's settings
-			//trace.Entity:SetChains( Chains==1 )
 			trace.Entity:SetType( Type )
 			trace.Entity:SetRelativeRoll( RelRoll==1 )
 			trace.Entity:SetRoll( Bank )
@@ -92,6 +91,8 @@ function TAB:LeftClick( trace, tool )
 				controller:SetLooped( false )
 			else
 				local node = CoasterManager.CreateNode( ID, newPos, newAng, Type, ply )
+				if !IsValid( node ) then return end
+
 				node:SetRoll( Bank )
 				node:SetRelativeRoll( RelRoll==1 )
 
@@ -126,6 +127,7 @@ function TAB:RightClick( trace, tool )
 			
 			if IsValid( Controller ) && IsValid( Controller:GetFirstNode() ) && !Controller:Looped() then
 				local newNode = CoasterManager.CreateNode( ID, FirstNode:GetPos(), FirstNode:GetAngles(), COASTER_NODE_NORMAL, ply )
+				if !IsValid( newNode ) then return end
 
 				local lastNode = Controller.Nodes[ #Controller.Nodes ]
 				

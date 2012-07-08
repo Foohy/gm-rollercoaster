@@ -38,7 +38,7 @@ function TAB:LeftClick( trace, tool )
 	
 	local Ent = trace.Entity
 	
-	if IsValid( Ent ) && Ent:GetClass() == "coaster_node" then
+	if IsValid( Ent ) && ( Ent:GetClass() == "coaster_node" || Ent:GetClass() == "coaster_physmesh" ) then
 		if SERVER then 
 			local controller = Ent:GetController()
 
@@ -82,7 +82,10 @@ function TAB:RightClick( trace, tool )
 	
 	local Ent 		= trace.Entity
 	
-	if IsValid( Ent ) && Ent:GetClass() == "coaster_node" then
+	if CLIENT then
+		print( IsValid( Ent ), Ent:GetClass() )
+	end
+	if IsValid( Ent ) && (Ent:GetClass() == "coaster_node" || Ent:GetClass() == "coaster_physmesh") then
 		if SERVER then
 			local controller = Ent:GetController()
 		
@@ -91,7 +94,7 @@ function TAB:RightClick( trace, tool )
 				controller:ClearTrains()
 			end
 		end
-		
+
 		return true
 	end
 end

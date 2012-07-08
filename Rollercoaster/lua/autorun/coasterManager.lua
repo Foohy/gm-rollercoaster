@@ -37,20 +37,6 @@ resource.AddFile("models/sunabouzu/sonic_the_carthog.mdl")
 
 if SERVER then
 
-	//Because rollercoaster can go faster than what source allows, change what source allows.
-	hook.Add("InitPostEntity", "CoasterSetPerfSettings", function()
-		CoasterManager.Settings = {}
-		CoasterManager.Settings.MaxVelocity = 6000000 //Let's hope this doesn't break things
-		physenv.SetPerformanceSettings(CoasterManager.Settings)
-		
-
-		//sv_tags, why not
-		local tag = GetConVar("sv_tags"):GetString()
-		tag = string.gsub( tag, "Rollercoaster", "")
-
-		RunConsoleCommand( "sv_tags", tag .. ",Rollercoaster" )
-
-	end )
 
 	//For use with spawning coasters from a file. Less automagic bs, but you have to know what you're doing
 	function CoasterManager.CreateNodeSimple( id, pos, ang ) //For use with spawning coasters from a file. Less automagic bs
@@ -76,6 +62,12 @@ if SERVER then
 
 	//Spawn a new rollercoaster the simple way
 	function CoasterManager.CreateNode( id, pos, ang, type, ply )
+		//Make sure we're allowed to spawn one
+		if !SinglePlayer() && IsValid( ply ) && ply:NumCoasterNodes() >= GetConVarNumber("coaster_maxnodes") then
+			ply:LimitHit("maxnodes")
+			return nil 
+		end
+
 		local node = ents.Create("coaster_node")		
 		node.CoasterID = id
 		node:SetType( type )
@@ -101,7 +93,22 @@ if SERVER then
 
 	end
 
+	//Because rollercoaster can go faster than what source allows, change what source allows.
+	hook.Add("InitPostEntity", "CoasterSetPerfSettings", function()
+		CoasterManager.Settings = {}
+		CoasterManager.Settings.MaxVelocity = 6000000 //Let's hope this doesn't break things
+		physenv.SetPerformanceSettings(CoasterManager.Settings)
+		
 
+		//sv_tags, why not
+		local tag = GetConVar("sv_tags"):GetString()
+		tag = string.gsub( tag, "Rollercoaster", "")
+
+		RunConsoleCommand( "sv_tags", tag .. ",Rollercoaster" )
+
+	end )
+
+	//Tell newly joining players to update their shit
 	hook.Add( "PlayerInitialSpawn", "UpdateWitAllTracks", function( ply )
 		timer.Simple( 5, function() //is there a hook when the player is able to receive umsgs?
 			for k, v in pairs( ents.FindByClass("coaster_node") ) do
@@ -120,8 +127,13 @@ if SERVER then
 		if ent1:GetClass() == "coaster_cart" and ent2:GetClass() == "coaster_physmesh" then return false end
 		if ent2:GetClass() == "coaster_cart" and ent1:GetClass() == "coaster_physmesh" then return false end
 
-		//Prevent trains from colliding with itself but collide them with other trains
+		
 		if ent1:GetClass() != "coaster_cart" or ent2:GetClass() != "coaster_cart" then return end
+
+		//If either of the carts are off da railz, collide the hell outta them
+		if ent1.IsOffDaRailz || ent2.IsOffDaRailz then return true end
+
+		//Prevent trains from colliding with itself but collide them with other trains
 		if ent1.CartTable == nil or ent2.CartTable == nil then return false end
 
 		//the first entry in the cart table is ALWAYS the dummy cart. don't fuck that up.
@@ -131,10 +143,12 @@ if SERVER then
 		if ent1.CartTable == ent2.CartTable then return false else return true end
 	end )
 
+	//Don't let the physics mesh be picked up.
 	hook.Add("PhysgunPickup", "PreventCoasterMeshPickup", function( ply, ent ) 
 		if ent:GetClass() == "coaster_physmesh" then return false end
 	end )
 
+	//Be 1000% sure cart dummies are NEVER left over after their train has since exploded
 	hook.Add("Think", "RemoveGhostedDummies", function() 
 		if !CoasterManager.NextThink || CoasterManager.NextThink < CurTime() then
 			CoasterManager.NextThink = CurTime() + 2
@@ -161,10 +175,21 @@ if SERVER then
 			end
 		end
 	end )
+
+
+	//Admin settings (Remember to add clientside language if creating more if it's a numerical limit)
+	CreateConVar("coaster_maxcarts", "16", FCVAR_NOTIFY) //Maximum number of carts per person
+	CreateConVar("coaster_maxnodes", "70", FCVAR_NOTIFY) //Maximum numbr of nodes per person
+	CreateConVar("coaster_cart_explosive_damage", "1", FCVAR_NOTIFY, "Should the cart deal explosive damage and remove itself after going Off Da Railz?") //Should the cart do explosive damage?
+
 end
 
 
 if CLIENT then
+	//Language for admin limits
+	language.Add("SBoxLimit_maxcarts", "You've hit the Carts limit!")
+	language.Add("SBoxLimit_maxnodes", "You've hit the Nodes limit!")
+
 	CoasterBlur = 0.00003 //Blur multiplier
 
 	//Perfomance settings

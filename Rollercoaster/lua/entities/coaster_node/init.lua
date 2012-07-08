@@ -29,6 +29,7 @@ function ENT:Initialize()
 	self.Nodes = {} //List of nodes (assuming we are the controller)
 	self.PhysMeshes = {}
 	self:SetModel( self.Model )	
+	self:SetMaterial( self.Material )
 
 	self:PhysicsInit(SOLID_VPHYSICS)
 	self:SetMoveType(MOVETYPE_VPHYSICS)
@@ -171,7 +172,6 @@ function ENT:UpdateServerSpline()
 		for k, v in pairs( controller.Nodes ) do
 			if k > 1 && k < #controller.Nodes - 1 then
 				v:BuildSegmentMesh()
-				print("Built mesh for segment " .. k )
 			end
 		end
 		//controller:BuildPhysicsMesh()
@@ -217,6 +217,7 @@ function ENT:BuildSegmentMesh()
 		//Make sure it's information is up to date
 		self.PhysMesh.Segment = Segment
 		self.PhysMesh.Controller = controller
+		self.PhysMesh:SetController( controller )
 	else
 		//Create the physics mesh entity
 		local physmesh = ents.Create("coaster_physmesh")
@@ -229,91 +230,14 @@ function ENT:BuildSegmentMesh()
 
 		//Spawn it and store it
 		physmesh:Spawn()
+		physmesh:SetController( controller )
 		physmesh:Activate()
+
 		self.PhysMesh = physmesh
-
-
 	end
 
 	//Build meshhhhhhhhes
 	self.PhysMesh:BuildMesh()
-
-
-	/*
-	local Vertices = {} //Create an array that will hold an array of vertices (This is to split up the model)
-	local Meshes = {} 
-	local Radius = 35
-	local modelCount = 1 
-	local Resolution = 10 //how many 'splines' in the catmull to do
-	local Segment = 2
-	local controller = Rollercoasters[ self.CoasterID ]
-
-	//Find our proper segment
-	if IsValid( controller ) && controller.Nodes && #controller.Nodes > 3 then
-		for k, v in pairs( controller.Nodes ) do
-			if v == self then Segment = k end
-		end
-	else
-		return //get the fuck out
-	end
-
-	if Segment < 2 or Segment >= #controller.Nodes - 1 then return end
-
-	Cylinder.Start( Radius, 4 ) //We're starting up making a beam of cylinders
-
-	local LastAngle = Angle( 0, 0, 0 )
-	local ThisAngle = Angle( 0, 0, 0 )
-
-	local ThisPos = Vector( 0, 0, 0 )
-	local NextPos = Vector( 0, 0, 0 )
-	for i = 1, Resolution do
-		ThisPos = controller.CatmullRom:Point(Segment, i/Resolution)
-		NextPos = controller.CatmullRom:Point(Segment, (i+1)/Resolution)
-
-		//if i==#self.CatmullRom.Spline then
-		//	NextPos = self.CatmullRom.PointsList[#self.CatmullRom.PointsList]
-		//end
-		local ThisAngleVector = ThisPos - NextPos
-		ThisAngle = ThisAngleVector:Angle()
-
-		ThisAngle:RotateAroundAxis( ThisAngleVector:Angle():Right(), 90 )
-		ThisAngle:RotateAroundAxis( ThisAngleVector:Angle():Up(), 270 )
-
-		if i==1 then LastAngle = ThisAngle end
-
-		Cylinder.AddBeam(ThisPos, LastAngle, NextPos, ThisAngle, Radius )
-
-		if #Cylinder.Vertices > 50000 then// some arbitrary limit to split up the verts into seperate meshes
-
-			Vertices[modelCount] = Cylinder.Vertices
-			modelCount = modelCount + 1
-
-			Cylinder.Vertices = {}
-			Cylinder.TriCount = 1
-		end
-
-		LastAngle = ThisAngle
-	end
-
-	local Remaining = Cylinder.EndBeam()
-
-	//move all the positions
-	for i=1, #Remaining do
-		Remaining[i].pos = Remaining[i].pos - self:GetPos()
-	end
-
-	Vertices[modelCount] = Remaining
-	local oldangs = self:GetAngles()
-	self:SetAngles( Angle( 0, 0, 0 ) )
-	self:EnableCustomCollisions( )
-	self:PhysicsFromMesh( Vertices[1] ) //THIS MOTHERFUCKER
-	self:EnableCustomCollisions( )
-
-	self:GetPhysicsObject():EnableMotion( false )
-	self:SetMoveType(MOVETYPE_NONE)
-	self:SetCollisionGroup( COLLISION_GROUP_NONE)
-	self:SetAngles( oldangs )
-	*/
 end
 
 function ENT:PhysicsUpdate(physobj)
@@ -472,8 +396,16 @@ function ENT:SetTrain(ply, model, cartnum)
 
 	local Train = {}
 	while Percent < 1 do
+
+		//Spawn only the specified amount of carts
 		if createdCarts > cartnum then 
 			RollercoasterUpdateCartTable(cartgroup)
+			return Train
+		end
+
+		//Limit a player's maximum number of carts
+		if !SinglePlayer() && IsValid( ply ) && ply:NumActiveCarts() >= GetConVarNumber("coaster_maxcarts") then
+			ply:LimitHit("maxcarts")
 			return Train
 		end
 
@@ -488,6 +420,7 @@ function ENT:SetTrain(ply, model, cartnum)
 			dummy.CoasterID 	= self.CoasterID
 			dummy.Controller 	= self
 			dummy.IsDummy 		= true
+			dummy.Owner 		= ply
 			table.insert( Train, dummy )
 
 
@@ -518,6 +451,7 @@ function ENT:SetTrain(ply, model, cartnum)
 		cart.CoasterID 		= self.CoasterID
 		cart.Controller 	= self
 		cart.IsDummy		= false
+		cart.Owner 			= ply
 		table.insert( Train, cart )
 
 
