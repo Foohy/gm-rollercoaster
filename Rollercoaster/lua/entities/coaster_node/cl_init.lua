@@ -49,6 +49,9 @@ function ENT:Initialize()
 
 	if !self:IsController() then return end //Don't continue executing -- the rest of this stuff is for only the controller
 
+	//The controller handles the drawing of the track mesh -- so we always want it to draw.
+	self:SetRenderBoundsWS(Vector(-1000000,-1000000,-1000000), Vector( 1000000, 1000000, 1000000 ) ) //There must be a better way to do this
+
 	//Other misc. clientside models that are only used by the controller
 	self.WheelModel			= ClientsideModel( "models/props_vehicles/carparts_wheel01a.mdl")
 
@@ -567,7 +570,7 @@ end
 //track preview beams, track mesh
 function ENT:DrawTrack()
 	if self.CatmullRom == nil then return end //Shit
-
+	if true then return end
 	if #self.CatmullRom.PointsList > 3 then
 
 
@@ -1085,7 +1088,6 @@ end
 
 //Draw the node
 function ENT:Draw()
-
 	//Draw ourselves a support beam
 	if LocalPlayer():GetInfoNum("coaster_supports") != 0 then
 		if IsValid(self.SupportModel ) && IsValid(self.SupportModelStart ) && IsValid(self.SupportModelBase ) then
@@ -1177,16 +1179,25 @@ function ENT:Draw()
 
 	// Don't draw if we're taking pictures
 	local wep = LocalPlayer():GetActiveWeapon()
-	if wep:IsValid() && wep:GetClass() == "gmod_camera" then
+	if wep:IsValid() && wep:GetClass() == "gmod_camera" && !self:IsController() then
 		return
 	end
 
 	//If we're in a vehicle ( cart ), don't draw
-	if LocalPlayer():InVehicle() then
+	if LocalPlayer():InVehicle() && !self:IsController() then
 		return
 	end
 
+	//render.SetBlend( 0 )
 	self:DrawModel()
+	//render.SetBlend( 1 )
+
+	if self:IsController() then
+		if #self.CatmullRom.PointsList > 3 then
+			self:DrawRailMesh()
+
+		end
+	end
 end
 
 //Update the node's spline if our velocity (and thus position) changes
@@ -1201,7 +1212,9 @@ function ENT:Think()
 			trace.mask = MASK_SOLID_BRUSHONLY
 			trace = util.TraceLine(trace)
 
-		self:SetRenderBoundsWS( trace.StartPos + Vector( 0, 0, 20), trace.HitPos - Vector( 0, 0, 20) )
+		if !self:IsController() then
+			self:SetRenderBoundsWS( trace.StartPos + Vector( 0, 0, 20), trace.HitPos - Vector( 0, 0, 20) )
+		end
 
 		self.FirstBoundsCheck = true
 	end
@@ -1218,7 +1231,7 @@ function ENT:Think()
 
 
 	for k, v in pairs( self.Nodes ) do	
-		if IsValid( v ) && v:GetVelocity():Length() > 0 then
+		if IsValid( v ) && v:GetVelocity():Length() > 0 && v != self then
 
 			//So we can see the beams move while me move a node
 			self:UpdateClientSpline() 

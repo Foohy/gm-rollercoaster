@@ -6,7 +6,14 @@ local TRACK = {}
 TRACK.Name = "Metal Track"
 TRACK.Description = "A nice metal coaster"
 TRACK.Material = Material("phoenix_storms/dome")
-//TRACK.Material = Material("models/props_wasteland/wood_fence01a")
+/*
+TRACK.Material =  CreateMaterial( "CoasterTrackMaterial", "VertexLitGeneric", { //VertexLitGeneric
+    ["$basetexture"] = "phoenix_storms/dome",
+	//["$nocull"] = 1,
+	//["$translucent"] = 1,
+	//["$vertexalpha"] = 1,
+} )
+*/
 
 local StrutOffset = 1 //Space between coaster struts
 local Offset = 20  //Downwards offset of large center beam
