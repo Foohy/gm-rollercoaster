@@ -108,6 +108,7 @@ function TAB:LeftClick( trace, tool )
 	return true
 end
 
+//Loop the track so carts don't fall off
 function TAB:RightClick( trace, tool )
 	local ply   = tool:GetOwner()
 	
@@ -138,7 +139,16 @@ function TAB:RightClick( trace, tool )
 
 				newNode.FinalNode = true //TODO: Remove the need for this variable
 				Controller:SetLooped( true )
-				//Controller.Looped = true
+
+				//Now that it's looped, make sure all nodes are in their correct place		
+				for _, v in pairs( Controller.Nodes ) do
+					if IsValid( v ) then v:UpdateMagicPositions() end
+				end
+
+				//Delay so the new node is initialized
+				timer.Simple( 0.2, function() 
+					Controller:UpdateServerSpline()
+				end )
 				
 				print("Looped rollercoaster!")
 			end

@@ -176,6 +176,8 @@ function ENT:UpdateServerSpline()
 		for k, v in pairs( controller.Nodes ) do
 			if k > 1 && k < #controller.Nodes - 1 then
 				v:BuildSegmentMesh()
+			else
+				if IsValid( v.PhysMesh ) then v.PhysMesh:Remove() end
 			end
 		end
 		//controller:BuildPhysicsMesh()

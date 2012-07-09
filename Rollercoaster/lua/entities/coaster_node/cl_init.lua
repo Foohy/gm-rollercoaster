@@ -564,7 +564,7 @@ function ENT:GetSplineSegment(spline) //Get the segment of the given spline
 end
 
 //Main function for all track rendering
-//Draws track supports, track preview beams, track mesh
+//track preview beams, track mesh
 function ENT:DrawTrack()
 	if self.CatmullRom == nil then return end //Shit
 
@@ -573,10 +573,6 @@ function ENT:DrawTrack()
 
 		render.SetMaterial( mat_debug )
 		self:DrawRailMesh()
-
-
-		//Draw the supports
-		//self:DrawSupports()
 
 	end
 

@@ -6,6 +6,7 @@ local TRACK = {}
 TRACK.Name = "Metal Track"
 TRACK.Description = "A nice metal coaster"
 TRACK.Material = Material("phoenix_storms/dome")
+//TRACK.Material = Material("models/props_wasteland/wood_fence01a")
 
 local StrutOffset = 1 //Space between coaster struts
 local Offset = 20  //Downwards offset of large center beam
