@@ -17,6 +17,7 @@ TAB.ClientConVar["elevation"] = "150"
 TAB.ClientConVar["bank"] = "0"
 TAB.ClientConVar["tracktype"] = "1"
 
+TAB.ClientConVar["prev_nodeheight"] = "0"
 TAB.ClientConVar["trackchains"] = "0"
 TAB.ClientConVar["relativeroll"] = "0"
 
@@ -265,34 +266,17 @@ function TAB:BuildPanel( )
 	local panel = vgui.Create("DForm")
 	panel:SetName("Node Spawner")
 
-	local IDSlider = vgui.Create("DNumSlider", panel )
-	IDSlider:SetText("ID: ")
-	IDSlider:SetDecimals( 0 )
-	IDSlider:SetMin( 1 )
-	IDSlider:SetMax( 8 )
-	IDSlider:SetConVar( "coaster_supertool_tab_node_creator_id")
-	panel:AddItem( IDSlider )
-
-	local ElevSlider = vgui.Create("DNumSlider", panel)
-	ElevSlider:SetText("Elevation: ")
-	ElevSlider:SetDecimals( 3 )
-	ElevSlider:SetMin(0)
-	ElevSlider:SetMax(2000)
-	ElevSlider:SetConVar("coaster_supertool_tab_node_creator_elevation")
-	panel:AddItem( ElevSlider )
-
-	local BankSlider = vgui.Create("DNumSlider", panel)
-	BankSlider:SetText("Roll: ")
-	BankSlider:SetDecimals( 2 )
-	BankSlider:SetMin( -180 )
-	BankSlider:SetMax( 180 )
-	BankSlider:SetConVar("coaster_supertool_tab_node_creator_bank")
-	panel:AddItem( BankSlider )
-	BankSlider:SetValue( 0 )
+	panel:NumSlider("ID: ","coaster_supertool_tab_node_creator_id", 1, 8, 0)
+	panel:NumSlider("Elevation: ","coaster_supertool_tab_node_creator_elevation", 0, 2000, 3)
+	local bankSlider = panel:NumSlider("Roll: ","coaster_supertool_tab_node_creator_bank", -180, 180, 2)
+	bankSlider:SetValue( 0 )
 
 	//panel:AddControl("Slider",   {Label = "ID: ",    Description = "The ID of the specific rollercoaster (Change the ID if you want to make a seperate coaster)",       Type = "Int", Min = "1", Max = "8", Command = "coaster_track_creator_id"})
 	//panel:AddControl("Slider",   {Label = "Elevation: ",    Description = "The height of the track node",       Type = "Float", Min = "0.00", Max = "5000", Command = "coaster_track_creator_elevation"})
 	//panel:AddControl("Slider",   {Label = "Bank: ",    Description = "How far to bank at that node",       Type = "Float", Min = "-180.0", Max = "180.0", Command = "coaster_track_creator_bank"})
+
+	panel:CheckBox( "Set to previous node's height", "coaster_supertool_tab_node_creator_prev_nodeheight" )
+
 
 	local ComboBox = vgui.Create("DComboBox", panel)
 	//Create some nice choices
@@ -308,21 +292,11 @@ function TAB:BuildPanel( )
 	ComboBox.OnSelect = function(index, value, data)
 		RunConsoleCommand("coaster_supertool_tab_node_creator_tracktype" , tostring( value ) )
 	end
-
 	panel:AddItem( ComboBox )
 
-	local Seperator = vgui.Create("DLabel", panel)
-	Seperator:SetText("______________________________________________")
-	panel:AddItem( Seperator )
-	
-	local NoteLabel = vgui.Create("DLabel", panel)
-	NoteLabel:SetText("Note: Building the mesh is not realtime.")
-	panel:AddItem( NoteLabel )
 
-	local buildBtn = vgui.Create("DButton", panel)
-	buildBtn:SetText("Build Mesh")
-	buildBtn:SetConsoleCommand("update_mesh")
-	panel:AddItem( buildBtn )
+	panel:Button( "Build Clientside Mesh", "update_mesh")
+	panel:ControlHelp( "Note: Building the mesh is not realtime. You WILL experience a temporary freeze when building the mesh." )
 	//panel:AddControl("CheckBox", {Label = "Relative Roll: ", Description = "Roll of the cart is relative to the tracks angle (LOOPDY LOOP HEAVEN)", Command = "coaster_track_creator_relativeroll"})
 
 	//panel:AddControl("Button",	 {Label = "BUILD COASTER (CAUTION WEEOOO)", Description = "Build the current rollercoaster with a pretty mesh track. WARNING FREEZES FOR A FEW SECONDS.", Command = "update_mesh"})

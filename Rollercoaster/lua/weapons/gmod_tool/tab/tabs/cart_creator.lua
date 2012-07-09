@@ -132,33 +132,14 @@ function TAB:BuildPanel()
 
 	panel:AddItem(propSelect)
 	//panel:AddControl( "PropSelect", { Label = "#WheelTool_model", ConVar = "coaster_cart_creator_model", Category = "Carts", Models = list.Get( "CartModels" ) } )
+	local cartSlider 		= panel:NumSlider("Number of carts: ","coaster_supertool_tab_cart_creator_cart_amount", 1, 8, 0)
+	panel:ControlHelp("How many carts should be spawned and attached as a single train")
 
-	local cartSlider = vgui.Create("DNumSlider")
-	cartSlider:SetText("Number of carts: ")
-	cartSlider:SetDecimals( 0 )
-	cartSlider:SetMin( 1 )
-	cartSlider:SetMax( 8 )
-	cartSlider:SetConVar( "coaster_supertool_tab_cart_creator_cart_amount")
-	panel:AddItem( cartSlider )
-	//panel:AddControl("Slider",   {Label = "Number of carts: ",    Tooltip = "The number of carts on the coaster train",       Type = "Int", Min = "1", Max = "8", Command = "coaster_cart_creator_cart_amount"})
+	local minSpeedSlider 	= panel:NumSlider("Minimum speed: ","coaster_supertool_tab_cart_creator_minSpeed", 0, 100, 3)
+	panel:ControlHelp("Never let the cart slow beyond the specified speed. Use a minimum speed of 0 to disable.")
 
-	local MinSpeedSlider = vgui.Create("DNumSlider", panel)
-	MinSpeedSlider:SetText("Minimum Speed: ")
-	MinSpeedSlider.Tooltip = "Use a minimum speed of 0 to disable."
-	MinSpeedSlider:SetDecimals( 3 )
-	MinSpeedSlider:SetMin(0)
-	MinSpeedSlider:SetMax(100)
-	MinSpeedSlider:SetConVar("coaster_supertool_tab_cart_creator_minSpeed")
-	MinSpeedSlider:SetValue( 0.0 )
-	panel:AddItem( MinSpeedSlider )
-
-	local FrictionSlider = vgui.Create("DNumSlider", panel)
-	FrictionSlider:SetText("Frictional Coefficient: ")
-	FrictionSlider.Tooltip = "Use a minimum speed of 0 to disable."
-	FrictionSlider:SetDecimals( 3 )
-	FrictionSlider:SetConVar("coaster_supertool_tab_cart_creator_friction")
-	FrictionSlider:SetValue( 0.04 )
-	panel:AddItem( FrictionSlider )
+	local FrictionSlider 	= panel:NumSlider("Frictional Coefficient: ","coaster_supertool_tab_cart_creator_friction", 0, 1, 3)
+	panel:ControlHelp("The frictional coefficient of each cart. Higher = more friction.")
 
 	//panel:AddControl("CheckBox", {Label = "Use weapons while in cart", Description = "Aim and shoot weapons while in the cart.", Command = "coaster_cart_creator_allow_weapons"})
 

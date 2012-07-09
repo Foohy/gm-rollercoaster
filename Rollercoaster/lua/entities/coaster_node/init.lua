@@ -271,7 +271,6 @@ function ENT:PhysicsUpdate(physobj)
 			self.WasBeingHeld = true
 			self:Invalidate() //invalidate ourselves, we moved
 		end
-		
 		self:UpdateMagicPositions()
 		
 	end

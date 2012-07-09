@@ -7,7 +7,7 @@ local UNIQUENAME = "saver"
 
 TAB.Name = "Save"
 TAB.UniqueName = UNIQUENAME
-TAB.Description = "Save and load tracks "
+TAB.Description = "Save, load, and upload tracks"
 TAB.Instructions = "Right click on a coaster to select it to save. Left click to spawn a loaded coaster."
 TAB.Icon = "coaster/save"
 TAB.Position = 5 //The position in the series of tabs
@@ -21,7 +21,7 @@ TAB.CoolDown 	= 0 //For some reason, LeftClick is called four times when pressed
 
 //Some uniquely named global variables
 coaster_saver_ClipboardTrack = {} //The coaster track loaded into the 'clipboard', to be saved or loaded
-coaster_saver_selectedfilename = "none"
+coaster_saver_selectedfilename = ""
 coaster_saver_preview_trackmesh = nil
 coaster_saver_preview_trackcenter = Vector( 0, 0, 0 )
 coaster_saver_preview_shoulddraw = false
@@ -41,6 +41,8 @@ function TAB:LeftClick( trace, tool )
 	if CurTime() < self.CoolDown then return end
 
 	if CLIENT || SinglePlayer() then
+		if !coaster_saver_selectedfilename or coaster_saver_selectedfilename == "" then return false end
+
 		self:SpawnTrack( tool )
 		self.CoolDown = CurTime() + .25
 
@@ -118,7 +120,7 @@ function TAB:BuildPanel( )
 	local panel = vgui.Create("DForm")
 	panel:SetName("Save/Load/Upload Completed Tracks")
 
-		local tracklist = vgui.Create("DListView")
+	local tracklist = vgui.Create("DListView")
 	tracklist:SetParent( panel )
 	tracklist:SetMultiSelect( false )
 	tracklist:AddColumn("Track Name")
@@ -129,36 +131,19 @@ function TAB:BuildPanel( )
 	panel:AddItem( tracklist )
 	panel.tracklist = tracklist
 
-	local btnLoad = panel:Button("Load Selected")
-	btnLoad.DoClick = function() LoadSelectedTrack() end
-	btnLoad:SetWide( (panel:GetWide() / 2) - 5 )
-	btnLoad:AlignLeft()
-
 	local btnRefresh = panel:Button("Refresh")
 	btnRefresh.DoClick = function() UpdateTrackList() end
-	btnRefresh:SetWide( (panel:GetWide() / 2) - 5 )
-	btnRefresh:MoveRightOf( btnLoad, 10 )
-	btnRefresh:AlignRight()
+
+	local btnLoad = panel:Button("Load Selected")
+	btnLoad.DoClick = function() LoadSelectedTrack() end
 
 	if !SinglePlayer() then
-		panel:Button("Upload...", "coaster_supertool_tab_saver_uploadpanel")
+		local upload = panel:Button("Upload...")
+		upload.DoClick = function() OpenCoasterUploadMenu() end
 	end
+	panel:NumSlider( "Spawn ID: ", "coaster_supertool_tab_saver_id", 1, 8, 0 )
 
-	local IDSlider = vgui.Create("DNumSlider", panel )
-	IDSlider:SetText("Spawn ID: ")
-	IDSlider:SetDecimals( 0 )
-	IDSlider:SetMin( 1 )
-	IDSlider:SetMax( 8 )
-	IDSlider:SetConVar( "coaster_supertool_tab_saver_id")
-	panel:AddItem( IDSlider )
-
-	//panel:AddControl("Slider",   {Label = "Spawn ID: ",    Description = "The ID of the specific rollercoaster (Change the ID if you want to make a seperate coaster)",       Type = "Int", Min = "1", Max = "8", Command = "coaster_track_saver_id"})
-
-	//panel:AddControl("CheckBox", {Label = "Spawn at original position: ", Command = "coaster_track_creator_relativeroll"})
-	local CheckOrigPos = vgui.Create("DCheckBoxLabel", panel )
-	CheckOrigPos:SetText("Spawn at original position and angle")
-	CheckOrigPos:SetConVar("coaster_supertool_tab_saver_orig_spawn")
-	panel:AddItem( CheckOrigPos )
+	panel:CheckBox("Spawn at original position and angles", "coaster_supertool_tab_saver_orig_spawn")
 
 	local Seperator = vgui.Create("DLabel", panel)
 	Seperator:SetText("______________________________________________")
@@ -191,7 +176,7 @@ end
 function OpenCoasterSaveMenu()
 
 	local form = vgui.Create( "DFrame" )
-	form:SetSize( 250, 289 )
+	form:SetSize( 250, 300 ) //289
 	form:SetTitle("Save Rollercoaster")
 	form:Center()
 	form:SetVisible( true )
@@ -554,10 +539,6 @@ usermessage.Hook("Coaster_spawntrack_sp", function(um)
 	RunConsoleCommand( "coaster_supertool_tab_saver_spawntrack", coaster_saver_selectedfilename, um:ReadShort() or 1, um:ReadShort(), um:ReadVector() )
 	print("Building \"" .. coaster_saver_selectedfilename .. "\"")
 end )
-
-concommand.Add("coaster_supertool_tab_saver_uploadpanel", function()
-	OpenCoasterUploadMenu()
-end)
 
 //Activate things on the server (not really enough to govern a net function)
 if SERVER then

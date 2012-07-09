@@ -82,6 +82,8 @@ function TAB:BuildPanel( )
 	local panel = vgui.Create("DForm")
 	panel:SetName("Coaster Remover")
 
+	panel:Help("Remove entire rollercoasters at a time. Unless you are an admin, you can only remove your own tracks.")
+
 	return panel
 end
 
