@@ -25,8 +25,10 @@ function ENT:Initialize()
 
 
 	timer.Simple(0.5, function()
-		self.Initialized = true
-		self:BuildMesh()
+		if IsValid( self ) then
+			self.Initialized = true
+			self:BuildMesh()
+		end
 	end )
 end
 

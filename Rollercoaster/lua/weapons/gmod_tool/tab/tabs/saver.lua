@@ -41,7 +41,7 @@ function TAB:LeftClick( trace, tool )
 	if CurTime() < self.CoolDown then return end
 
 	if CLIENT || SinglePlayer() then
-		if !coaster_saver_selectedfilename or coaster_saver_selectedfilename == "" then return false end
+		if !coaster_saver_selectedfilename or coaster_saver_selectedfilename == "" && !SinglePlayer() then return false end
 
 		self:SpawnTrack( tool )
 		self.CoolDown = CurTime() + .25
@@ -56,25 +56,60 @@ function TAB:RightClick( trace, tool )
 	local ply   = tool:GetOwner()
 	
 	if IsValid( trace.Entity ) && trace.Entity:GetClass() == "coaster_node" then
-		if IsValid( trace.Entity:GetController() ) && CLIENT then
-			local Controller = trace.Entity:GetController()
-			coaster_saver_ClipboardTrack = {} //This will be the table holding all of the information we'll need to later create the coaster
+		if IsValid( trace.Entity:GetController() ) &&  CLIENT then
 
-			for k, v in pairs( Controller.Nodes ) do
-				coaster_saver_ClipboardTrack[k] = {}
-				coaster_saver_ClipboardTrack[k].Pos = tostring(v:GetPos())
-				coaster_saver_ClipboardTrack[k].Ang = tostring(v:GetAngles())
-				coaster_saver_ClipboardTrack[k].Type = v:GetType()
-				coaster_saver_ClipboardTrack[k].Roll = v:GetRoll()
-				coaster_saver_ClipboardTrack[k].Color = v:GetColor()
-			end
+			CreateTrackTable( trace.Entity:GetController() )
 
-			coaster_saver_ClipboardTrack.numnodes = #Controller.Nodes
-			coaster_saver_ClipboardTrack.looped = tostring(Controller:Looped())
+
+		elseif SinglePlayer() then
+			//Tell the client to do something. I have to do this because this isn't called clientside in singleplayer
+			//This is due to no prediction in singleplayer, but it'd be nice if garry had this called clientside anyway
+			umsg.Start("coaster_rightclick_sp")
+				umsg.Entity( tool:GetOwner() )
+			umsg.End()
 		end
 
 		return true
 	end
+end
+
+usermessage.Hook("coaster_rightclick_sp", function( um ) 
+	local ply = um:ReadEntity()
+
+	if !IsValid( ply ) then print("ASLKDJAK") return end
+
+	local trace = {}
+	trace.start  = ply:GetShootPos()
+	trace.endpos = trace.start + (ply:GetAimVector() * 99999999)
+	trace.filter = ply
+	trace = util.TraceLine(trace)
+
+	if IsValid( trace.Entity ) && trace.Entity:GetClass() == "coaster_node" then
+		if IsValid( trace.Entity:GetController() )  then
+
+			CreateTrackTable( trace.Entity:GetController() )
+			print("created track table in singleplayer!")
+		end
+
+	end
+
+end )
+
+function CreateTrackTable( controller )
+	coaster_saver_ClipboardTrack = {} //This will be the table holding all of the information we'll need to later create the coaster
+
+	for k, v in pairs( controller.Nodes ) do
+		coaster_saver_ClipboardTrack[k] = {}
+		coaster_saver_ClipboardTrack[k].Pos = tostring(v:GetPos())
+		coaster_saver_ClipboardTrack[k].Ang = tostring(v:GetAngles())
+		coaster_saver_ClipboardTrack[k].Type = v:GetType()
+		coaster_saver_ClipboardTrack[k].Roll = v:GetRoll()
+		coaster_saver_ClipboardTrack[k].Color = v:GetColor()
+	end
+
+	coaster_saver_ClipboardTrack.numnodes = #controller.Nodes
+	coaster_saver_ClipboardTrack.looped = tostring(controller:Looped())
+
 end
 
 function TAB:Reload( trace )
@@ -219,7 +254,16 @@ function OpenCoasterSaveMenu()
 
 	local btnSave = vgui.Create("Button")
 	btnSave:SetText("Save")
-	btnSave.DoClick = function() SaveTrack(DName:GetValue(), DDesc:GetValue()); form:Close(); surface.PlaySound("garrysmod/content_downloaded.wav") end
+	btnSave.DoClick = function() 
+		print(table.Count(coaster_saver_ClipboardTrack) )
+		if coaster_saver_ClipboardTrack != nil && #coaster_saver_ClipboardTrack > 0 then
+			SaveTrack(DName:GetValue(), DDesc:GetValue()); form:Close(); 
+			surface.PlaySound("garrysmod/content_downloaded.wav") 
+		else
+			GAMEMODE:AddNotify( "No track selected!", NOTIFY_ERROR, 6 )
+	       	surface.PlaySound( "buttons/button10.wav" )
+		end
+	end
 	panel:AddItem( btnSave )
 
 	local btnCancel = vgui.Create("Button")
@@ -351,6 +395,8 @@ function SaveTrack(name, desc)
 
 		//Update with the newly saved track
 		UpdateTrackList()
+	else
+		print("Failed to save rollercoaster: " .. coaster_saver_ClipboardTrack )
 	end
 end
 
