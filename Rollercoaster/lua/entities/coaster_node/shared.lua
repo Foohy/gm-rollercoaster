@@ -15,13 +15,23 @@ function ENT:SetupDataTables()
 	self:DTVar("Bool", 0, "IsController")
 	self:DTVar("Bool", 1, "RelativeRoll")
 	self:DTVar("Bool", 2, "Looped")
-	self:DTVar("Int", 0, "FirstNode")
-	self:DTVar("Int", 1, "NextNode")
-	self:DTVar("Int", 2, "Type")
-	self:DTVar("Int", 3, "TrackType")
+	self:DTVar("Entity", 0, "FirstNode")
+	self:DTVar("Entity", 1, "NextNode")
+	self:DTVar("Int", 0, "Type")
+	self:DTVar("Int", 1, "TrackType")
+	self:DTVar("Int", 2, "CoasterID")
 	self:DTVar("Float", 0, "Roll")
 	self:DTVar("Vector", 0, "TrackColor")
 	self:DTVar("Vector", 1, "SupportColor")
+end
+
+//Function to get if we are being driven with garry's new drive system
+function ENT:IsBeingDriven()
+	for _, v in pairs( player.GetAll() ) do
+		if v:GetViewEntity() == self then return true end
+	end
+
+	return false
 end
 
 function ENT:SetController(bController)
@@ -49,19 +59,19 @@ function ENT:Looped()
 end
 
 function ENT:SetFirstNode(node)
-	self.dt.FirstNode = node:EntIndex()
+	self.dt.FirstNode = node
 end
 
 function ENT:GetFirstNode()
-	return Entity(self.dt.FirstNode)
+	return self.dt.FirstNode
 end
 
 function ENT:SetNextNode(node)
-	self.dt.NextNode = node:EntIndex()
+	self.dt.NextNode = node
 end
 
 function ENT:GetNextNode()
-	return Entity(self.dt.NextNode)
+	return self.dt.NextNode
 end
 
 function ENT:SetType(type)
@@ -78,6 +88,14 @@ end
 
 function ENT:GetTrackType()
 	return self.dt.TrackType or COASTER_TRACK_METAL
+end
+
+function ENT:SetCoasterID( id )
+	self.dt.CoasterID = id
+end
+
+function ENT:GetCoasterID()
+	return self.dt.CoasterID or -1;
 end
 
 function ENT:SetRoll(roll) //Not to be confused with CLuaParticle.SetRoll()

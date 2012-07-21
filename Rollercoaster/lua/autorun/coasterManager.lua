@@ -1,11 +1,22 @@
-AddCSLuaFile( "autorun/coasterManager.lua" )
+/* 
+ROLLERCOASTER
+BY FOOHY
+LOTS CAN BE IMPROVED
+LOTS CAN BE RECODED
+LOTS CAN BE BROKEN
+DONT HURT ME IF IT DOES
 
+TODO:
+	moved to trello
+*/
+
+AddCSLuaFile( "autorun/coasterManager.lua" )
 AddCSLuaFile("trackmanager.lua")
 include("trackmanager.lua")
 
+//I should probably make this a package and combine these two global tables into one.
 Rollercoasters = {} //Holds all the rollercoasters
 CoasterManager = {} //Holds all the methods and variables for rollercoasters
-//Controller	   = {}
 
 
 //Some content (Remove these lines if you don't want clients to download)
@@ -22,7 +33,7 @@ resource.AddFile("materials/coaster/remover.vmt")
 resource.AddFile("materials/coaster/settings.vmt")
 resource.AddFile("materials/coaster/track.vmt")
 resource.AddFile("materials/coaster/save.vmt")
-resource.AddFile("materials/models/sunabouzu/sonic_the_carthog.vmt")
+
 
 resource.AddFile("models/sunabouzu/coaster_base.mdl")
 resource.AddFile("materials/models/sunabouzu/coaster_base.vmt")
@@ -33,6 +44,7 @@ resource.AddFile("materials/models/sunabouzu/coaster_pole.vmt")
 resource.AddFile("models/sunabouzu/coaster_pole_start.mdl")
 resource.AddFile("materials/models/sunabouzu/coaster_pole_start.vmt")
 
+resource.AddFile("materials/models/sunabouzu/sonic_the_carthog.vmt")
 resource.AddFile("models/sunabouzu/sonic_the_carthog.mdl")
 
 if SERVER then
@@ -41,7 +53,7 @@ if SERVER then
 	//For use with spawning coasters from a file. Less automagic bs, but you have to know what you're doing
 	function CoasterManager.CreateNodeSimple( id, pos, ang ) //For use with spawning coasters from a file. Less automagic bs
 		local node = ents.Create("coaster_node")		
-		node.CoasterID = id
+		node:SetCoasterID( id )
 		node:SetTrackType( COASTER_TRACK_METAL )
 		
 		node:SetPos( pos )
@@ -69,7 +81,7 @@ if SERVER then
 		end
 
 		local node = ents.Create("coaster_node")		
-		node.CoasterID = id
+		node:SetCoasterID( id )
 		node:SetType( type )
 		node:SetTrackType( COASTER_TRACK_METAL )
 		
@@ -137,8 +149,8 @@ if SERVER then
 		if ent1.CartTable == nil or ent2.CartTable == nil then return false end
 
 		//the first entry in the cart table is ALWAYS the dummy cart. don't fuck that up.
-		if ent1.CartTable[1] == ent1 then return false end
-		if ent2.CartTable[1] == ent2 then return false end
+		if ent1.CartTable[1] == ent1 && #ent1.CartTable > 1 then return false end
+		if ent2.CartTable[1] == ent2 && #ent2.CartTable > 1 then return false end
 
 		if ent1.CartTable == ent2.CartTable then return false else return true end
 	end )

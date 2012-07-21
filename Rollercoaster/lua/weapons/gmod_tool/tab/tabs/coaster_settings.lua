@@ -34,7 +34,7 @@ function TAB:LeftClick( trace, tool )
 			local controller = Ent:GetController()
 
 			if IsValid( controller ) then
-				print("Editing settings for "..tostring(controller.CoasterID))
+				print("Editing settings for "..tostring(controller:GetCoasterID()))
 				controller:SetTrackColor(r,g,b)
 				controller:SetTrackType(tracktype)
 			end
@@ -57,7 +57,7 @@ function TAB:RightClick( trace, tool )
 			local controller = Ent:GetController()
 		
 			if IsValid( controller ) && SERVER then 
-				print("Doing nothing for "..tostring(controller.CoasterID))
+				print("Doing nothing for "..tostring(controller:GetCoasterID()))
 				//controller:ClearTrains()
 			end
 		end

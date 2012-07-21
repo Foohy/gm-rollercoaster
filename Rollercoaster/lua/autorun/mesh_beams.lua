@@ -84,54 +84,80 @@ function Cylinder.AddBeam( Pos1, Ang1, Pos2, Ang2, Radius )
 		local OldV      = Cylinder.TotalV
 		Cylinder.TotalV = Cylinder.TotalV + ( 1 / Cylinder.Count)
 
-		//Create the 6 verts that make up a single quad
+		//Create some variables for proper lightmapped color
+		local colVec = Vector( 0, 0, 0 )
 
+		//Create the 6 verts that make up a single quad
+		colVec = render.ComputeLighting( CurRight.pos, CurRight.norm )
+		colVec = colVec + render.GetAmbientLightColor()
+		colVec = colVec + render.ComputeDynamicLighting(CurRight.pos, CurRight.norm )
 		Cylinder.Vertices[Cylinder.TriCount] = { 
 			pos = CurRight.pos, 
 			normal = CurRight.norm, 
 			u = OldU,
 			v = Cylinder.TotalV,
+			color = Color( colVec.x*255, colVec.y*255, colVec.z*255)
 		}
 		Cylinder.TriCount = Cylinder.TriCount + 1
 
+		colVec = render.ComputeLighting( CurLeft.pos, CurLeft.norm )
+		colVec = colVec + render.GetAmbientLightColor()
+		colVec = colVec + render.ComputeDynamicLighting(CurLeft.pos, CurLeft.norm )
 		Cylinder.Vertices[Cylinder.TriCount] = { 
 			pos = CurLeft.pos, 
 			normal = CurLeft.norm, 
 			u = OldU,
 			v = OldV,
+			color = Color( colVec.x*255, colVec.y*255, colVec.z*255)
 		}
 		Cylinder.TriCount = Cylinder.TriCount + 1
 
+		colVec = render.ComputeLighting( NextLeft.pos, NextLeft.norm )
+		colVec = colVec + render.GetAmbientLightColor()
+		colVec = colVec + render.ComputeDynamicLighting(NextLeft.pos, NextLeft.norm )
 		Cylinder.Vertices[Cylinder.TriCount] = { 
 			pos = NextLeft.pos, 
 			normal = NextLeft.norm, 
 			u = Cylinder.TotalU,
 			v = OldV,
+			color = Color( colVec.x*255, colVec.y*255, colVec.z*255)
 		}
 		Cylinder.TriCount = Cylinder.TriCount + 1
 
 		//Second tri
+		colVec = render.ComputeLighting( NextLeft.pos, NextLeft.norm )
+		colVec = colVec + render.GetAmbientLightColor()
+		colVec = colVec + render.ComputeDynamicLighting(NextLeft.pos, NextLeft.norm )
 		Cylinder.Vertices[Cylinder.TriCount] = { 
 			pos = NextLeft.pos, 
 			normal = NextLeft.norm, 
 			u = Cylinder.TotalU,
 			v = OldV,
+			color = Color( colVec.x*255, colVec.y*255, colVec.z*255)
 		}
 		Cylinder.TriCount = Cylinder.TriCount + 1
 
+		colVec = render.ComputeLighting( NextRight.pos, NextRight.norm )
+		colVec = colVec + render.GetAmbientLightColor()
+		colVec = colVec + render.ComputeDynamicLighting(NextRight.pos, NextRight.norm )
 		Cylinder.Vertices[Cylinder.TriCount] = { 
 			pos = NextRight.pos, 
 			normal = NextRight.norm, 
 			u = Cylinder.TotalU,
 			v = Cylinder.TotalV,
+			color = Color( colVec.x*255, colVec.y*255, colVec.z*255)
 		}
 		Cylinder.TriCount = Cylinder.TriCount + 1
 
+		colVec = render.ComputeLighting( CurRight.pos, CurRight.norm )
+		colVec = colVec + render.GetAmbientLightColor()
+		colVec = colVec + render.ComputeDynamicLighting(CurRight.pos, CurRight.norm )
 		Cylinder.Vertices[Cylinder.TriCount] = { 
 			pos = CurRight.pos, 
 			normal = CurRight.norm, 
 			u = OldU,
 			v = Cylinder.TotalV,
+			color = Color( colVec.x*255, colVec.y*255, colVec.z*255)
 		}
 		Cylinder.TriCount = Cylinder.TriCount + 1
 

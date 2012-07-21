@@ -450,7 +450,7 @@ function RequestTrackList(ply)
 
 	//Send it to the client
 	net.Start("Coaster_transferInfo")
-		net.WriteInt( TRANSFER_TRACKLIST, 1 )
+		net.WriteInt( TRANSFER_TRACKLIST, 2 )
 		net.WriteTable( tracklist )
 	net.Send( ply )
 
@@ -466,12 +466,15 @@ function LoadSelectedTrack()
 		if num then
 			line = panel.tracklist:GetLine( num )
 		else
-			return 
 			print("Failed to load track - No selected track. (" .. tostring( num ) .. ")")
+			GAMEMODE:AddNotify( "No selected track", NOTIFY_ERROR, 5 )
+			return 
 		end
 
 		if line then
 			coaster_saver_selectedfilename = line:GetValue( 1 ) .. ".txt"
+
+			GAMEMODE:AddNotify( "Loaded " .. coaster_saver_selectedfilename, NOTIFY_GENERIC, 5 )
 
 			if !line.PreviewTable then
 				RunConsoleCommand("coaster_supertool_tab_saver_requestpreview", coaster_saver_selectedfilename )
@@ -487,8 +490,9 @@ function LoadSelectedTrack()
 			print(coaster_saver_selectedfilename)
 
 		else
-			return
 			print("Failed to load track - Line was nil")
+			GAMEMODE:AddNotify( "No selected track", NOTIFY_ERROR, 5 )
+			return
 		end
 	end
 end
@@ -679,7 +683,7 @@ if SERVER then
 
 				//Send it to the client
 				net.Start("Coaster_transferInfo")
-					net.WriteInt( TRANSFER_PREVIEW, 1 )
+					net.WriteInt( TRANSFER_PREVIEW, 2 )
 					net.WriteString( filename )
 					net.WriteTable( PreviewTable )
 				net.Send( ply )
@@ -758,12 +762,14 @@ end
 if CLIENT then
 
 	net.Receive("Coaster_transferInfo", function( length, client )
-		local transferType = net.ReadInt( 1 )
+
+		local transferType = net.ReadInt( 2 )
 
 		if transferType == TRANSFER_TRACKLIST then
 			local TrackTable = net.ReadTable()
 
 			if TrackTable then
+
 				//and if the panel holding the listview is valid
 				local panel = GetTabPanel( "saver" )
 				if panel && panel.tracklist != nil then
@@ -772,6 +778,7 @@ if CLIENT then
 					//Add each track name and info
 					for key, value in pairs( TrackTable ) do
 						if key and value then
+
 							//Add specific info to panel
 							local line = panel.tracklist:AddLine( value.name, value.author )
 

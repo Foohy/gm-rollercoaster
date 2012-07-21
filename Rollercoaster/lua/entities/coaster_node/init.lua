@@ -45,7 +45,7 @@ function ENT:Initialize()
 	end
 
 	//Mainly to prevent duplicator spamming until I figure out how to correctly spawn nodes from garry's duplicator
-	if !self.CoasterID || self.CoasterID < 1 then self:Remove() end
+	if !self:GetCoasterID() || self:GetCoasterID() < 1 then self:Remove() end
 	
 	self.CatmullRom = CoasterManager.Controller:New( self )
 	self.CatmullRom:Reset()
@@ -111,8 +111,7 @@ function ENT:AddTrackNode( ent, ply )
 		
 		//Create the second node if we are the very first created node(controller)
 		if ( !IsValid( FirstNode ) || FirstNode:EntIndex() == 1 ) && ent:IsController() then
-			print( ent:GetPos() )
-			local node = CoasterManager.CreateNode( ent.CoasterID, ent:GetPos(), ent:GetAngles(), ent:GetType(), ply )
+			local node = CoasterManager.CreateNode( ent:GetCoasterID(), ent:GetPos(), ent:GetAngles(), ent:GetType(), ply )
 
 			undo.Create("Rollercoaster")
 				undo.AddEntity( ent )
@@ -125,7 +124,7 @@ function ENT:AddTrackNode( ent, ply )
 		
 		//Create the 4th node if we are the 3rd node created (2nd click)
 		if IsValid( FirstNode ) && FirstNode:EntIndex() != 1 && FirstNode:GetNextNode() == ent then
-			local node = CoasterManager.CreateNode( ent.CoasterID, ent:GetPos(), ent:GetAngles(), ent:GetType(), ply )
+			local node = CoasterManager.CreateNode( ent:GetCoasterID(), ent:GetPos(), ent:GetAngles(), ent:GetType(), ply )
 			
 			undo.Create("Coaster Node")
 				undo.AddEntity( ent )
@@ -158,7 +157,7 @@ end
 
 
 function ENT:UpdateServerSpline()
-	local controller = Rollercoasters[ self.CoasterID ]
+	local controller = Rollercoasters[ self:GetCoasterID() ]
 
 	controller.CatmullRom:Reset()
 	local amt = 1
@@ -172,7 +171,6 @@ function ENT:UpdateServerSpline()
 	if #controller.CatmullRom.PointsList > 3 then
 		controller.CatmullRom:CalcEntireSpline()
 
-		print( #controller.Nodes )
 		for k, v in pairs( controller.Nodes ) do
 			if k > 1 && k < #controller.Nodes - 1 then
 				v:BuildSegmentMesh()
@@ -201,7 +199,7 @@ end )
 //This function is NOT controller only, call it on the segment you want to update the mesh on
 function ENT:BuildSegmentMesh()
 	local Segment = -1
-	local controller = Rollercoasters[ self.CoasterID ]
+	local controller = Rollercoasters[ self:GetCoasterID() ]
 
 	//Find our proper segment
 	if IsValid( controller ) && controller.Nodes && #controller.Nodes > 3 then
@@ -246,10 +244,10 @@ function ENT:BuildSegmentMesh()
 	self.PhysMesh:BuildMesh()
 end
 
+
 function ENT:PhysicsUpdate(physobj)
 
-	if !self:IsPlayerHolding() then
-
+	if !self:IsPlayerHolding() && !self:IsBeingDriven() then
 		physobj:Sleep()
 		physobj:EnableMotion( false )
 		
@@ -260,7 +258,7 @@ function ENT:PhysicsUpdate(physobj)
 				umsg.Entity( self:GetController() )
 			umsg.End()
 
-			local controller = Rollercoasters[ self.CoasterID ]
+			local controller = Rollercoasters[ self:GetCoasterID() ]
 
 			if IsValid( controller ) then
 				controller:UpdateServerSpline()
@@ -279,8 +277,8 @@ end
 //This is a bit nasty... it sets the appropriate nodes to their proper position to keep a looped track looped
 //I wasn't being very creative for a function name
 function ENT:UpdateMagicPositions()
-	if self:Looped() || Rollercoasters[ self.CoasterID ]:Looped() then
-		local controller = Rollercoasters[ self.CoasterID ]
+	if self:Looped() || Rollercoasters[ self:GetCoasterID() ]:Looped() then
+		local controller = Rollercoasters[ self:GetCoasterID() ]
 		
 		if controller.Nodes[ #controller.Nodes - 2] == self then
 			controller:SetPos( self:GetPos() )
@@ -296,7 +294,7 @@ function ENT:UpdateMagicPositions()
 			controller.Nodes[ #controller.Nodes ]:SetPos( self:GetPos() )
 		end
 	else //If it isn't looped, just set the controller/end node to a place to hide
-		local controller = Rollercoasters[ self.CoasterID ]
+		local controller = Rollercoasters[ self:GetCoasterID() ]
 		
 		if self == controller:GetFirstNode() then
 			controller:SetPos( self:GetPos() )
@@ -321,7 +319,7 @@ function ENT:UpdateTrackLength()
 	//update length()
 	//update length for other appropriate nodes too
 	//print("invalidating")
-	local controller = Rollercoasters[self.CoasterID]
+	local controller = Rollercoasters[self:GetCoasterID()]
 	if !IsValid( controller ) or !IsValid( self ) then /*print("returning1")*/ return end
 	if #controller.Nodes < 1 then /*print("returning2")*/ return end
 	
@@ -338,42 +336,43 @@ function ENT:UpdateTrackLength()
 end
 
 function ENT:GetSegmentLength()
-	
+	local controller = nil
 	local segment = nil
-	for k, v in pairs(Rollercoasters[self.CoasterID].Nodes) do
+	for k, v in pairs(Rollercoasters[self:GetCoasterID()].Nodes) do
 		if v == self then segment = k end
 	end
 
+	controller = Rollercoasters[ self:GetCoasterID() ]
+
 	//if not self:IsController() then print("fail1") return end
 	//print("segment: "..segment)
-	//print("otherthing: "..#Rollercoasters[self.CoasterID].CatmullRom.PointsList)
-	if not (segment > 1 && (#Rollercoasters[self.CoasterID].CatmullRom.PointsList > segment )) then /*print("fail2")*/ return end
-	if Rollercoasters[self.CoasterID].CatmullRom.Spline == nil or #Rollercoasters[self.CoasterID].CatmullRom.Spline < 1 then /*print("fail3")*/ return end
+	//print("otherthing: "..#Rollercoasters[self:GetCoasterID()].CatmullRom.PointsList)
+	if not (segment > 1 && (#controller.CatmullRom.PointsList > segment )) then /*print("fail2")*/ return end
+	if controller.CatmullRom.Spline == nil or #controller.CatmullRom.Spline < 1 then /*print("fail3")*/ return end
 
 
-	local node = (segment - 2) * Rollercoasters[self.CoasterID].CatmullRom.STEPS
+	local node = (segment - 2) * controller.CatmullRom.STEPS
 	local Dist = 0
 	
-	if Rollercoasters[self.CoasterID].CatmullRom.Spline[node + 1] == nil then /*print("fail4")*/ return end
-	if Rollercoasters[self.CoasterID].CatmullRom.PointsList[segment] == nil then /*print("fail5")*/ return end
+	if controller.CatmullRom.Spline[node + 1] == nil then /*print("fail4")*/ return end
+	if controller.CatmullRom.PointsList[segment] == nil then /*print("fail5")*/ return end
 
-	for i = 1, (Rollercoasters[self.CoasterID].CatmullRom.STEPS) do
+	for i = 1, (controller.CatmullRom.STEPS) do
 		if i==1 then
-			Dist = Dist + Rollercoasters[self.CoasterID].CatmullRom.Spline[node + 1]:Distance( Rollercoasters[self.CoasterID].CatmullRom.PointsList[segment] ) 
+			Dist = Dist + controller.CatmullRom.Spline[node + 1]:Distance( controller.CatmullRom.PointsList[segment] ) 
 		else
-			Dist = Dist + Rollercoasters[self.CoasterID].CatmullRom.Spline[node + i]:Distance( Rollercoasters[self.CoasterID].CatmullRom.Spline[node + i - 1] ) 
+			Dist = Dist + controller.CatmullRom.Spline[node + i]:Distance( controller.CatmullRom.Spline[node + i - 1] ) 
 		end
 	end
 
-	Dist = Dist + Rollercoasters[self.CoasterID].CatmullRom.PointsList[segment + 1]:Distance( Rollercoasters[self.CoasterID].CatmullRom.Spline[ node + Rollercoasters[self.CoasterID].CatmullRom.STEPS ] )
+	Dist = Dist + controller.CatmullRom.PointsList[segment + 1]:Distance( controller.CatmullRom.Spline[ node + controller.CatmullRom.STEPS ] )
 
-	//print( "foohy segment"..segment.." dist"..Dist )
 	self.SegLength = Dist
 end
 
 //Return the controller in charge of this node, which is also a node
 function ENT:GetController()
-	return Rollercoasters[self.CoasterID]
+	return Rollercoasters[self:GetCoasterID()]
 end
 
 function ENT:SetTrain(ply, model, cartnum)
@@ -418,11 +417,11 @@ function ENT:SetTrain(ply, model, cartnum)
 		Multiplier = self:GetMultiplier(Segment, Percent)
 
 		//Create a dummy cart for bletotum's code for fixing up cart spacing
-		if createdCarts == 1 then
+		if createdCarts == 1 && cartnum > 1 then //If we're only spawning 1 cart, we don't need a dummy cart.
 			local dummy			= ents.Create( "coaster_cart")
 			dummy.Model 		= model 
 			dummy.NumCarts 		= cartnum
-			dummy.CoasterID 	= self.CoasterID
+			dummy.CoasterID 	= self:GetCoasterID()
 			dummy.Controller 	= self
 			dummy.IsDummy 		= true
 			dummy.Owner 		= ply
@@ -453,7 +452,7 @@ function ENT:SetTrain(ply, model, cartnum)
 		local cart			= ents.Create( "coaster_cart")
 		cart.Model 			= model 
 		cart.NumCarts 		= cartnum
-		cart.CoasterID 		= self.CoasterID
+		cart.CoasterID 		= self:GetCoasterID()
 		cart.Controller 	= self
 		cart.IsDummy		= false
 		cart.Owner 			= ply
@@ -502,7 +501,7 @@ function ENT:ClearTrains()
 	
 	//Remove any trains that may have been leftover
 	for _, v in pairs( ents.FindByClass("coaster_cart") ) do
-		if IsValid( v ) && v.CoasterID == self.CoasterID then
+		if IsValid( v ) && v.CoasterID == self:GetCoasterID() then
 			v:Remove()
 		end
 	end
@@ -513,9 +512,9 @@ function ENT:Think()
 end
 
 function ENT:OnRemove()	
-	if !self.CoasterID || self.CoasterID < 1 then return end
+	if !self:GetCoasterID() || self:GetCoasterID() < 1 then return end
 
-	local cont = Rollercoasters[self.CoasterID]
+	local cont = Rollercoasters[self:GetCoasterID()]
 
 	if self:IsController() || (IsValid( cont ) && #cont.Nodes <= 4 )|| (IsValid( cont ) && self == cont.Nodes[2]) then // || (IsValid( cont ) && cont.Nodes[2] == self ) 
 		for _, v in pairs( cont.Nodes ) do

@@ -136,12 +136,28 @@ usermessage.Hook("Coaster_nodeinvalidate", function( um )
 	local node	 = um:ReadEntity()
 	local inval_minimal = um:ReadBool() //Should we only invalidate the node before this one?
 
-	if !IsValid( controller ) or !IsValid( node ) then return end
+	if IsValid( node ) then
+		node:Invalidate( controller, inval_minimal )
+	end
+
+end )
+
+function ENT:UpdateClientsidePhysics( )
+	for k, v in pairs( ents.FindByClass("coaster_physmesh") ) do
+		if v.GetController && v:GetController() == self then
+			v:BuildMesh()
+		end
+	end
+end
+
+//Invalid ourselves and nearby affected node
+function ENT:Invalidate( controller, minimal_invalidation )
+	if !IsValid( controller ) then return end
 	if #controller.Nodes < 1 then return end
 
 	for k, v in pairs( controller.Nodes ) do
-		if v == node then
-			if inval_minimal then
+		if v == self then
+			if minimal_invalidation then
 				v.Invalidated = true
 
 				if IsValid( controller.Nodes[ k - 1 ] ) then
@@ -188,14 +204,6 @@ usermessage.Hook("Coaster_nodeinvalidate", function( um )
 	end
 
 	controller:UpdateClientsidePhysics()
-end )
-
-function ENT:UpdateClientsidePhysics( )
-	for k, v in pairs( ents.FindByClass("coaster_physmesh") ) do
-		if v.GetController && v:GetController() == self then
-			v:BuildMesh()
-		end
-	end
 end
 
 //Refresh the client spline for track previews and mesh generation
@@ -365,199 +373,7 @@ function ENT:GetMultiplier(i, perc)
 	return 1 / Dist 
 end
 
-//I can't retrieve the triangles from a compiled model, SO LET'S MAKE OUR OWN
-//These are the triangular struts of the metal beam mesh track
-function ENT:CreateStrutsMesh(pos, ang)
-	local width = 5
-	local Offset = 15
-	local RailOffset = 25
 
-	//Front tri
-	local F_Right = pos + ang:Right() * RailOffset
-	local F_Bottom = pos + ang:Up() * -Offset
-	local F_Left = pos + ang:Right() * -RailOffset
-
-	//Back tri
-	local B_Right = F_Right + ( ang:Forward() * width )
-	local B_Bottom = F_Bottom + ( ang:Forward() * width )
-	local B_Left = F_Left + ( ang:Forward() * width )
-
-	local Vertices = {}
-
-	//Vars to get the proper normal of the left/right bits of the struts
-	local angLeft = F_Bottom - F_Left
-	angLeft:Normalize()
-	local angRight = F_Bottom - F_Right
-	angRight:Normalize()
-
-	local NormTop = ang:Up()
-	local NormFwd = -ang:Forward()
-	local NormBkwd = ang:Forward()
-	local NormLeft = angLeft
-	local NormRight = angRight
-
-	local norm = Vector( 0, 0, 1)
-
-	//Front triangle
-	Vertices[1] = {
-		pos = F_Right,
-		normal = NormFwd,
-		u = 0,
-		v = 0
-	}
-	Vertices[2] = {
-		pos = F_Bottom,
-		normal = NormFwd,
-		u = 0.5,
-		v = 1
-	}
-	Vertices[3] = {
-		pos = F_Left,
-		normal = NormFwd,
-		u = 1,
-		v = 0
-	}
-
-	//Back triangle
-	Vertices[4] = {
-		pos = B_Left,
-		normal = NormBkwd,
-		u = 0,
-		v = 0
-	}
-	Vertices[5] = {
-		pos = B_Bottom,
-		normal = NormBkwd,
-		u = 0.5,
-		v = 1
-	}
-	Vertices[6] = {
-		pos = B_Right,
-		normal = NormBkwd,
-		u = 1,
-		v = 0
-	}
-
-	//Top Quad
-	Vertices[7] = {
-		pos = B_Left,
-		normal = NormTop,
-		u = 0,
-		v = 0
-	}
-	Vertices[8] = {
-		pos = B_Right,
-		normal = NormTop,
-		u = 0.5,
-		v = 1
-	}
-	Vertices[9] = {
-		pos = F_Right,
-		normal = NormTop,
-		u = 1,
-		v = 0
-	}
-
-	Vertices[10] = {
-		pos = F_Right,
-		normal = NormTop,
-		u = 0,
-		v = 0
-	}
-	Vertices[11] = {
-		pos = F_Left,
-		normal = NormTop,
-		u = 0.5,
-		v = 1
-	}
-	Vertices[12] = {
-		pos = B_Left,
-		normal = NormTop,
-		u = 1,
-		v = 0
-	}
-
-	//Left Quad
-	Vertices[13] = {
-		pos = F_Bottom,
-		normal = NormLeft,
-		u = 0,
-		v = 0
-	}
-	Vertices[14] = {
-		pos = B_Bottom,
-		normal = NormLeft,
-		u = 0.5,
-		v = 1
-	}
-	Vertices[15] = {
-		pos = B_Left,
-		normal = NormLeft,
-		u = 1,
-		v = 0
-	}
-
-	Vertices[16] = {
-		pos = B_Left,
-		normal = NormLeft,
-		u = 0,
-		v = 0
-	}
-	Vertices[17] = {
-		pos = F_Left,
-		normal = NormLeft,
-		u = 0.5,
-		v = 1
-	}
-	Vertices[18] = {
-		pos = F_Bottom,
-		normal = NormLeft,
-		u = 1,
-		v = 0
-	}
-
-	//Right Quad
-	Vertices[19] = {
-		pos = F_Bottom,
-		normal = NormRight,
-		u = 0,
-		v = 0
-	}
-	Vertices[20] = {
-		pos = F_Right,
-		normal = NormRight,
-		u = 0.5,
-		v = 1
-	}
-	Vertices[21] = {
-		pos = B_Right,
-		normal = NormRight,
-		u = 1,
-		v = 0
-	}
-
-	Vertices[22] = {
-		pos = B_Right,
-		normal = NormRight,
-		u = 0,
-		v = 0
-	}
-	Vertices[23] = {
-		pos = B_Bottom,
-		normal = NormRight,
-		u = 0.5,
-		v = 1
-	}
-	Vertices[24] = {
-		pos = F_Bottom,
-		normal = NormRight,
-		u = 1,
-		v = 0
-	}
-
-
-	return Vertices
-end
 
 //Given a spline number, return the segment it's on
 function ENT:GetSplineSegment(spline) //Get the segment of the given spline
@@ -1219,13 +1035,19 @@ function ENT:Think()
 		self.FirstBoundsCheck = true
 	end
 
-
+/*
 	if self.Material != self:GetMaterial() then
 		self.OverrideMaterial = Material( self:GetMaterial() )
 	else
 		self.OverrideMaterial = nil
 	end
-
+*/
+	
+	//force-invalidate ourselves if we're being driven at all
+	if self:IsBeingDriven() && !self.Invalidated then
+		self:Invalidate( self:GetController(), false )
+		print("for allah")
+	end
 
 	if !self:IsController() then return end
 

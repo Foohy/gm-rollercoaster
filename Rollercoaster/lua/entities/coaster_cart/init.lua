@@ -205,10 +205,16 @@ local function CalcAverageCartFriction(ctable,dt)
 	if ctable == nil then return nil end if dt == nil then return nil end
 	local total = 0
 	for k, v in pairs(ctable) do
+		//Specific exception if they want to have 1 cart (no need for all this silly business)
+		if #ctable == 1 then
+			return v:CalcFrictionalForce(v.CurSegment,v.Percent,dt)
+		end
+
 		if k > 1 then
 			total = total + v:CalcFrictionalForce(v.CurSegment,v.Percent,dt)
 		end
 	end
+
 	return (total/(table.Count(ctable)-1))
 end
 
@@ -216,6 +222,11 @@ local function CalcAverageCartSlopeVelocity(ctable,dt)
 	if ctable == nil then return nil end if dt == nil then return nil end
 	local total = 0
 	for k, v in pairs(ctable) do
+
+		//Specific exception if they want to have 1 cart (no need for all this silly business)
+		if #ctable == 1 then
+			return v:CalcChangeInVelocity(v.CurSegment,v.Percent,dt)
+		end
 		if k > 1 then
 			total = total + v:CalcChangeInVelocity(v.CurSegment,v.Percent,dt)
 		end
@@ -278,6 +289,7 @@ function ENT:PhysicsSimulate(phys, deltatime)
 		if NoCartHoldOrFreeze(self.CartTable) then
 			local friction = CalcAverageCartFriction(self.CartTable,deltatime)
 			local slopelev = CalcAverageCartSlopeVelocity(self.CartTable,deltatime)
+
 			for k, v in pairs(self.CartTable) do
 				v.Velocity = v.Velocity - friction
 				v.Velocity = v.Velocity - slopelev
@@ -293,7 +305,6 @@ function ENT:PhysicsSimulate(phys, deltatime)
 			end
 		end
 	end
-	
 
 
 	self:MinSpeedThink()
@@ -320,6 +331,18 @@ function ENT:PhysicsSimulate(phys, deltatime)
 			util.Effect("ManhackSparks", self.SparkEffect )
 		end
 
+	end
+
+	//Do some fancy effects
+	if self:GetCurrentNode():GetType() == COASTER_NODE_SPEEDUP then
+		if self.LastSpark && self.LastSpark < CurTime() then
+			self.LastSpark = CurTime() + 0.08
+
+			self.SparkEffect:SetOrigin( self:GetPos() )
+			local newangles = self:GetAngles() + Angle( 15, 0, 0 )
+			self.SparkEffect:SetNormal( -newangles:Forward() + Vector( 0, 0, 0.5) )
+			util.Effect("ManhackSparks", self.SparkEffect )
+		end
 	end
 
 	/*Check for collisions
@@ -549,16 +572,20 @@ function ENT:CalcFrictionalForce(i, perc, dt)
 	Force = self.WheelFriction * ( math.cos( math.rad(Ang.p) ) * mass * self.GRAVITY ) //frictional force = mew*normal of weight
 	Velocity = (Force / mass) * dt // F = MA and your every day best friend DVA
 	
-
+	//Apply a backwards force in both directions
 	if self.Velocity < 0 then
 		Velocity = -Velocity
 	end
 
 	//Prevent floating point numbers from fucking shit up
+	if self:GetPhysicsObject():GetEnergy() < 0.05 then
+		return 0
+	end
+	/*
 	if math.abs(self.Velocity) < 0.05 then
 		return 0
 	end
-
+	*/
 	return Velocity
 end
 
@@ -586,39 +613,30 @@ function ENT:SpeedupThink(dt)
 	local SpeedupForce = 0
 	local MaxSpeed = 0
 	local NumOnSpeedup = 0
+	local TotalCarts = 0
 
 	if self.CartTable[1] == self then
 		for k, v in pairs(self.CartTable) do
-			if k > 1 then
+			if k > 1 || #self.CartTable == 1 then
 				local node = v:GetCurrentNode()
 				if IsValid( node ) && node:GetType() == COASTER_NODE_SPEEDUP then
 					OnSpeedup = true
 					SpeedupForce = node.SpeedupForce
 					MaxSpeed = node.MaxSpeed
 					NumOnSpeedup = NumOnSpeedup + 1
+					TotalCarts = TotalCarts + 1
 				end
 			end
 		end
 	end
 
 	if OnSpeedup && self.Velocity < MaxSpeed  then //We can get away with using our velocity because all the carts are going the same speed anyway
-		local Acceleration = ( SpeedupForce / self:GetPhysicsObject():GetMass() ) * (NumOnSpeedup / (#self.CartTable-1) ) //F = MA. thus, (F / M) = A
+		local Acceleration = ( SpeedupForce / self:GetPhysicsObject():GetMass() ) * (NumOnSpeedup / (TotalCarts) ) //F = MA. thus, (F / M) = A
 		local Velocity = Acceleration * dt //A = VelocityChange / TimeChange. thus, V = AT
 		local newVelocity = (self.Velocity + Velocity )
 
 		for k, v in pairs(self.CartTable) do
 			v.Velocity = newVelocity
-			if k > 1 then
-				//Play The Sparks
-				if v.LastSpark && v.LastSpark < CurTime() then
-					v.LastSpark = CurTime() + 0.01
-
-					v.SparkEffect:SetOrigin( v:GetPos() )
-					local newangles = v:GetAngles() + Angle( 15, 0, 0 )
-					v.SparkEffect:SetNormal( -newangles:Forward() + Vector( 0, 0, 0.5) )
-					util.Effect("ManhackSparks", v.SparkEffect )
-				end
-			end
 		end
 	end
 
@@ -629,23 +647,25 @@ function ENT:BreakThink(dt)
 	local BreakForce = 0
 	local MinSpeed = 0
 	local NumOnBreaks = 0
+	local TotalCarts = 0
 
 	if self.CartTable[1] == self then
 		for k, v in pairs(self.CartTable) do
-			if k > 1 then
+			if k > 1 || #self.CartTable == 1 then
 				local node = v:GetCurrentNode()
 				if IsValid( node ) && node:GetType() == COASTER_NODE_BREAKS then
 					OnBreaks = true
 					BreakForce = node.BreakForce
 					MinSpeed = node.BreakSpeed
 					NumOnBreaks = NumOnBreaks + 1
+					TotalCarts = TotalCarts + 1
 				end
 			end
 		end
 	end
 
 	if OnBreaks && self.Velocity > MinSpeed  then //We can get away with using our velocity because all the carts are going the same speed anyway
-		local Acceleration = ( BreakForce / self:GetPhysicsObject():GetMass() ) * (NumOnBreaks / (#self.CartTable-1) ) //F = MA. thus, (F / M) = A
+		local Acceleration = ( BreakForce / self:GetPhysicsObject():GetMass() ) * (NumOnBreaks / (TotalCarts) ) //F = MA. thus, (F / M) = A
 		local Velocity = Acceleration * dt //A = VelocityChange / TimeChange. thus, V = AT
 		local newVelocity = (self.Velocity - Velocity )
 
@@ -861,17 +881,18 @@ function ENT:CartExplode()
 	explosion:Fire("Explode", 0, 0)
 
 	if !self.Enabled then
+		/*
 		local debris = EffectData()
 		debris:SetOrigin( self:GetPos() )
 		util.Effect( "coaster_cart_debris", debris )
-		
+		*/
 		self:Remove()
 	end
 end
 
 //Explode if they are off the rails
 function ENT:PhysicsCollide(data, physobj)
-	if data.Speed > 60 && self.IsOffDaRailz && ( (IsValid(data.HitEntity) && data.HitEntity:GetClass() != "coaster_cart" ) || !IsValid( data.HitEntity )) then
+	if data.Speed > 100 && self.IsOffDaRailz && ( (IsValid(data.HitEntity) && data.HitEntity:GetClass() != "coaster_cart" ) || !IsValid( data.HitEntity )) then
 		
 		self:CartExplode()
 		
