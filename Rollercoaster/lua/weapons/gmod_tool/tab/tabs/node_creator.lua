@@ -32,7 +32,8 @@ function TAB:LeftClick( trace, tool )
 	local Bank	 	= GetClientNumber( self, "bank", tool )
 	local ID 		= GetClientNumber( self, "id", tool )
 	local Type 		= GetClientNumber( self, "tracktype", tool )
-	local RelRoll 	= GetClientNumber( self, "relativeroll", tool )
+	local RelRoll 	= GetClientNumber( self, "relativeroll", tool ) == 1
+	local matchZ = GetClientNumber( self, "prev_nodeheight", tool ) == 1
 
 	local plyAng	= ply:GetAngles()
 			
@@ -42,7 +43,7 @@ function TAB:LeftClick( trace, tool )
 	if SERVER then
 		if IsValid( trace.Entity ) && trace.Entity:GetClass() == "coaster_node" then //Update an existing node's settings
 			trace.Entity:SetType( Type )
-			trace.Entity:SetRelativeRoll( RelRoll==1 )
+			trace.Entity:SetRelativeRoll( RelRoll )
 			trace.Entity:SetRoll( Bank )
 			trace.Entity:Invalidate( true )
 
@@ -58,7 +59,7 @@ function TAB:LeftClick( trace, tool )
 
 				if IsValid( node ) then
 					node:SetType( Type )
-					node:SetRelativeRoll( RelRoll==1 )
+					node:SetRelativeRoll( RelRoll )
 					node:SetRoll( Bank )
 					node:Invalidate( true )
 				end
@@ -77,13 +78,13 @@ function TAB:LeftClick( trace, tool )
 					LastNode:SetAngles( newAng )
 					//LastNode:SetChains( Chains==1 )
 					LastNode:SetType( Type )
-					LastNode:SetRelativeRoll( RelRoll==1 )
+					LastNode:SetRelativeRoll( RelRoll)
 					
 					VeryLastNode:SetPos( newPos )
 					VeryLastNode:SetAngles( newAng )
 					//VeryLastNode:SetChains( Chains==1 )
 					VeryLastNode:SetType( Type )
-					VeryLastNode:SetRelativeRoll( RelRoll==1 )
+					VeryLastNode:SetRelativeRoll( RelRoll )
 					
 					VeryLastNode.FinalNode = false
 				end
@@ -91,11 +92,17 @@ function TAB:LeftClick( trace, tool )
 				//controller.Looped = false
 				controller:SetLooped( false )
 			else
+				if matchZ && IsValid( controller ) then
+					local VeryLastNode = controller.Nodes[ #controller.Nodes ]
+					if IsValid( VeryLastNode ) then
+						newPos.z = VeryLastNode:GetPos().z
+					end
+				end
 				local node = CoasterManager.CreateNode( ID, newPos, newAng, Type, ply )
 				if !IsValid( node ) then return end
 
 				node:SetRoll( Bank )
-				node:SetRelativeRoll( RelRoll==1 )
+				node:SetRelativeRoll( RelRoll)
 
 				if node:IsController() then
 					node:SetOwner( ply )
@@ -121,7 +128,7 @@ function TAB:RightClick( trace, tool )
 
 	if SERVER then
 		if IsValid( trace.Entity ) && trace.Entity:GetClass() == "coaster_node" then //Update an existing node's settings
-			local ID = trace.Entity.CoasterID
+			local ID = trace.Entity:GetCoasterID()
 			local Controller = Rollercoasters[ ID ]
 			local FirstNode  = Controller:GetFirstNode()
 			local SecondToLast = Controller.Nodes[ #Controller.Nodes - 1 ]
@@ -167,7 +174,7 @@ function TAB:Reload( trace, tool )
 
 		//Info gathering time
 		local type = trace.Entity:GetType()
-		local ID = trace.Entity.CoasterID
+		local ID = trace.Entity:GetCoasterID()
 		local Bank = trace.Entity:GetRoll()
 		local RelRoll = trace.Entity:GetRelativeRoll()
 
@@ -215,6 +222,9 @@ function TAB:Think( tool )
 			SelectSingleNode( trace.Entity, Color( 180 - math.random( 0, 120 ), 220 - math.random( 0, 150 ), 255, 255 ))
 
 			local toolText = "Rollercoaster Node"
+			if trace.Entity.GetCoasterID then
+				toolText = toolText .. " (" .. trace.Entity:GetCoasterID() .. ")"
+			end
 			if trace.Entity.IsController && trace.Entity:IsController() then 
 				toolText = toolText .. " (Controller)" 
 				toolText = toolText .. "\nLooped: " .. tostring( trace.Entity:Looped() )
@@ -236,6 +246,14 @@ function TAB:Think( tool )
 	self:UpdateGhostNode( self.GhostEntity, tool )
 end
 
+//TODO: include in rollercoaster table
+function GetControllerFromID( id )
+	for _, v in pairs( ents.FindByClass("coaster_node")) do
+		if v:IsController() && v:GetCoasterID() == id then return v end
+	end
+
+end
+
 
 function TAB:UpdateGhostNode( ent, tool )
 	local ply = tool:GetOwner()
@@ -251,8 +269,19 @@ function TAB:UpdateGhostNode( ent, tool )
 	end
 
 	local Elevation = GetClientNumber( self, "elevation", tool )
+	local ID = GetClientNumber( self, "ID", tool )
+	local matchZ = GetClientNumber( self, "prev_nodeheight", tool ) == 1
 	local newPos = trace.HitPos + Vector( 0, 0, Elevation )
 	local newAng = Angle(0, ply:GetAngles().y, 0) + Angle( 0, 0, 0 )
+
+	//Set the height of the last node if it's checked
+	local controller = GetControllerFromID( ID )
+	if matchZ && IsValid( controller ) then
+		local LastNode = controller.Nodes[ #controller.Nodes ]
+		if IsValid( LastNode ) then
+			newPos.z = LastNode:GetPos().z
+		end
+	end
 
 	ent:SetAngles( newAng )
 	ent:SetPos( newPos )
