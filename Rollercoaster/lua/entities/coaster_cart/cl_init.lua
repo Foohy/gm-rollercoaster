@@ -100,10 +100,10 @@ function ENT:Think()
 		end
 
 		if self.WindSound != nil then
-			self.WindSound:ChangeVolume(math.Clamp( (self:GetVelocity():Length() / 900) , 0, 1 ) )
+			self.WindSound:ChangeVolume(math.Clamp( (self:GetVelocity():Length() / 1100) , 0, 1 ) )
 
-			local pitch = 90 + (self:GetVelocity():Length() / 13)
-			self.WindSound:ChangePitch(math.Clamp( pitch , 90, 110 ) )
+			local pitch = 90 + (self:GetVelocity():Length() / 15)
+			self.WindSound:ChangePitch(math.Clamp( pitch , 90, 120 ) )
 		else
 			self.WindSound = CreateSound( self, "coaster_wind.wav" )
 		end
@@ -112,13 +112,15 @@ function ENT:Think()
 	//I have no idea, I just threw these values in
 	local amp = 0
 	if LocalPlayer():InVehicle() then
-		amp = math.Clamp( self:GetVelocity():Length() / 4000, 0, 32 )
+		amp = math.Clamp( self:GetVelocity():Length() / 1000, 0, 32 )
+		if amp < 0.15 then amp = 0 end //So we don't have a bunch of tiny rumbles
 	else
-		amp = math.Clamp( self:GetVelocity():Length() / 30, 0, 32 )
-		amp = math.Clamp( amp / ( LocalPlayer():GetPos():Distance( self:GetPos() ) ), 0, 2000 )
+		//amp = math.Clamp(  / 0.01, 0, 32 )
+		amp = math.Clamp( self:GetVelocity():Length() / LocalPlayer():GetPos():Distance( self:GetPos() ) *0.1, 0, 2000 )
+		if amp < 0.55 then amp = 0 end //So we don't have a bunch of tiny rumbles
 	end
 	amp = amp * self.ShakeMultiplier
-	util.ScreenShake( LocalPlayer():GetPos(), amp, 300, .5, 300 )
+	util.ScreenShake( LocalPlayer():GetPos(), amp, 300, 0.10, 300 )
 
 end
 

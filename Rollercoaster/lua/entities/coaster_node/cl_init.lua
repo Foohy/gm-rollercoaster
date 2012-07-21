@@ -45,6 +45,7 @@ function ENT:Initialize()
 		[MAT_DIRT] 		= 0,
         [MAT_CONCRETE] 	= 1,
 		[MAT_SAND] 		= 2,
+		[MAT_GLASS] 	= 1,
 	}
 
 	if !self:IsController() then return end //Don't continue executing -- the rest of this stuff is for only the controller
@@ -1029,7 +1030,7 @@ function ENT:Think()
 			trace = util.TraceLine(trace)
 
 		if !self:IsController() then
-			self:SetRenderBoundsWS( trace.StartPos + Vector( 0, 0, 20), trace.HitPos - Vector( 0, 0, 20) )
+			self:SetRenderBoundsWS(  trace.StartPos + self:OBBMins() - Vector( 50, 50, 50), trace.HitPos + self:OBBMaxs() + Vector( 50, 50, 50) )
 		end
 
 		self.FirstBoundsCheck = true
@@ -1046,7 +1047,6 @@ function ENT:Think()
 	//force-invalidate ourselves if we're being driven at all
 	if self:IsBeingDriven() && !self.Invalidated then
 		self:Invalidate( self:GetController(), false )
-		print("for allah")
 	end
 
 	if !self:IsController() then return end
@@ -1067,10 +1067,15 @@ function ENT:Think()
 				trace.mask = MASK_SOLID_BRUSHONLY
 				trace = util.TraceLine(trace)
 
-			v:SetRenderBoundsWS( trace.StartPos + Vector( 0, 0, 20), trace.HitPos - Vector( 0, 0, 20) )
+			v:SetRenderBoundsWS(  trace.StartPos + v:OBBMins() - Vector( 50, 50, 50), trace.HitPos + v:OBBMaxs() + Vector( 50, 50, -50) )
 			break
 		end
 	end
+	self:SetRenderBoundsWS(Vector(-1000000,-1000000,-1000000), Vector( 1000000, 1000000, 1000000 ) ) //There must be a better way to do this
+
+	self:NextThink( CurTime() + 0.5 )
+
+	return true
 end
 
 function ENT:OnRemove()
@@ -1098,7 +1103,27 @@ function ENT:OnRemove()
 	end
 end
 
+concommand.Add("coaster_refresh_drawbounds", function()
+	for k, v in pairs( ents.FindByClass("coaster_node")) do
+		if IsValid( v ) then
+			if v:IsController() then
+				v:SetRenderBoundsWS(Vector(-1000000,-1000000,-1000000), Vector( 1000000, 1000000, 1000000 ) ) //There must be a better way to do this
+			else
+				//Update their render bounds so it draws the supports too
+				trace = {}
 
+				trace.start  = v:GetPos()
+				trace.endpos = v:GetPos() - Vector( 0, 0, 100000 ) //Trace straight down
+				trace.filter = v
+				trace.mask = MASK_SOLID_BRUSHONLY
+				trace = util.TraceLine(trace)
+
+				v:SetRenderBoundsWS(  trace.StartPos + v:OBBMins() - Vector( 50, 50, 50), trace.HitPos + v:OBBMaxs() + Vector( 50, 50, 50) )
+			end
+		end
+	end
+
+end )
 
 
 
