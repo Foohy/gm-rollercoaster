@@ -136,8 +136,8 @@ if SERVER then
 	//Manage cart collisions (So trains don't collide with themselves, but collide with other trains)
 	hook.Add("ShouldCollide","RollercoasterShouldCartCollide",function(ent1,ent2)
 		//Prevent carts from colliding with the physics mesh of the tracks
-		if ent1:GetClass() == "coaster_cart" and ent2:GetClass() == "coaster_physmesh" then return false end
-		if ent2:GetClass() == "coaster_cart" and ent1:GetClass() == "coaster_physmesh" then return false end
+		if ent1:GetClass() == "coaster_cart" and ent2:GetClass() == "coaster_physmesh" && ent1.CoasterID == ent2.Controller:GetCoasterID() then return false end
+		if ent2:GetClass() == "coaster_cart" and ent1:GetClass() == "coaster_physmesh" && ent2.CoasterID == ent1.Controller:GetCoasterID() then return false end
 
 		
 		if ent1:GetClass() != "coaster_cart" or ent2:GetClass() != "coaster_cart" then return end

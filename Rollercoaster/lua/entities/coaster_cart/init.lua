@@ -148,6 +148,12 @@ function ENT:OffDaRailz(safemode)
 	end
 end
 
+//Reconnect the cart to a new track
+function ENT:OnDaRailz()
+
+
+end
+
 
 local function UCT(ctable,x)
 	//this supplements the working of RollercoasterUpdateCartTable()
@@ -892,11 +898,73 @@ end
 
 //Explode if they are off the rails
 function ENT:PhysicsCollide(data, physobj)
+	//If we collided with another track, attach ourselves to it.
+	if IsValid( data.HitEntity ) && (data.HitEntity:GetClass() == "coaster_physmesh" || data.HitEntity:GetClass() == "coaster_node") then
+		if data.DeltaTime < 0.3 then return end //this function tends to be spammed a bit, so let it have a cooldown period.
+
+		local NewID = -1
+		local Segment = -1
+		local Percent = 0
+		local controller = nil
+
+		if data.HitEntity:GetClass() == "coaster_physmesh" then
+			Segment 	= data.HitEntity.Segment
+			NewID 		= data.HitEntity.Controller:GetCoasterID()
+			controller 	= data.HitEntity.Controller
+		else
+			Segment 	= data.HitEntity.Segment
+			NewID 		= data.HitEntity:GetCoasterID()
+			controller 	= data.HitEntity:GetController()
+		end
+
+		//estimate the percent along the track we're joining we are
+		local distClosest = math.huge
+		for i=1, controller.CatmullRom.STEPS do
+			local splinePos = controller.CatmullRom.Spline[ ((Segment - 2)*controller.CatmullRom.STEPS) + i]
+
+			if self:GetPos():Distance( splinePos ) < distClosest then
+				distClosest = self:GetPos():Distance( splinePos )
+				Percent = i / controller.CatmullRom.STEPS
+			end
+		end
+
+		self.CoasterID 	= NewID
+		self.CurSegment = Segment
+		self.Percent 	= Percent
+		self.Velocity 	= data.OurOldVelocity:Length() / 25
+		self.Controller = controller
+
+		//Recreate the cart table
+		self.CartTable = {}
+		table.insert( self.CartTable, self )
+
+		//We are now back on da railz
+		self.IsOffDaRailz = false
+
+		//Do some nice effects
+		self:EmitSound("Metal.SawbladeStick")
+
+		local effectdata = EffectData()
+			effectdata:SetOrigin( self:GetPos() )
+			effectdata:SetNormal( self:GetAngles() )
+			effectdata:SetMagnitude( 8 )
+			effectdata:SetScale( 1 )
+			effectdata:SetRadius( 16 )
+		util.Effect( "Sparks", effectdata )
+		//self:SetCurrentNode( controller.Nodes[ Segment ] )
+
+		return
+	end
+
+
 	if data.Speed > 100 && self.IsOffDaRailz && ( (IsValid(data.HitEntity) && data.HitEntity:GetClass() != "coaster_cart" ) || !IsValid( data.HitEntity )) then
 		
 		self:CartExplode()
 		
 	end
+
+	//the many attempts at proper elastic and inelastic collisions between carts.
+	//not feasible because of the catmull rom spline algorithm 
 	//print( !self.OffDaRailz )
 	//print( ( IsValid(data.HitEntity) && data.HitEntity:GetClass() == "coaster_cart" ) )
 	//print( data.HitEntity.Velocity )

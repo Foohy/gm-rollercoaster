@@ -1118,7 +1118,7 @@ concommand.Add("coaster_refresh_drawbounds", function()
 				trace.mask = MASK_SOLID_BRUSHONLY
 				trace = util.TraceLine(trace)
 
-				v:SetRenderBoundsWS(  trace.StartPos + v:OBBMins() - Vector( 50, 50, 50), trace.HitPos + v:OBBMaxs() + Vector( 50, 50, 50) )
+				v:SetRenderBoundsWS(  trace.StartPos + v:OBBMins() - Vector( 50, 50, 50), trace.HitPos + v:OBBMaxs() + Vector( 50, 50, -50) )
 			end
 		end
 	end

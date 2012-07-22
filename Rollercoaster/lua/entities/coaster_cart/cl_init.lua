@@ -78,9 +78,7 @@ function ENT:Think()
 			end
 		end
 
-		if CurrentNode:EntIndex() == 1 then
-			self.OffDaRailz = true
-		end
+		self.OffDaRailz = CurrentNode:EntIndex() == 1
 	end
 
 	if CurTime() >= self.Timer then
@@ -94,12 +92,20 @@ function ENT:Think()
 		if self.CoastSound != nil then self.CoastSound:Stop() end
 	else
 		if self.CoastSound != nil then
+			if !self.CoastSound:IsPlaying() then
+				self.CoastSound:PlayEx( 0.5, 100)
+			end
+
 			self.CoastSound:ChangePitch(math.Clamp( (self:GetVelocity():Length() / 8) , 1, 240 ) )
 		else
 			self.CoastSound = CreateSound( self, "coaster_ride.wav" )
 		end
 
 		if self.WindSound != nil then
+			if !self.WindSound:IsPlaying() then
+				self.WindSound:PlayEx(0, 100)
+			end
+
 			self.WindSound:ChangeVolume(math.Clamp( (self:GetVelocity():Length() / 1100) , 0, 1 ) )
 
 			local pitch = 90 + (self:GetVelocity():Length() / 15)
@@ -107,6 +113,7 @@ function ENT:Think()
 		else
 			self.WindSound = CreateSound( self, "coaster_wind.wav" )
 		end
+
 	end
 	
 	//I have no idea, I just threw these values in
