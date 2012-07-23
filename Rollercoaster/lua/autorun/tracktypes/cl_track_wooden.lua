@@ -152,4 +152,4 @@ function TRACK:Draw( controller )
 
 end
 
-trackmanager.Register( EnumNames.Tracks[COASTER_TRACK_WOOD], TRACK )
+//trackmanager.Register( EnumNames.Tracks[COASTER_TRACK_WOOD], TRACK )

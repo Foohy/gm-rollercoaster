@@ -297,14 +297,16 @@ function TAB:BuildPanel( )
 
 	panel:NumSlider("ID: ","coaster_supertool_tab_node_creator_id", 1, 8, 0)
 	panel:NumSlider("Elevation: ","coaster_supertool_tab_node_creator_elevation", 0, 2000, 3)
-	local bankSlider = panel:NumSlider("Roll: ","coaster_supertool_tab_node_creator_bank", -180, 180, 2)
+	panel:CheckBox( "Set to previous node's elevation", "coaster_supertool_tab_node_creator_prev_nodeheight" )
+	local bankSlider = panel:NumSlider("Roll: ","coaster_supertool_tab_node_creator_bank", -180.01, 180, 2)
 	bankSlider:SetValue( 0 )
+	RunConsoleCommand("coaster_supertool_tab_node_creator_bank", 0 ) //Default to 0
 
 	//panel:AddControl("Slider",   {Label = "ID: ",    Description = "The ID of the specific rollercoaster (Change the ID if you want to make a seperate coaster)",       Type = "Int", Min = "1", Max = "8", Command = "coaster_track_creator_id"})
 	//panel:AddControl("Slider",   {Label = "Elevation: ",    Description = "The height of the track node",       Type = "Float", Min = "0.00", Max = "5000", Command = "coaster_track_creator_elevation"})
 	//panel:AddControl("Slider",   {Label = "Bank: ",    Description = "How far to bank at that node",       Type = "Float", Min = "-180.0", Max = "180.0", Command = "coaster_track_creator_bank"})
 
-	panel:CheckBox( "Set to previous node's height", "coaster_supertool_tab_node_creator_prev_nodeheight" )
+
 
 
 	local ComboBox = vgui.Create("DComboBox", panel)

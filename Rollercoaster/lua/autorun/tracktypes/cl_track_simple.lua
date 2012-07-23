@@ -4,7 +4,18 @@ local TRACK = {}
 
 TRACK.Name = "Simple Track"
 TRACK.Description = "The bare basics of a track. Good for customization."
-TRACK.Material = Material("phoenix_storms/dome")
+TRACK.Material =  CreateMaterial( "CoasterTrackMaterial", "UnlitGeneric", { //VertexLitGeneric
+	["$basetexture"] 		= "phoenix_storms/dome", //models/debug/debugwhite
+    ["$bumpmap"]			= "phoenix_storms/dome_bump",
+    ["$vertexcolor"] 		= 1,
+    ["$phong"] 				= 1,
+    ["$phongexponent"] 		= 20,
+    ["$phongboost"] 		= 2,
+    ["$phongfresnelranges"] = "0.5 0.8 1",
+	//["$nocull"] = 1,
+	//["$translucent"] = 1,
+	//["$vertexalpha"] = 1,
+} )
 
 //local Offset = 20  //Downwards offset of large center beam
 local RailOffset = 25 //Distance track beams away from eachother

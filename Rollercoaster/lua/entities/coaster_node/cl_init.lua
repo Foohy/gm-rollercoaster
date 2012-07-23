@@ -303,7 +303,6 @@ function ENT:PercAlongNode(spline, qf)
 end
 
 //This baby is what builds the clientside mesh. It's really complicated.
-//It should really be recoded
 function ENT:UpdateClientMesh()
 	print("Building clientside mesh...")
 
@@ -1030,7 +1029,7 @@ function ENT:Think()
 			trace = util.TraceLine(trace)
 
 		if !self:IsController() then
-			self:SetRenderBoundsWS(  trace.StartPos + self:OBBMins() - Vector( 50, 50, 50), trace.HitPos + self:OBBMaxs() + Vector( 50, 50, 50) )
+			self:SetRenderBoundsWS(  trace.StartPos - Vector( 50, 50, -50), trace.HitPos + Vector( 50, 50, -50) )
 		end
 
 		self.FirstBoundsCheck = true
@@ -1067,7 +1066,7 @@ function ENT:Think()
 				trace.mask = MASK_SOLID_BRUSHONLY
 				trace = util.TraceLine(trace)
 
-			v:SetRenderBoundsWS(  trace.StartPos + v:OBBMins() - Vector( 50, 50, 50), trace.HitPos + v:OBBMaxs() + Vector( 50, 50, -50) )
+			v:SetRenderBoundsWS(  trace.StartPos - Vector( 50, 50, -50), trace.HitPos + Vector( 50, 50, -50) )
 			break
 		end
 	end
@@ -1118,7 +1117,7 @@ concommand.Add("coaster_refresh_drawbounds", function()
 				trace.mask = MASK_SOLID_BRUSHONLY
 				trace = util.TraceLine(trace)
 
-				v:SetRenderBoundsWS(  trace.StartPos + v:OBBMins() - Vector( 50, 50, 50), trace.HitPos + v:OBBMaxs() + Vector( 50, 50, -50) )
+				v:SetRenderBoundsWS(  trace.StartPos - Vector( 50, 50, -50), trace.HitPos + Vector( 50, 50, -50) )
 			end
 		end
 	end
