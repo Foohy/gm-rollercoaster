@@ -26,7 +26,7 @@ All of the following settings can be changed in the 'Settings' tab of the SuperT
 * coaster_previews 1/0 Toggle the drawing of track previews
 * coaster_motionblur 1/0 Toggle the drawing of motion blur.
 * coaster_maxwheels (default: 15 ) The maximum number of wheels (breaks, speedups) to be drawing per segment.
-* coaster_resolution (default: 15) The 'resolution' of the catmull rom spline for previewed and generated track mesh. Lower = faster generation/better perfmance.
+* coaster_resolution (default: 15) The 'resolution' of the catmull rom spline for previewed and generated track mesh. Lower = faster generation/better performance.
 
 #### Installation ####
 Installation is relatively simple. Just extract the Rollercoasters folder into your garrysmod/garrysmod/addons folder.
