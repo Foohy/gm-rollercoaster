@@ -11,14 +11,6 @@ TOOL.ConfigName	= nil
 TOOL.ClientConVar["selected_tab"] = "1"
 
 function TOOL:LeftClick(trace)
-	local ply   = self:GetOwner()
-	
-	trace = {}
-	trace.start  = ply:GetShootPos()
-	trace.endpos = trace.start + (ply:GetAimVector() * 99999999)
-	trace.filter = ply
-	trace = util.TraceLine(trace)
-
 	local class = self:GetCurrentTab()
 
 	if class then
@@ -28,13 +20,6 @@ function TOOL:LeftClick(trace)
 end
 
 function TOOL:RightClick(trace)
-	local ply   = self:GetOwner()
-	
-	trace = {}
-	trace.start  = ply:GetShootPos()
-	trace.endpos = trace.start + (ply:GetAimVector() * 99999999)
-	trace.filter = ply
-	trace = util.TraceLine(trace)
 
 	local class = self:GetCurrentTab()
 
@@ -44,13 +29,6 @@ function TOOL:RightClick(trace)
 end
 
 function TOOL:Reload(trace)
-	local ply   = self:GetOwner()
-	
-	trace = {}
-	trace.start  = ply:GetShootPos()
-	trace.endpos = trace.start + (ply:GetAimVector() * 99999999)
-	trace.filter = ply
-	trace = util.TraceLine(trace)
 
 	local class = self:GetCurrentTab()
 

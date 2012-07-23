@@ -1,9 +1,9 @@
 "AddonInfo"
 {
-	"name"			"Rollercoaster"
-	"version"		"0.00000001"
+	"name"			"Lua Rollercoaster"
+	"version"		"0.80"
 	"author_name"		"Foohy"
 	"author_url"		"foohy.net"
-	"info"			"A working rollercoaster for GMod"
+	"info"			"A working rollercoaster builder for GMod"
 	"override"		"0"
 }
