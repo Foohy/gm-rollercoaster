@@ -674,7 +674,7 @@ function ENT:DrawBreakModels( segment )
 
 	while Percent < 1 do
 		if numwheels >= GetConVar("coaster_maxwheels"):GetInt() then return end
-		
+
 		if numwheels % 2 == 0 then //Draw every other wheel
 			ang = self:AngleAt( segment, Percent)
 
@@ -937,7 +937,7 @@ function ENT:DrawSupport()
 	local controller = self:GetController()
 	if !IsValid( controller ) then return end
 	if LocalPlayer():GetInfoNum("coaster_supports") == 0 then return end //Don't draw if they don't want us to draw.
-	if self == controlller || controller.Nodes[ #controller.Nodes ] == self then return false end //Don't draw the controller or the very last (unconnected) node
+	if self:IsController() || controller.Nodes[ #controller.Nodes ] == self then return false end //Don't draw the controller or the very last (unconnected) node
 	if math.abs( math.NormalizeAngle( self:GetRoll() ) ) > 90 then return false end //If a track is upside down, don't draw the supports
 	if controller:Looped() && controller.Nodes[ 2 ] == self then return false end //Don't draw the supports for the second node ONLY if the track is looped
 
