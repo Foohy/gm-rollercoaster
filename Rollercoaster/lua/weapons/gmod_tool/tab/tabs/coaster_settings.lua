@@ -177,6 +177,7 @@ function TAB:BuildPanel( )
 	AllSettingsPanel:CheckBox("Draw track previews", "coaster_previews")
 	AllSettingsPanel:CheckBox("Draw track supports", "coaster_supports")
 	AllSettingsPanel:CheckBox("Draw motion blur", "coaster_motionblur")
+	AllSettingsPanel:CheckBox("Automatically switch to toolgun", "coaster_autoswitch")
 	/*
 	local MaxWheels = vgui.Create("DNumSlider", AllSettingsPanel )
 	MaxWheels:SetText("Max wheels per segment: ")

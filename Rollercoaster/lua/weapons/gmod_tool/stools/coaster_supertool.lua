@@ -47,7 +47,7 @@ function TOOL:Think()
 
 			if Sheet.Class && Sheet.Class != class then
 				RunConsoleCommand("coaster_supertool_selected_tab", Sheet.Class.UniqueName )
-				print("Setting current tab to " .. tostring( Sheet.Class.UniqueName ) )
+
 
 			end
 		end
@@ -215,7 +215,18 @@ end
 
 
 
-if CLIENT then
+if CLIENT then	
+
+	//Get when something was clicked and our tool was out to automagically switch to our tool
+	//"Polish" - bletotum
+	function coasterClick(  mousecode, vec )
+		if mousecode == MOUSE_LEFT && LocalPlayer():GetTool() && LocalPlayer():GetTool().Name == "Rollercoaster SuperTool" then
+			if LocalPlayer():GetInfoNum("coaster_autoswitch") == 0 then return end
+			RunConsoleCommand("use", "gmod_tool") //select the tool gun
+		end
+
+	end
+	hook.Add( "GUIMousePressed", "CoasterAutoswitchtool", coasterClick ) 
 
 	language.Add( "tool.coaster_supertool.name", "" )
 	language.Add( "tool.coaster_supertool.desc", "" )

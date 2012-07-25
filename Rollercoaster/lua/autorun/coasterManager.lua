@@ -213,6 +213,7 @@ if CLIENT then
 
 	//Misc Settings
 	CreateClientConVar("coaster_cart_spin_override", 0, false, true) //Override cart spawning to make it spin like the carousel
+	CreateClientConVar("coaster_autoswitch", 0, true, false ) //Automatically switch to the tool gun on left click with C menu open
 
 	//Motion blur
 	local function GetMotionBlurValues( x, y, fwd, spin )
