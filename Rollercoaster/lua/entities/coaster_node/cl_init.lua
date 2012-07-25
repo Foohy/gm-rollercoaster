@@ -53,7 +53,7 @@ function ENT:Initialize()
 	self:SetRenderBoundsWS(Vector(-1000000,-1000000,-1000000), Vector( 1000000, 1000000, 1000000 ) ) //There must be a better way to do this
 
 	//Other misc. clientside models that are only used by the controller
-	self.WheelModel			= ClientsideModel( "models/props_vehicles/carparts_wheel01a.mdl")
+	self.WheelModel	= ClientsideModel( "models/props_vehicles/carparts_wheel01a.mdl")
 
 	self.WheelModel:SetPos( Vector( 100000, 100000, -100000 ) )
 	self.WheelModel:SetModelScale( Vector( 1.6, 1.6, 1.6))
@@ -908,6 +908,63 @@ function ENT:GetController()
 
 end
 
+function ENT:DrawSupport()
+	local controller = self:GetController()
+	if !IsValid( controller ) then return end
+	if LocalPlayer():GetInfoNum("coaster_supports") == 0 then return end //Don't draw if they don't want us to draw.
+	if self == controlller || controller.Nodes[ #controller.Nodes ] == self then return false end //Don't draw the controller or the very last (unconnected) node
+	if math.abs( math.NormalizeAngle( self:GetRoll() ) ) > 90 then return false end //If a track is upside down, don't draw the supports
+	if controller:Looped() && controller.Nodes[ 2 ] == self then return false end //Don't draw the supports for the second node ONLY if the track is looped
+
+	self.SupportModelStart:SetNoDraw( false )
+	self.SupportModel:SetNoDraw( false )
+	self.SupportModelBase:SetNoDraw( false )
+
+	local dist = 100000
+	trace = {}
+
+		trace.start  = self:GetPos()
+		trace.endpos = self:GetPos() - Vector( 0, 0, dist ) //Trace straight down
+		trace.filter = self
+		trace.mask = MASK_SOLID_BRUSHONLY
+		trace = util.TraceLine(trace)
+		
+	local Distance = self:GetPos():Distance( trace.HitPos + Vector( 0, 0, self.BaseHeight) )
+	//Set their colors
+	local color = self:GetColor()
+	
+	if self.Invalidated then
+		color.r = 255
+		color.g = 0
+		color.b = 0
+	end
+
+	self.SupportModelStart:SetColor( color )
+	self.SupportModel:SetColor( color )
+
+	//Draw the first pole
+	self.SupportModelStart:SetPos( trace.HitPos + Vector( 0, 0, self.BaseHeight ) ) //Add 64 units so it's right on top of the base
+	local height = math.Clamp( Distance, 1, self.PoleHeight - self.BaseHeight )
+	self.SupportModelStart:SetModelScale( Vector( 1, 1, height / (self.PoleHeight  ) ) )
+	self.SupportModelStart:SetAngles( Angle( 0, self:GetAngles().y, 0 ) )
+
+	//Draw the second pole (if applicable)
+	if Distance > self.PoleHeight - self.BaseHeight then
+		self.SupportModel:SetPos(trace.HitPos + Vector(0, 0, self.PoleHeight ))
+		self.SupportModel:SetModelScale( Vector( 1, 1, ( (Distance - self.PoleHeight + self.BaseHeight) / self.PoleHeight)   ) )
+		self.SupportModel:SetAngles( Angle( 0, self:GetAngles().y, 0 ) )				
+	else
+		self.SupportModel:SetNoDraw( true )
+	end
+		
+	local skin = self.MatSkins[trace.MatType]
+	self.SupportModelBase:SetSkin( skin or 1 )
+	self.SupportModelBase:SetPos( trace.HitPos )
+	self.SupportModelBase:SetAngles( Angle( 0, self:GetAngles().y, 0 ) )
+
+	return true
+end
+
 //Draw the node
 function ENT:Draw()
 	// Don't draw if we're taking pictures
@@ -949,83 +1006,16 @@ function ENT:Think()
 		self.FirstBoundsCheck = true
 	end
 
-	//Set the positions of the supports
-		//Draw ourselves a support beam
-	if LocalPlayer():GetInfoNum("coaster_supports") != 0 then
-		if IsValid(self.SupportModel ) && IsValid(self.SupportModelStart ) && IsValid(self.SupportModelBase ) then
+	//Draw this node's support
+	if IsValid(self.SupportModel) && IsValid(self.SupportModelStart) && IsValid(self.SupportModelBase) then
 
-			local cont = true
-			local controller = self:GetController()
-			if IsValid( controller ) then
-				if self:IsController() || controller.Nodes[ #controller.Nodes ] == self then cont = false end //Don't draw the controller or the very last (unconnected) node
-				if math.NormalizeAngle(self:GetRoll()) > 90 || math.NormalizeAngle(self:GetRoll()) < -90 then cont = false end //If a track is upside down, don't draw the supports
-				if controller:Looped() && controller.Nodes[ 2 ] == self then cont = false end //Don't draw the supports for the second node ONLY if the track is looped
-			else
-				cont = false
-			end
-			if cont then
-				self.SupportModelStart:SetNoDraw( false )
-				self.SupportModel:SetNoDraw( false )
-				self.SupportModelBase:SetNoDraw( false )
-
-				local dist = 100000
-				trace = {}
-
-					trace.start  = self:GetPos()
-					trace.endpos = self:GetPos() - Vector( 0, 0, dist ) //Trace straight down
-					trace.filter = self
-					trace.mask = MASK_SOLID_BRUSHONLY
-					trace = util.TraceLine(trace)
-					
-				local Distance = self:GetPos():Distance( trace.HitPos + Vector( 0, 0, self.BaseHeight) )
-				//Set their colors
-				local color = self:GetColor()
-				
-				if self.Invalidated then
-					color.r = 255
-					color.g = 0
-					color.b = 0
-				end
-				//render.SetColorModulation( color.r / 255, color.g / 255, color.b / 255)
-
-				self.SupportModelStart:SetColor( color )
-				self.SupportModel:SetColor( color )
-
-				//Draw the first pole
-				self.SupportModelStart:SetPos( trace.HitPos + Vector( 0, 0, self.BaseHeight ) ) //Add 64 units so it's right on top of the base
-				local height = math.Clamp( Distance, 1, self.PoleHeight - self.BaseHeight )
-				self.SupportModelStart:SetModelScale( Vector( 1, 1, height / (self.PoleHeight  ) ) )
-				self.SupportModelStart:SetAngles( Angle( 0, self:GetAngles().y, 0 ) )
-
-				//Draw the second pole (if applicable)
-				if Distance > self.PoleHeight - self.BaseHeight then
-					self.SupportModel:SetPos(trace.HitPos + Vector(0, 0, self.PoleHeight ))
-					self.SupportModel:SetModelScale( Vector( 1, 1, ( (Distance - self.PoleHeight + self.BaseHeight) / self.PoleHeight)   ) )
-					self.SupportModel:SetAngles( Angle( 0, self:GetAngles().y, 0 ) )				
-				else
-					self.SupportModel:SetNoDraw( true )
-				end
-					
-				local skin = self.MatSkins[trace.MatType]
-				self.SupportModelBase:SetSkin( skin or 1 )
-				self.SupportModelBase:SetPos( trace.HitPos )
-				self.SupportModelBase:SetAngles( Angle( 0, self:GetAngles().y, 0 ) )
-
-			else //cont is false
-				self.SupportModelStart:SetNoDraw( true )
-				self.SupportModel:SetNoDraw( true )
-				self.SupportModelBase:SetNoDraw( true )
-			end
+		if !self:DrawSupport() then
+			self.SupportModelStart:SetNoDraw( true )
+			self.SupportModel:SetNoDraw( true )
+			self.SupportModelBase:SetNoDraw( true )
 		end
 	end
 
-/*
-	if self.Material != self:GetMaterial() then
-		self.OverrideMaterial = Material( self:GetMaterial() )
-	else
-		self.OverrideMaterial = nil
-	end
-*/
 	
 	//force-invalidate ourselves if we're being driven at all
 	if self:IsBeingDriven() && !self.Invalidated then
