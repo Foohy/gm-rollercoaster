@@ -32,7 +32,6 @@ function ENT:Initialize()
 	self.SupportModel 		= ClientsideModel( "models/sunabouzu/coaster_pole.mdl" )
 	self.SupportModelStart 	= ClientsideModel( "models/sunabouzu/coaster_pole_start.mdl" )
 	self.SupportModelBase 	= ClientsideModel( "models/sunabouzu/coaster_base.mdl" )
-	self.SupportModel:SetMaterial( mat_chain )
 
 	//hide them (shh)
 	self.SupportModel:SetNoDraw( true )
@@ -469,6 +468,7 @@ end
 
 //Draw the track supports.
 //This includes the base, and the variable length support cylinder
+/*
 function ENT:DrawSupports()
 	if LocalPlayer():GetInfoNum("coaster_supports") == 0 then return end
 
@@ -579,7 +579,7 @@ function ENT:DrawSupports()
 	self.SupportModelBase:SetNoDraw( true )
 	
 end
-
+*/
 
 local WheelOffset = 1
 
@@ -772,6 +772,7 @@ function ENT:DrawSideRail( segment, offset )
 	render.EndBeam()
 end
 
+//Though easier to understand, this was more laggy than the above function, so it isn't used.
 function ENT:DrawSideRail2( segment, offset )
 	if not (segment > 1 && (#self.CatmullRom.PointsList > segment )) then return end
 	if self.CatmullRom.Spline == nil or #self.CatmullRom.Spline < 1 then return end
@@ -889,6 +890,7 @@ end
 //Get the controller entity of this node
 //I should make a shared function to do this
 //This is bad
+//Really bad
 function ENT:GetController()
 	if self:IsController() then return self end
 
@@ -908,11 +910,50 @@ end
 
 //Draw the node
 function ENT:Draw()
-	//Draw ourselves a support beam
+	// Don't draw if we're taking pictures
+	local wep = LocalPlayer():GetActiveWeapon()
+	if wep:IsValid() && wep:GetClass() == "gmod_camera" && !self:IsController() then
+		return
+	end
+
+	//If we're in a vehicle ( cart ), don't draw
+	if LocalPlayer():InVehicle() && !self:IsController() then
+		return
+	end
+
+	self:DrawModel()
+
+	if self:IsController() then
+		if #self.CatmullRom.PointsList > 3 then
+			self:DrawRailMesh()
+		end
+	end
+end
+
+//Update the node's spline if our velocity (and thus position) changes
+function ENT:Think()
+	if !self.FirstBoundsCheck then
+		//Update their render bounds so it draws the supports too
+		trace = {}
+
+			trace.start  = self:GetPos()
+			trace.endpos = self:GetPos() - Vector( 0, 0, 100000 ) //Trace straight down
+			trace.filter = self
+			trace.mask = MASK_SOLID_BRUSHONLY
+			trace = util.TraceLine(trace)
+
+		if !self:IsController() && IsValid( self.SupportModel) then
+			self.SupportModel:SetRenderBoundsWS(  trace.StartPos - Vector( 50, 50, -50), trace.HitPos + Vector( 50, 50, -50) )
+		end
+
+		self.FirstBoundsCheck = true
+	end
+
+	//Set the positions of the supports
+		//Draw ourselves a support beam
 	if LocalPlayer():GetInfoNum("coaster_supports") != 0 then
 		if IsValid(self.SupportModel ) && IsValid(self.SupportModelStart ) && IsValid(self.SupportModelBase ) then
 
-			
 			local cont = true
 			local controller = self:GetController()
 			if IsValid( controller ) then
@@ -920,9 +961,13 @@ function ENT:Draw()
 				if math.NormalizeAngle(self:GetRoll()) > 90 || math.NormalizeAngle(self:GetRoll()) < -90 then cont = false end //If a track is upside down, don't draw the supports
 				if controller:Looped() && controller.Nodes[ 2 ] == self then cont = false end //Don't draw the supports for the second node ONLY if the track is looped
 			else
-				cont = false 
+				cont = false
 			end
 			if cont then
+				self.SupportModelStart:SetNoDraw( false )
+				self.SupportModel:SetNoDraw( false )
+				self.SupportModelBase:SetNoDraw( false )
+
 				local dist = 100000
 				trace = {}
 
@@ -941,102 +986,37 @@ function ENT:Draw()
 					color.g = 0
 					color.b = 0
 				end
-				render.SetColorModulation( color.r / 255, color.g / 255, color.b / 255)
+				//render.SetColorModulation( color.r / 255, color.g / 255, color.b / 255)
 
-				if self.OverrideMaterial then
-					self.SupportModel:SetMaterial( self.OverrideMaterial )
-					self.SupportModelStart:SetMaterial( self.OverrideMaterial )
-					self.SupportModelBase:SetMaterial( self.OverrideMaterial )
-				else
-					self.SupportModel:SetMaterial( "" )
-					self.SupportModelStart:SetMaterial( "" )
-					self.SupportModelBase:SetMaterial( "" )
-				end
-
+				self.SupportModelStart:SetColor( color )
+				self.SupportModel:SetColor( color )
 
 				//Draw the first pole
-				self.SupportModelStart:SetRenderOrigin( trace.HitPos + Vector( 0, 0, self.BaseHeight ) ) //Add 64 units so it's right on top of the base
-
-				render.SetLightingOrigin( trace.HitPos + Vector( 0, 0, self.BaseHeight ) )
-				local lightvec = render.GetLightColor(trace.HitPos + Vector( 0, 0, self.BaseHeight ))
-				render.ResetModelLighting(lightvec.x, lightvec.y, lightvec.z)
+				self.SupportModelStart:SetPos( trace.HitPos + Vector( 0, 0, self.BaseHeight ) ) //Add 64 units so it's right on top of the base
 				local height = math.Clamp( Distance, 1, self.PoleHeight - self.BaseHeight )
 				self.SupportModelStart:SetModelScale( Vector( 1, 1, height / (self.PoleHeight  ) ) )
 				self.SupportModelStart:SetAngles( Angle( 0, self:GetAngles().y, 0 ) )
-				self.SupportModelStart:SetupBones()
-				self.SupportModelStart:DrawModel()
-					
+
 				//Draw the second pole (if applicable)
 				if Distance > self.PoleHeight - self.BaseHeight then
-					self.SupportModel:SetRenderOrigin( trace.HitPos + Vector(0, 0, self.PoleHeight  ))
-					render.SetLightingOrigin( trace.HitPos + Vector(0, 0, self.PoleHeight  ))
-					local lightvec = render.GetLightColor(trace.HitPos + Vector(0, 0, self.PoleHeight  ))
-					render.ResetModelLighting(lightvec.x, lightvec.y, lightvec.z)
+					self.SupportModel:SetPos(trace.HitPos + Vector(0, 0, self.PoleHeight ))
 					self.SupportModel:SetModelScale( Vector( 1, 1, ( (Distance - self.PoleHeight + self.BaseHeight) / self.PoleHeight)   ) )
 					self.SupportModel:SetAngles( Angle( 0, self:GetAngles().y, 0 ) )				
-					self.SupportModel:SetupBones()	
-					self.SupportModel:DrawModel()
+				else
+					self.SupportModel:SetNoDraw( true )
 				end
 					
 				local skin = self.MatSkins[trace.MatType]
-				//render.SetMaterial( skin or table.GetFirstValue(self.MatSkins) )
-				//print( trace.MatType )
-				render.SetColorModulation( 1, 1, 1 )
 				self.SupportModelBase:SetSkin( skin or 1 )
-				self.SupportModelBase:SetRenderOrigin( trace.HitPos )
-
+				self.SupportModelBase:SetPos( trace.HitPos )
 				self.SupportModelBase:SetAngles( Angle( 0, self:GetAngles().y, 0 ) )
-				self.SupportModelBase:SetupBones()
 
-
-				render.SetLightingOrigin( trace.HitPos )
-				local lightvec = render.GetLightColor(trace.HitPos)
-				render.ResetModelLighting( lightvec.x, lightvec.y, lightvec.z )
-				self.SupportModelBase:DrawModel()
+			else //cont is false
+				self.SupportModelStart:SetNoDraw( true )
+				self.SupportModel:SetNoDraw( true )
+				self.SupportModelBase:SetNoDraw( true )
 			end
 		end
-	end
-
-	// Don't draw if we're taking pictures
-	local wep = LocalPlayer():GetActiveWeapon()
-	if wep:IsValid() && wep:GetClass() == "gmod_camera" && !self:IsController() then
-		return
-	end
-
-	//If we're in a vehicle ( cart ), don't draw
-	if LocalPlayer():InVehicle() && !self:IsController() then
-		return
-	end
-
-	//render.SetBlend( 0 )
-	self:DrawModel()
-	//render.SetBlend( 1 )
-
-	if self:IsController() then
-		if #self.CatmullRom.PointsList > 3 then
-			self:DrawRailMesh()
-
-		end
-	end
-end
-
-//Update the node's spline if our velocity (and thus position) changes
-function ENT:Think()
-	if !self.FirstBoundsCheck then
-		//Update their render bounds so it draws the supports too
-		trace = {}
-
-			trace.start  = self:GetPos()
-			trace.endpos = self:GetPos() - Vector( 0, 0, 100000 ) //Trace straight down
-			trace.filter = self
-			trace.mask = MASK_SOLID_BRUSHONLY
-			trace = util.TraceLine(trace)
-
-		if !self:IsController() then
-			self:SetRenderBoundsWS(  trace.StartPos - Vector( 50, 50, -50), trace.HitPos + Vector( 50, 50, -50) )
-		end
-
-		self.FirstBoundsCheck = true
 	end
 
 /*
@@ -1060,17 +1040,18 @@ function ENT:Think()
 
 			//So we can see the beams move while me move a node
 			self:UpdateClientSpline() 
+			if IsValid( self.SupportModel) then
+				//Update it's render bounds
+				trace = {}
 
-			//Update it's render bounds
-			trace = {}
+					trace.start  = v:GetPos()
+					trace.endpos = v:GetPos() - Vector( 0, 0, 100000 ) //Trace straight down
+					trace.filter = v
+					trace.mask = MASK_SOLID_BRUSHONLY
+					trace = util.TraceLine(trace)
 
-				trace.start  = v:GetPos()
-				trace.endpos = v:GetPos() - Vector( 0, 0, 100000 ) //Trace straight down
-				trace.filter = v
-				trace.mask = MASK_SOLID_BRUSHONLY
-				trace = util.TraceLine(trace)
-
-			v:SetRenderBoundsWS(  trace.StartPos - Vector( 50, 50, -50), trace.HitPos + Vector( 50, 50, -50) )
+				v.SupportModel:SetRenderBoundsWS(  trace.StartPos - Vector( 50, 50, -50), trace.HitPos + Vector( 50, 50, -50) )
+			end
 			break
 		end
 	end
@@ -1082,14 +1063,30 @@ function ENT:Think()
 end
 
 function ENT:OnRemove()
+	//Remove models
+	if IsValid( self.SupportModel  ) then 
+		self.SupportModel:SetNoDraw( true )
+		self.SupportModel:Remove() 
+		self.SupportModel = nil
+	end
+	if IsValid( self.SupportModelStart ) then 
+		self.SupportModelStart:SetNoDraw( true )
+		self.SupportModelStart:Remove() 
+		self.SupportModelStart = nil
+	end
+	if IsValid( self.SupportModelBase ) then 
+		self.SupportModelBase:SetNoDraw( true )
+		self.SupportModelBase:Remove() 
+		self.SupportModelBase = nil
+	end
+
+
 	if IsValid( self ) && self:IsController() then
 		self:UpdateClientSpline()
 
-		//Remove models
-		if IsValid( self.SupportModel  ) then self.SupportModel:Remove() end
-		if IsValid( self.SupportModelStart ) then self.SupportModelStart:Remove() end
-		if IsValid( self.SupportModelBase ) then self.SupportModelBase:Remove() end
-		if IsValid( self.WheelModel ) then self.WheelModel:Remove() end
+		if IsValid( self.WheelModel ) then 
+			self.WheelModel:Remove() 
+		end
 	else
 		local Controller = self:GetController()
 		if !IsValid( Controller ) then return end
@@ -1112,6 +1109,8 @@ concommand.Add("coaster_refresh_drawbounds", function()
 			if v:IsController() then
 				v:SetRenderBoundsWS(Vector(-1000000,-1000000,-1000000), Vector( 1000000, 1000000, 1000000 ) ) //There must be a better way to do this
 			else
+				if !IsValid( v.SupportModel ) then return end
+
 				//Update their render bounds so it draws the supports too
 				trace = {}
 
@@ -1121,7 +1120,7 @@ concommand.Add("coaster_refresh_drawbounds", function()
 				trace.mask = MASK_SOLID_BRUSHONLY
 				trace = util.TraceLine(trace)
 
-				v:SetRenderBoundsWS(  trace.StartPos - Vector( 50, 50, -50), trace.HitPos + Vector( 50, 50, -50) )
+				v.SupportModel:SetRenderBoundsWS( trace.StartPos - Vector( 50, 50, -50), trace.HitPos + Vector( 50, 50, -50) )		
 			end
 		end
 	end
