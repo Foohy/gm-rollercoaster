@@ -87,4 +87,4 @@ function TAB:BuildPanel( )
 	return panel
 end
 
-coastertabmanager.Register( UNIQUENAME, TAB )
+//coastertabmanager.Register( UNIQUENAME, TAB )

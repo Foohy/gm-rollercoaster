@@ -1,15 +1,3 @@
-/* 
-ROLLERCOASTER
-BY FOOHY
-LOTS CAN BE IMPROVED
-LOTS CAN BE RECODED
-LOTS CAN BE BROKEN
-DONT HURT ME IF IT DOES
-
-TODO:
-	moved to trello
-*/
-
 AddCSLuaFile( "autorun/coasterManager.lua" )
 AddCSLuaFile("trackmanager.lua")
 include("trackmanager.lua")
@@ -66,6 +54,9 @@ if SERVER then
 			Rollercoasters[id] = node
 			Rollercoasters[id]:SetController(true)
 			Rollercoasters[id]:SetModel( "models/props_junk/PopCan01a.mdl" )
+		else
+			//Nocollide the node with the main node so that the remover gun removes all nodes
+			constraint.NoCollide( node, Rollercoasters[id], 0, 0 )
 		end
 
 		Rollercoasters[id]:AddNodeSimple( node )
@@ -97,6 +88,9 @@ if SERVER then
 			Rollercoasters[id]:SetModel( "models/props_junk/PopCan01a.mdl" )
 			Rollercoasters[id]:AddTrackNode( node, ply ) //The first node is always the controller node
 		else //The ID IS an actual rollercoaster, so let's append to it
+			//Nocollide the node with the main node so that the remover gun removes all nodes
+			constraint.NoCollide( node, Rollercoasters[id], 0, 0 )
+
 			Rollercoasters[id]:AddTrackNode( node, ply )
 			Msg("Creating a new node: "..tostring(Rollercoasters[id]:GetNumNodes()).." for coaster ID: "..id.."\n")
 		end
