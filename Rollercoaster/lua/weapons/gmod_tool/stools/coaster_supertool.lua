@@ -48,7 +48,6 @@ function TOOL:Think()
 			if Sheet.Class && Sheet.Class != class then
 				RunConsoleCommand("coaster_supertool_selected_tab", Sheet.Class.UniqueName )
 
-
 			end
 		end
 	end
@@ -109,6 +108,7 @@ function TOOL:DrawHUD()
 
 	if class then
 		if class.Name then Name = class.Name end
+		if class.Name == "" && class.Name2 then Name = class.Name2 end //quickfix
 		if class.Description then Desc = class.Description end
 		if class.Instructions then Instructions = class.Instructions end
 	end
@@ -166,6 +166,7 @@ function TOOL:DrawToolScreen( TEX_SIZE )
 	local class = self:GetCurrentTab()
 	local text = "None"
 	if class && class.Name then text = class.Name end
+	if class.Name == "" && class.Name2 then text = class.Name2 end //quickfix
 
 	surface.SetFont("GModToolScreen")
 	DrawScrollingText( text, 64, TEX_SIZE )
@@ -196,7 +197,7 @@ function TOOL.BuildCPanel(panel)
 
 	local PropertySheet = vgui.Create( "DPropertySheet", panel )
 	PropertySheet:SetPos( 0, 0 )
-	PropertySheet:SetSize( 340, 600 ) //340, 600
+	PropertySheet:SetSize( 360, 560 ) //340, 600
 
 	local FixedTable = toSortedTable( coastertabmanager.List, "Position")
 
@@ -210,6 +211,9 @@ function TOOL.BuildCPanel(panel)
 
 	panel:AddItem( PropertySheet )
 	panel.Tabs = PropertySheet
+
+	panel:Button( "Build Clientside Mesh", "update_mesh")
+	panel:ControlHelp( "Note: Building the mesh is not realtime. You WILL experience a temporary freeze when building the mesh." )
 
 end
 

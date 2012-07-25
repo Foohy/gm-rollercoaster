@@ -3,12 +3,13 @@ local TAB = {}
 TAB.ClientConVar = {}
 local UNIQUENAME = "remover"
 
-TAB.Name = "Remove"
+TAB.Name = ""
+TAB.Name2 = "Remover" //Name for the non-tab stuff
 TAB.UniqueName = UNIQUENAME
 TAB.Description = "Remove entire rollercoasters"
 TAB.Instructions = "Click on any node of a track to remove the entire thing"
 TAB.Icon = "coaster/remover"
-TAB.Position = 4
+TAB.Position = 5
 
 function TAB:LeftClick( trace, tool )
 	local ply   = tool:GetOwner()
@@ -87,4 +88,4 @@ function TAB:BuildPanel( )
 	return panel
 end
 
-//coastertabmanager.Register( UNIQUENAME, TAB )
+coastertabmanager.Register( UNIQUENAME, TAB )

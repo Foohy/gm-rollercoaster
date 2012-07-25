@@ -4,7 +4,8 @@ local TAB = {}
 TAB.ClientConVar = {}
 local UNIQUENAME = "track_settings"
 
-TAB.Name = "Settings"
+TAB.Name = ""
+TAB.Name2 = "Settings" //Name for the non-tab stuff
 TAB.UniqueName = UNIQUENAME
 TAB.Description = "Change track-wide and addon-wide settings"
 TAB.Instructions = "Click on any node of a rollercoaster to update its settings. Alternatively, adjust clientside settings for all rollercoasters"

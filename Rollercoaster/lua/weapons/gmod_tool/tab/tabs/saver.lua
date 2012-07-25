@@ -5,12 +5,12 @@ local TAB = {}
 TAB.ClientConVar = {}
 local UNIQUENAME = "saver"
 
-TAB.Name = "Save"
+TAB.Name = "Save/Load"
 TAB.UniqueName = UNIQUENAME
 TAB.Description = "Save, load, and upload tracks"
 TAB.Instructions = "Right click on a coaster to select it to save. Left click to spawn a loaded coaster."
 TAB.Icon = "coaster/save"
-TAB.Position = 5 //The position in the series of tabs
+TAB.Position = 4 //The position in the series of tabs
 
 TAB.ClientConVar["id"] = "1"
 TAB.ClientConVar["orig_spawn"] = "1"
@@ -176,7 +176,7 @@ function TAB:BuildPanel( )
 		local upload = panel:Button("Upload...")
 		upload.DoClick = function() OpenCoasterUploadMenu() end
 	end
-	panel:NumSlider( "Spawn ID: ", "coaster_supertool_tab_saver_id", 1, 8, 0 )
+	panel:NumSlider( "Rollercoaster ID: ", "coaster_supertool_tab_saver_id", 1, 8, 0 )
 
 	panel:CheckBox("Spawn at original position and angles", "coaster_supertool_tab_saver_orig_spawn")
 
