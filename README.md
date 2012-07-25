@@ -34,3 +34,4 @@ Installation is relatively simple. Just extract the Rollercoasters folder into y
 #### More information ####
 * See current status on rollercoasters via the Trello page [located here](https://trello.com/board/rollercoaster/4fd3f7084971ae066211c8ad)
 * [Facepunch Thread](http://www.facepunch.com/showthread.php?t=1200443)
+* [Foohy.net](http://foohy.net/)
