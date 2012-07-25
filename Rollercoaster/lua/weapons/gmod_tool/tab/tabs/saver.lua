@@ -197,12 +197,12 @@ end
 function TAB:SpawnTrack( tool )
 	if SinglePlayer() then //I'm seriously sending a usermessage to the client, who is the host. WHY IS LEFTCLICK NOT CALLED ON THE CLIENT IN SINGLEPLAYER
 		umsg.Start("Coaster_spawntrack_sp")
-			umsg.Short( GetClientNumber( self, "ID", tool ))
+			umsg.String( LocalPlayer():SteamID() .. "_" .. tostring( GetClientNumber( self, "id", tool ) ) )
 			umsg.Short( GetClientNumber( self, "orig_spawn", tool ) )
 			umsg.Vector( coaster_saver_preview_trackcenter )
 		umsg.End()
 	else
-		RunConsoleCommand( "coaster_supertool_tab_saver_spawntrack", coaster_saver_selectedfilename, GetClientNumber( self, "ID", tool ),  GetClientNumber( self, "orig_spawn", tool ), coaster_saver_preview_trackcenter )
+		RunConsoleCommand( "coaster_supertool_tab_saver_spawntrack", coaster_saver_selectedfilename, LocalPlayer():SteamID() .. "_" .. tostring( GetClientNumber( self, "id", tool ) ),  GetClientNumber( self, "orig_spawn", tool ), coaster_saver_preview_trackcenter )
 		print("Building \"" .. coaster_saver_selectedfilename .. "\"")
 	end
 
@@ -586,7 +586,7 @@ end
 
 
 usermessage.Hook("Coaster_spawntrack_sp", function(um) 
-	RunConsoleCommand( "coaster_supertool_tab_saver_spawntrack", coaster_saver_selectedfilename, um:ReadShort() or 1, um:ReadShort(), um:ReadVector() )
+	RunConsoleCommand( "coaster_supertool_tab_saver_spawntrack", coaster_saver_selectedfilename, um:ReadString() or 1, um:ReadShort(), um:ReadVector() )
 	print("Building \"" .. coaster_saver_selectedfilename .. "\"")
 end )
 
@@ -694,7 +694,7 @@ if SERVER then
 	concommand.Add("coaster_supertool_tab_saver_spawntrack", function(ply, cmd, args)
 		print( args[2], args[3] )
 		local filename = args[1]
-		local id = math.Round(tonumber(args[2]) ) or 9
+		local id = args[2] or ""
 		local orig_spawn = math.Round(tonumber(args[3] ) ) == 1
 		local TranslateTo = ply:GetEyeTrace().HitPos
 		local AngleTo = ply:GetAngles()

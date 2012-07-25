@@ -19,10 +19,12 @@ function ENT:SetupDataTables()
 	self:DTVar("Entity", 1, "NextNode")
 	self:DTVar("Int", 0, "Type")
 	self:DTVar("Int", 1, "TrackType")
-	self:DTVar("Int", 2, "CoasterID")
 	self:DTVar("Float", 0, "Roll")
 	self:DTVar("Vector", 0, "TrackColor")
 	self:DTVar("Vector", 1, "SupportColor")
+
+	self:SetNetworkedString( "CoasterID", "")//The string is STEAMID_ID (ex: STEAM_0:1:18712009_3 )
+	//self:DTVar("String", 0, "CoasterID") 
 end
 
 //Function to get if we are being driven with garry's new drive system
@@ -91,11 +93,13 @@ function ENT:GetTrackType()
 end
 
 function ENT:SetCoasterID( id )
-	self.dt.CoasterID = id
+	//self.dt.CoasterID = id
+	self:SetNetworkedString("CoasterID", id )
 end
 
 function ENT:GetCoasterID()
-	return self.dt.CoasterID or -1;
+	//return self.dt.CoasterID;
+	return self:GetNetworkedString("CoasterID")
 end
 
 function ENT:SetRoll(roll) //Not to be confused with CLuaParticle.SetRoll()

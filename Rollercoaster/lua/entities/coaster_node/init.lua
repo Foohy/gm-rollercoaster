@@ -45,7 +45,7 @@ function ENT:Initialize()
 	end
 
 	//Mainly to prevent duplicator spamming until I figure out how to correctly spawn nodes from garry's duplicator
-	if !self:GetCoasterID() || self:GetCoasterID() < 1 then self:Remove() end
+	if !self:GetCoasterID() || self:GetCoasterID() == "" then self:Remove() end
 	
 	self.CatmullRom = CoasterManager.Controller:New( self )
 	self.CatmullRom:Reset()
@@ -277,6 +277,8 @@ end
 //This is a bit nasty... it sets the appropriate nodes to their proper position to keep a looped track looped
 //I wasn't being very creative for a function name
 function ENT:UpdateMagicPositions()
+	if !IsValid( Rollercoasters[ self:GetCoasterID() ] ) then return end 
+
 	if self:Looped() || Rollercoasters[ self:GetCoasterID() ]:Looped() then
 		local controller = Rollercoasters[ self:GetCoasterID() ]
 		
@@ -512,7 +514,7 @@ function ENT:Think()
 end
 
 function ENT:OnRemove()	
-	if !self:GetCoasterID() || self:GetCoasterID() < 1 then return end
+	if !self:GetCoasterID() || self:GetCoasterID() == "" then return end
 
 	local cont = Rollercoasters[self:GetCoasterID()]
 

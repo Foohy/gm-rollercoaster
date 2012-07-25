@@ -43,7 +43,6 @@ function TAB:LeftClick( trace, tool )
 			local controller = Ent:GetController()
 
 			if IsValid( controller ) then
-				print("Creating train for "..tostring(controller))
 
 				local trains = controller:SetTrain( ply, model, CartNum )
 				if trains then 
@@ -90,7 +89,6 @@ function TAB:RightClick( trace, tool )
 			local controller = Ent:GetController()
 		
 			if IsValid( controller ) && SERVER then 
-				print("Removing train for "..tostring(controller))
 				controller:ClearTrains()
 			end
 		end

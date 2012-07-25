@@ -30,11 +30,10 @@ function TAB:LeftClick( trace, tool )
 	
 	local Elevation = GetClientNumber( self, "elevation", tool )
 	local Bank	 	= GetClientNumber( self, "bank", tool )
-	local ID 		= GetClientNumber( self, "id", tool )
+	local ID 		= ply:SteamID() .. "_" ..  GetClientInfo( self, "id", tool )
 	local Type 		= GetClientNumber( self, "tracktype", tool )
 	local RelRoll 	= GetClientNumber( self, "relativeroll", tool ) == 1
 	local matchZ = GetClientNumber( self, "prev_nodeheight", tool ) == 1
-
 	local plyAng	= ply:GetAngles()
 			
 	local newPos = trace.HitPos + Vector( 0, 0, Elevation )
@@ -122,20 +121,20 @@ function TAB:RightClick( trace, tool )
 	
 	local Elevation = GetClientNumber( self, "elevation", tool )
 	local Bank	 	= GetClientNumber( self, "bank", tool )
-	local ID 		= GetClientNumber( self, "id", tool )
+	local ID 		= ply:SteamID() .. "_" .. tostring( GetClientNumber( self, "id", tool ) )
 	local Chains	= GetClientNumber( self, "trackchains", tool )
 	local plyAng	= ply:GetAngles()
 
 	if SERVER then
 		if IsValid( trace.Entity ) && trace.Entity:GetClass() == "coaster_node" then //Update an existing node's settings
-			local ID = trace.Entity:GetCoasterID()
-			local Controller = Rollercoasters[ ID ]
+			local Cur_ID = trace.Entity:GetCoasterID()
+			local Controller = Rollercoasters[ Cur_ID ]
 			local FirstNode  = Controller:GetFirstNode()
 			local SecondToLast = Controller.Nodes[ #Controller.Nodes - 1 ]
 			local SecondNode = FirstNode:GetNextNode()
 			
 			if IsValid( Controller ) && IsValid( Controller:GetFirstNode() ) && !Controller:Looped() then
-				local newNode = CoasterManager.CreateNode( ID, FirstNode:GetPos(), FirstNode:GetAngles(), COASTER_NODE_NORMAL, ply )
+				local newNode = CoasterManager.CreateNode( Cur_ID, FirstNode:GetPos(), FirstNode:GetAngles(), COASTER_NODE_NORMAL, ply )
 				if !IsValid( newNode ) then return end
 
 				local lastNode = Controller.Nodes[ #Controller.Nodes ]
@@ -269,7 +268,7 @@ function TAB:UpdateGhostNode( ent, tool )
 	end
 
 	local Elevation = GetClientNumber( self, "elevation", tool )
-	local ID = GetClientNumber( self, "ID", tool )
+	local ID = ply:SteamID() .. "_" .. tostring( GetClientNumber( self, "id", tool ) )
 	local matchZ = GetClientNumber( self, "prev_nodeheight", tool ) == 1
 	local newPos = trace.HitPos + Vector( 0, 0, Elevation )
 	local newAng = Angle(0, ply:GetAngles().y, 0) + Angle( 0, 0, 0 )

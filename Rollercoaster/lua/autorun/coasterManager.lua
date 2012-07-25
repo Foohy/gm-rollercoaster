@@ -82,7 +82,7 @@ if SERVER then
 		node:Activate()
 
 		if !IsValid( Rollercoasters[id] ) then //The ID isn't an existing rollercoaster, so lets create one
-			Msg("Creating a new rollercoaster with ID: "..id.."\n" )
+			Msg("Creating a new rollercoaster with ID: "..tostring(id).."\n" )
 			Rollercoasters[id] = node
 			Rollercoasters[id]:SetController(true)
 			Rollercoasters[id]:SetModel( "models/props_junk/PopCan01a.mdl" )
@@ -92,7 +92,7 @@ if SERVER then
 			constraint.NoCollide( node, Rollercoasters[id], 0, 0 )
 
 			Rollercoasters[id]:AddTrackNode( node, ply )
-			Msg("Creating a new node: "..tostring(Rollercoasters[id]:GetNumNodes()).." for coaster ID: "..id.."\n")
+			Msg("Creating a new node: "..tostring(Rollercoasters[id]:GetNumNodes()).." for coaster ID: "..tostring(id).."\n")
 		end
 		
 		return node
