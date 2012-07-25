@@ -2,8 +2,6 @@ AddCSLuaFile( "cl_init.lua" )
 AddCSLuaFile( "shared.lua" )
 AddCSLuaFile( "mesh_beams.lua")
 include( "shared.lua" )
-include( "mesh_physics.lua")
-
 
 ENT.TrackEnts		= {} //List of all the track entities
 ENT.Nodes 			= {} //List of nodes (assuming we are the controller)

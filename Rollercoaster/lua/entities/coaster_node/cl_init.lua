@@ -146,6 +146,7 @@ end )
 function ENT:UpdateClientsidePhysics( )
 	for k, v in pairs( ents.FindByClass("coaster_physmesh") ) do
 		if v.GetController && v:GetController() == self then
+			v.Controller = v:GetController()
 			v:BuildMesh()
 		end
 	end
@@ -279,6 +280,8 @@ function ENT:UpdateClientSpline()
 	end
 	
 	self.CatmullRom:CalcEntireSpline()
+	//self:UpdateClientsidePhysics()
+
 end
 
 //Build all coaster's clientside mesh
@@ -286,13 +289,11 @@ concommand.Add("update_mesh", function()
 	for _, v in pairs( ents.FindByClass("coaster_node") ) do
 		if IsValid( v ) && v:IsController() then 
 			v:UpdateClientMesh()
-			//v:UpdateMesh()
-			//PrintTable( v.Nodes )
 		end
 	end
 end )
 
-//Give spline index, return percent of a node
+//Given spline index, return percent of a node
 //Util function
 function ENT:PercAlongNode(spline, qf)
 	while spline >= self.CatmullRom.STEPS do
@@ -308,6 +309,9 @@ function ENT:UpdateClientMesh()
 
 	//Make sure we have the most up to date version of the track
 	self:RefreshClientSpline()
+
+	//And the clientside mesh
+	self:UpdateClientsidePhysics()
 
 	if #self.CatmullRom.PointsList > 3 then
 		self.BuildingMesh = true //Tell the mesh to stop drawing because we're gonna rebuild it
