@@ -38,6 +38,8 @@ function ENT:Initialize()
 	self.SupportModelStart:SetNoDraw( true )
 	self.SupportModelBase:SetNoDraw( true )
 
+	//Make sure we draw the support model even though we stretched it to hell and back
+	self:UpdateSupportDrawBounds()
 	
 	//Material table, to vary the base skin depending on the type of ground it's on
 	self.MatSkins = {
@@ -610,30 +612,33 @@ function ENT:DrawSpeedupModels( segment )
 	while Percent < 1 do
 		if numwheels >= GetConVar("coaster_maxwheels"):GetInt() then return end
 
-		ang = self:AngleAt( segment, Percent)
+		if numwheels % 2 == 0 then //Draw every other wheel
+			ang = self:AngleAt( segment, Percent)
 
-		//Change the roll depending on the track
-		Roll = -Lerp( Percent, math.NormalizeAngle( ThisSegment:GetRoll() ), NextSegment:GetRoll())	
-		
-		//Set the roll for the current track peice
-		ang.r = Roll
-		//ang.y = ang.y - 90
-		//ang:RotateAroundAxis( ang:Up(), -90 )
-		Position = self.CatmullRom:Point(segment, Percent)
-		Position = Position + ang:Up() * -13
+			//Change the roll depending on the track
+			Roll = -Lerp( Percent, math.NormalizeAngle( ThisSegment:GetRoll() ), NextSegment:GetRoll())	
+			
+			//Set the roll for the current track peice
+			ang.r = Roll
+			//ang.y = ang.y - 90
+			//ang:RotateAroundAxis( ang:Up(), -90 )
+			Position = self.CatmullRom:Point(segment, Percent)
+			Position = Position + ang:Up() * -13
 
-		ang:RotateAroundAxis( ang:Right(), CurTime() * 1000 ) //BAM
+			ang:RotateAroundAxis( ang:Right(), CurTime() * 1000 ) //BAM
 
-		//Now... manage moving throughout the track evenly
-		//Each spline has a certain multiplier so the cart travel at a constant speed throughout the track
-		Multiplier = self:GetMultiplier(segment, Percent)
+			//Now... manage moving throughout the track evenly
+			//Each spline has a certain multiplier so the cart travel at a constant speed throughout the track
+			Multiplier = self:GetMultiplier(segment, Percent)
 
-		self.WheelModel:SetRenderOrigin( Position )
-		render.SetLightingOrigin( Position )
-		self.WheelModel:SetAngles( ang )
-		self.WheelModel:SetupBones()
-		self.WheelModel:DrawModel()
+			self.WheelModel:SetRenderOrigin( Position )
+			render.SetLightingOrigin( Position )
+			self.WheelModel:SetAngles( ang )
+			self.WheelModel:SetupBones()
+			self.WheelModel:DrawModel()
 
+			
+		end
 		numwheels = numwheels + 1
 
 		//Move ourselves forward along the track
@@ -669,37 +674,38 @@ function ENT:DrawBreakModels( segment )
 
 	while Percent < 1 do
 		if numwheels >= GetConVar("coaster_maxwheels"):GetInt() then return end
-
-		ang = self:AngleAt( segment, Percent)
-
-		//Change the roll depending on the track
-		Roll = -Lerp( Percent, math.NormalizeAngle( ThisSegment:GetRoll() ), NextSegment:GetRoll())	
 		
-		//Set the roll for the current track peice
-		ang.r = Roll
-		//ang.y = ang.y - 90
-		//ang:RotateAroundAxis( ang:Up(), -90 )
-		PositionL = self.CatmullRom:Point(segment, Percent) + ( ang:Up() * -13 ) + ( ang:Right() * 15 )
-		PositionR = self.CatmullRom:Point(segment, Percent) + ( ang:Up() * -13 ) + ( ang:Right() * -15 )
+		if numwheels % 2 == 0 then //Draw every other wheel
+			ang = self:AngleAt( segment, Percent)
 
-		ang:RotateAroundAxis( ang:Right(), CurTime() * -130 ) //BAM
+			//Change the roll depending on the track
+			Roll = -Lerp( Percent, math.NormalizeAngle( ThisSegment:GetRoll() ), NextSegment:GetRoll())	
+			
+			//Set the roll for the current track peice
+			ang.r = Roll
+			//ang.y = ang.y - 90
+			//ang:RotateAroundAxis( ang:Up(), -90 )
+			PositionL = self.CatmullRom:Point(segment, Percent) + ( ang:Up() * -13 ) + ( ang:Right() * 15 )
+			PositionR = self.CatmullRom:Point(segment, Percent) + ( ang:Up() * -13 ) + ( ang:Right() * -15 )
 
-		//Now... manage moving throughout the track evenly
-		//Each spline has a certain multiplier so the cart travel at a constant speed throughout the track
-		Multiplier = self:GetMultiplier(segment, Percent)
+			ang:RotateAroundAxis( ang:Right(), CurTime() * -130 ) //BAM
 
-		self.WheelModel:SetRenderOrigin( PositionL )
-		render.SetLightingOrigin( PositionL )
-		self.WheelModel:SetAngles( ang )
-		self.WheelModel:SetupBones()
-		self.WheelModel:DrawModel()
+			//Now... manage moving throughout the track evenly
+			//Each spline has a certain multiplier so the cart travel at a constant speed throughout the track
+			Multiplier = self:GetMultiplier(segment, Percent)
 
-		self.WheelModel:SetRenderOrigin( PositionR )
-		render.SetLightingOrigin( PositionR )
-		//self.WheelModel:SetAngles( ang )
-		self.WheelModel:SetupBones()
-		self.WheelModel:DrawModel()
+			self.WheelModel:SetRenderOrigin( PositionL )
+			render.SetLightingOrigin( PositionL )
+			self.WheelModel:SetAngles( ang )
+			self.WheelModel:SetupBones()
+			self.WheelModel:DrawModel()
 
+			self.WheelModel:SetRenderOrigin( PositionR )
+			render.SetLightingOrigin( PositionR )
+			//self.WheelModel:SetAngles( ang )
+			self.WheelModel:SetupBones()
+			self.WheelModel:DrawModel()
+		end
 		numwheels = numwheels + 1
 
 		//Move ourselves forward along the track
@@ -908,6 +914,25 @@ function ENT:GetController()
 
 end
 
+function ENT:UpdateSupportDrawBounds()
+	if self:IsController() then
+		self:SetRenderBoundsWS(Vector(-1000000,-1000000,-1000000), Vector( 1000000, 1000000, 1000000 ) ) //There must be a better way to do this
+	else
+		if !IsValid( self.SupportModel ) then return end
+
+		//Update their render bounds so it draws the supports too
+		trace = {}
+
+		trace.start  = self:GetPos()
+		trace.endpos = self:GetPos() - Vector( 0, 0, 100000 ) //Trace straight down
+		trace.filter = self
+		trace.mask = MASK_SOLID_BRUSHONLY
+		trace = util.TraceLine(trace)
+
+		self.SupportModel:SetRenderBoundsWS( trace.StartPos - Vector( 50, 50, -50), trace.HitPos + Vector( 50, 50, -50) )		
+	end
+end
+
 function ENT:DrawSupport()
 	local controller = self:GetController()
 	if !IsValid( controller ) then return end
@@ -989,22 +1014,6 @@ end
 
 //Update the node's spline if our velocity (and thus position) changes
 function ENT:Think()
-	if !self.FirstBoundsCheck then
-		//Update their render bounds so it draws the supports too
-		trace = {}
-
-			trace.start  = self:GetPos()
-			trace.endpos = self:GetPos() - Vector( 0, 0, 100000 ) //Trace straight down
-			trace.filter = self
-			trace.mask = MASK_SOLID_BRUSHONLY
-			trace = util.TraceLine(trace)
-
-		if !self:IsController() && IsValid( self.SupportModel) then
-			self.SupportModel:SetRenderBoundsWS(  trace.StartPos - Vector( 50, 50, -50), trace.HitPos + Vector( 50, 50, -50) )
-		end
-
-		self.FirstBoundsCheck = true
-	end
 
 	//Draw this node's support
 	if IsValid(self.SupportModel) && IsValid(self.SupportModelStart) && IsValid(self.SupportModelBase) then
@@ -1030,22 +1039,11 @@ function ENT:Think()
 
 			//So we can see the beams move while me move a node
 			self:UpdateClientSpline() 
-			if IsValid( self.SupportModel) then
-				//Update it's render bounds
-				trace = {}
-
-					trace.start  = v:GetPos()
-					trace.endpos = v:GetPos() - Vector( 0, 0, 100000 ) //Trace straight down
-					trace.filter = v
-					trace.mask = MASK_SOLID_BRUSHONLY
-					trace = util.TraceLine(trace)
-
-				v.SupportModel:SetRenderBoundsWS(  trace.StartPos - Vector( 50, 50, -50), trace.HitPos + Vector( 50, 50, -50) )
-			end
+			v:UpdateSupportDrawBounds()
 			break
 		end
 	end
-	self:SetRenderBoundsWS(Vector(-1000000,-1000000,-1000000), Vector( 1000000, 1000000, 1000000 ) ) //There must be a better way to do this
+	self:UpdateSupportDrawBounds()
 
 	self:NextThink( CurTime() + 0.5 )
 
@@ -1096,22 +1094,7 @@ end
 concommand.Add("coaster_refresh_drawbounds", function()
 	for k, v in pairs( ents.FindByClass("coaster_node")) do
 		if IsValid( v ) then
-			if v:IsController() then
-				v:SetRenderBoundsWS(Vector(-1000000,-1000000,-1000000), Vector( 1000000, 1000000, 1000000 ) ) //There must be a better way to do this
-			else
-				if !IsValid( v.SupportModel ) then return end
-
-				//Update their render bounds so it draws the supports too
-				trace = {}
-
-				trace.start  = v:GetPos()
-				trace.endpos = v:GetPos() - Vector( 0, 0, 100000 ) //Trace straight down
-				trace.filter = v
-				trace.mask = MASK_SOLID_BRUSHONLY
-				trace = util.TraceLine(trace)
-
-				v.SupportModel:SetRenderBoundsWS( trace.StartPos - Vector( 50, 50, -50), trace.HitPos + Vector( 50, 50, -50) )		
-			end
+			v:UpdateSupportDrawBounds()
 		end
 	end
 
