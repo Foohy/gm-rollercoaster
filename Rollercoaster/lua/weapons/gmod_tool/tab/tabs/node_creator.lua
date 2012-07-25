@@ -296,11 +296,29 @@ function TAB:BuildPanel( )
 	panel:SetName("Node Spawner")
 
 	panel:NumSlider("ID: ","coaster_supertool_tab_node_creator_id", 1, 8, 0)
+
+	//The elevation slider
 	panel:NumSlider("Elevation: ","coaster_supertool_tab_node_creator_elevation", 0, 2000, 3)
+
+	//And the thing to make it easier
+	local easyelev = vgui.Create("DEasyButtons", self)
+	easyelev.ConVar = "coaster_supertool_tab_node_creator_elevation"
+	easyelev.Offset = 50
+	panel:AddItem( easyelev )
+
+	//Set to the height of the previous node?
 	panel:CheckBox( "Set to previous node's elevation", "coaster_supertool_tab_node_creator_prev_nodeheight" )
 	local bankSlider = panel:NumSlider("Roll: ","coaster_supertool_tab_node_creator_bank", -180.01, 180, 2)
+
+
 	bankSlider:SetValue( 0 )
 	RunConsoleCommand("coaster_supertool_tab_node_creator_bank", 0 ) //Default to 0
+
+	local easyroll = vgui.Create("DEasyButtons", self)
+	easyroll.ConVar = "coaster_supertool_tab_node_creator_bank"
+	easyroll.Offset = 45
+
+	panel:AddItem( easyroll )
 
 	//panel:AddControl("Slider",   {Label = "ID: ",    Description = "The ID of the specific rollercoaster (Change the ID if you want to make a seperate coaster)",       Type = "Int", Min = "1", Max = "8", Command = "coaster_track_creator_id"})
 	//panel:AddControl("Slider",   {Label = "Elevation: ",    Description = "The height of the track node",       Type = "Float", Min = "0.00", Max = "5000", Command = "coaster_track_creator_elevation"})
@@ -334,17 +352,6 @@ function TAB:BuildPanel( )
 
 
 	return panel
-end
-
-
-if CLIENT then
-	concommand.Add("updatetracks", function(ply, cmd, args ) 
-
-		local Tracks = file.Find("autorun/tracktypes/*", "LUA_PATH")
-
-		PrintTable( Tracks )
-
-	end )
 end
 
 coastertabmanager.Register( UNIQUENAME, TAB )
