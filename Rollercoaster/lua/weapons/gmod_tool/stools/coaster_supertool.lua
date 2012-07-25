@@ -223,14 +223,14 @@ if CLIENT then
 
 	//Get when something was clicked and our tool was out to automagically switch to our tool
 	//"Polish" - bletotum
-	function coasterClick(  mousecode, vec )
-		if mousecode == MOUSE_LEFT && LocalPlayer():GetTool() && LocalPlayer():GetTool().Name == "Rollercoaster SuperTool" then
+	function coasterClick(  clicked, mousecode )
+		if clicked && mousecode == MOUSE_LEFT && LocalPlayer():GetTool() && LocalPlayer():GetTool().Name == "Rollercoaster SuperTool" then
 			if LocalPlayer():GetInfoNum("coaster_autoswitch") == 0 then return end
 			RunConsoleCommand("use", "gmod_tool") //select the tool gun
 		end
 
 	end
-	hook.Add( "GUIMousePressed", "CoasterAutoswitchtool", coasterClick ) 
+	hook.Add( "VGUIMousePressed", "CoasterAutoswitchtool", coasterClick ) 
 
 	language.Add( "tool.coaster_supertool.name", "" )
 	language.Add( "tool.coaster_supertool.desc", "" )
