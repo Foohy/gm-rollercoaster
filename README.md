@@ -7,7 +7,7 @@ Lua rollercoaster addon for Garry's Mod adds the ability fully functioning rolle
 #### Features ####
 * Fully physical rollercoaster trains with multiple carts per train.
 * Rollecoaster SuperTool, combining all the functions needed for coaster creation into one tool.
-* Colorable supports.
+* Colorable supports and tracks.
 * Saving/Loading of tracks, as well as the ability upload to server
 * Change the roll of the track for deep turns and crazy barrel rolls.
 * Realtime preview of generated mesh. Several mesh generation types and system for creating more.
