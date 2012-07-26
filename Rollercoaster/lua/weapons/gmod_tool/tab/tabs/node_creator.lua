@@ -175,7 +175,7 @@ function TAB:Reload( trace, tool )
 		local type = trace.Entity:GetType()
 		local ID = trace.Entity:GetCoasterID()
 		local Bank = trace.Entity:GetRoll()
-		local RelRoll = trace.Entity:GetRelativeRoll()
+		//local RelRoll = trace.Entity:GetRelativeRoll()
 
 	end
 end

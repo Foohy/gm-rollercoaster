@@ -198,7 +198,7 @@ end
 function TAB:SpawnTrack( tool )
 	if SinglePlayer() then //I'm seriously sending a usermessage to the client, who is the host. WHY IS LEFTCLICK NOT CALLED ON THE CLIENT IN SINGLEPLAYER
 		umsg.Start("Coaster_spawntrack_sp")
-			umsg.String( LocalPlayer():SteamID() .. "_" .. tostring( GetClientNumber( self, "id", tool ) ) )
+			umsg.String( tool:GetOwner():SteamID() .. "_" .. tostring( GetClientNumber( self, "id", tool ) ) )
 			umsg.Short( GetClientNumber( self, "orig_spawn", tool ) )
 			umsg.Vector( coaster_saver_preview_trackcenter )
 		umsg.End()
