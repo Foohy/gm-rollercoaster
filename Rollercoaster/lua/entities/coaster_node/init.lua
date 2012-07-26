@@ -519,6 +519,7 @@ function ENT:OnRemove()
 
 	local cont = Rollercoasters[self:GetCoasterID()]
 
+	//if it is the controller, or there are less than 4 nodes, or this is the second node
 	if self:IsController() || (IsValid( cont ) && #cont.Nodes <= 4 )|| (IsValid( cont ) && self == cont.Nodes[2]) then // || (IsValid( cont ) && cont.Nodes[2] == self ) 
 		for _, v in pairs( cont.Nodes ) do
 			if IsValid( v ) then 
@@ -535,7 +536,8 @@ function ENT:OnRemove()
 				umsg.Entity( cont )
 			umsg.End()
 		end )
-	elseif ( IsValid( cont ) && #cont.Nodes <= 4 ) && cont.Nodes[4] == self || cont.Nodes[3] == self then
+	//If there are less than 4 nodes and the 4th node is us OR we are the third node
+	elseif ( IsValid( cont ) && #cont.Nodes <= 4 ) && cont.Nodes[4] == self /*|| cont.Nodes[3] == self*/ then
 		if cont.Nodes[4] == self then
 			if IsValid( cont.Nodes[3] ) then
 				cont.Nodes[3]:Remove() 
@@ -545,6 +547,7 @@ function ENT:OnRemove()
 		if cont.Nodes[3] == self then
 			if IsValid( cont.Nodes[4] ) then 
 				cont.Nodes[4]:Remove() 
+
 			end
 		end
 
@@ -564,6 +567,8 @@ function ENT:OnRemove()
 					if v == self then 
 						if IsValid( cont.Nodes[ k - 1 ] ) && IsValid( self:GetNextNode() ) then //Get the node previous to this one
 							cont.Nodes[ k - 1]:SetNextNode( self:GetNextNode() ) //Set our previous node to point to our next node
+							self:GetNextNode():Invalidate( true ) //invalidate the node before the removed node to show it's out of date
+							cont.Nodes[ k - 1]:Invalidate( true )
 						end
 						
 						table.remove( cont.Nodes, k ) 
