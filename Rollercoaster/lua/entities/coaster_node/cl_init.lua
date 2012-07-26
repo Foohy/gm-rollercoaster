@@ -262,10 +262,12 @@ function ENT:RefreshClientSpline()
 
 		for i=1, #self.Nodes do
 			local ent = self.Nodes[i]
-			if !ent:DrawSupport() then
-				ent.SupportModelStart:SetNoDraw( true )
-				ent.SupportModel:SetNoDraw( true )
-				ent.SupportModelBase:SetNoDraw( true )
+			if IsValid(ent.SupportModel) && IsValid(ent.SupportModelStart) && IsValid(ent.SupportModelBase) then
+				if !ent:DrawSupport() then
+					ent.SupportModelStart:SetNoDraw( true )
+					ent.SupportModel:SetNoDraw( true )
+					ent.SupportModelBase:SetNoDraw( true )
+				end
 			end
 		end
 	end
