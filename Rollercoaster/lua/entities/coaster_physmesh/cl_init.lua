@@ -6,10 +6,6 @@ ENT.Controller = nil
 
 ENT.RenderGroup 	= RENDERGROUP_TRANSLUCENT
 
-function ENT:Initialize()
-
-end
-
 //Build the mesh for the specific segment
 //This function is NOT controller only, call it on the segment you want to update the mesh on
 function ENT:BuildMesh()
@@ -62,19 +58,3 @@ function ENT:BuildMesh()
 	self:EnableCustomCollisions( )
 
 end
-
-function ENT:Draw()
-
-	//self:DrawModel()	
-
-end
-
-function ENT:Think()
-
-end
-
-//Remove sounds
-function ENT:OnRemove()
-
-end
-

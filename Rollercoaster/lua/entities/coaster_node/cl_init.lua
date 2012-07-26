@@ -110,7 +110,6 @@ usermessage.Hook("Coaster_AddNode", function( um )
 	if (self:IsController()) then
 
 		self:RefreshClientSpline()
-
 		
 		//Invalidate nearby nodes
 		if self.Nodes != nil then
@@ -913,6 +912,7 @@ function ENT:Think()
 			self.SupportModelBase:SetNoDraw( true )
 		end
 	end
+
 
 	
 	//force-invalidate ourselves if we're being driven at all

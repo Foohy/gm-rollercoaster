@@ -149,10 +149,6 @@ if SERVER then
 		if ent1.CartTable == ent2.CartTable then return false else return true end
 	end )
 
-	//Don't let the physics mesh be picked up.
-	hook.Add("PhysgunPickup", "PreventCoasterMeshPickup", function( ply, ent ) 
-		if ent:GetClass() == "coaster_physmesh" then return false end
-	end )
 
 	//Be 1000% sure cart dummies are NEVER left over after their train has since exploded
 	hook.Add("Think", "RemoveGhostedDummies", function() 
@@ -191,6 +187,11 @@ if SERVER then
 end
 
 
+//Don't let the physics mesh be picked up.
+hook.Add("PhysgunPickup", "PreventCoasterMeshPickup", function( ply, ent ) 
+	if ent:GetClass() == "coaster_physmesh" then return false end
+end )
+	
 if CLIENT then
 	//Language for admin limits
 	language.Add("SBoxLimit_maxcarts", "You've hit the Carts limit!")
