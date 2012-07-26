@@ -259,6 +259,15 @@ function ENT:RefreshClientSpline()
 
 		//And the clientside mesh
 		self:UpdateClientsidePhysics()
+
+		for i=1, #self.Nodes do
+			local ent = self.Nodes[i]
+			if !ent:DrawSupport() then
+				ent.SupportModelStart:SetNoDraw( true )
+				ent.SupportModel:SetNoDraw( true )
+				ent.SupportModelBase:SetNoDraw( true )
+			end
+		end
 	end
 end
 
@@ -903,20 +912,6 @@ end
 //Update the node's spline if our velocity (and thus position) changes
 function ENT:Think()
 
-	//Draw this node's support
-	if IsValid(self.SupportModel) && IsValid(self.SupportModelStart) && IsValid(self.SupportModelBase) then
-
-		if !self:DrawSupport() then
-			self.SupportModelStart:SetNoDraw( true )
-			self.SupportModel:SetNoDraw( true )
-			self.SupportModelBase:SetNoDraw( true )
-		end
-	else //If they are no longer valid, recreate them
-		if !IsValid( self.SupportModel ) then self.SupportModel = ClientsideModel( "models/sunabouzu/coaster_pole.mdl" ) end
-		if !IsValid( self.SupportModelStart ) then self.SupportModelStart = ClientsideModel( "models/sunabouzu/coaster_pole_start.mdl" ) end
-		if !IsValid( self.SupportModelBase ) then self.SupportModelBase = ClientsideModel( "models/sunabouzu/coaster_base.mdl" ) end
-	end
-	
 	//force-invalidate ourselves if we're being driven at all
 	if self:IsBeingDriven() && !self.Invalidated then
 		self:Invalidate( self:GetController(), false )
@@ -931,6 +926,22 @@ function ENT:Think()
 			//So we can see the beams move while me move a node
 			self:UpdateClientSpline() 
 			v:UpdateSupportDrawBounds()
+
+			//Set the positions of the clientside support models
+			if IsValid(v.SupportModel) && IsValid(v.SupportModelStart) && IsValid(v.SupportModelBase) then
+
+				if !v:DrawSupport() then
+					v.SupportModelStart:SetNoDraw( true )
+					v.SupportModel:SetNoDraw( true )
+					v.SupportModelBase:SetNoDraw( true )
+				end
+			else //If they are no longer valid, recreate them
+				if !IsValid( v.SupportModel ) then v.SupportModel = ClientsideModel( "models/sunabouzu/coaster_pole.mdl" ) end
+				if !IsValid( v.SupportModelStart ) then v.SupportModelStart = ClientsideModel( "models/sunabouzu/coaster_pole_start.mdl" ) end
+				if !IsValid( v.SupportModelBase ) then v.SupportModelBase = ClientsideModel( "models/sunabouzu/coaster_base.mdl" ) end
+			end
+
+
 			break
 		end
 	end
