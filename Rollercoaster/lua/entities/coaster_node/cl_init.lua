@@ -911,9 +911,11 @@ function ENT:Think()
 			self.SupportModel:SetNoDraw( true )
 			self.SupportModelBase:SetNoDraw( true )
 		end
+	else //If they are no longer valid, recreate them
+		if !IsValid( self.SupportModel ) then self.SupportModel = ClientsideModel( "models/sunabouzu/coaster_pole.mdl" ) end
+		if !IsValid( self.SupportModelStart ) then self.SupportModelStart = ClientsideModel( "models/sunabouzu/coaster_pole_start.mdl" ) end
+		if !IsValid( self.SupportModelBase ) then self.SupportModelBase = ClientsideModel( "models/sunabouzu/coaster_base.mdl" ) end
 	end
-
-
 	
 	//force-invalidate ourselves if we're being driven at all
 	if self:IsBeingDriven() && !self.Invalidated then
