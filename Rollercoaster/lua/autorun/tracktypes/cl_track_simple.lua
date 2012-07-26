@@ -122,12 +122,12 @@ function TRACK:Generate( controller )
 					FirstRight = controller.CatmullRom.PointsList[2] + ang:Right() * RailOffset
 				end
 
-				Cylinder.AddBeam( FirstLeft, LastAng, posL, NewAng, 4 )
-				Cylinder.AddBeam( FirstRight, LastAng, posR, NewAng, 4 )
+				Cylinder.AddBeam( FirstLeft, LastAng, posL, NewAng, 4, ThisSegment:GetTrackColor() )
+				Cylinder.AddBeam( FirstRight, LastAng, posR, NewAng, 4, ThisSegment:GetTrackColor() )
 			end
 			//Side rails
-			Cylinder.AddBeam( posL, LastAng, nPosL, NewAng, 4 )
-			Cylinder.AddBeam( posR, LastAng, nPosR, NewAng, 4 )
+			Cylinder.AddBeam( posL, LastAng, nPosL, NewAng, 4, ThisSegment:GetTrackColor() )
+			Cylinder.AddBeam( posR, LastAng, nPosR, NewAng, 4, ThisSegment:GetTrackColor() )
 
 			if #Cylinder.Vertices > 50000 then// some arbitrary limit to split up the verts into seperate meshes. It's surprisingly easy to hit that limit
 
