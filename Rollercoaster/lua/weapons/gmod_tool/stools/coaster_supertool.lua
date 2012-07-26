@@ -100,6 +100,7 @@ function TOOL:DrawHUD()
 	if ( !GetConVar("gmod_drawhelp"):GetBool() ) then return end
        
 	local class = self:GetCurrentTab()
+	if !class then return end
 
 	//Default names in case the class didn't define them
 	local Name = "None"
@@ -164,8 +165,10 @@ end
 
 function TOOL:DrawToolScreen( TEX_SIZE )
 	local class = self:GetCurrentTab()
+	if !class then return end
+
 	local text = "None"
-	if class && class.Name then text = class.Name end
+	if class.Name then text = class.Name end
 	if class.Name == "" && class.Name2 then text = class.Name2 end //quickfix
 
 	surface.SetFont("GModToolScreen")
