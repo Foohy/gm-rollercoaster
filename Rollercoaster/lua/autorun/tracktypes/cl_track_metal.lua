@@ -37,6 +37,7 @@ function TRACK:Generate( controller )
 	local modelCount = 1 
 
 	Cylinder.Start( Radius, PointCount ) //We're starting up making a beam of cylinders
+
 	local LastAng = nil
 	for i = 1, #controller.CatmullRom.Spline do
 		local NexterSegment = controller.Nodes[ controller:GetSplineSegment(i) + 2]
@@ -117,18 +118,18 @@ function TRACK:Generate( controller )
 					CenterBeam = controller.CatmullRom.PointsList[2] + ang:Up() * -Offset
 				end
 
-				Cylinder.AddBeam(CenterBeam, LastAng, controller.CatmullRom.Spline[i] + ang:Up() * -Offset, NewAng, Radius )
+				Cylinder.AddBeam(CenterBeam, LastAng, controller.CatmullRom.Spline[i] + ang:Up() * -Offset, NewAng, Radius, ThisSegment:GetTrackColor() )
 
-				Cylinder.AddBeam( FirstLeft, LastAng, posL, NewAng, 4 )
-				Cylinder.AddBeam( FirstRight, LastAng, posR, NewAng, 4 )
+				Cylinder.AddBeam( FirstLeft, LastAng, posL, NewAng, 4, ThisSegment:GetTrackColor() )
+				Cylinder.AddBeam( FirstRight, LastAng, posR, NewAng, 4, ThisSegment:GetTrackColor() )
 			end
 
 			//vec:ANgle()
-			Cylinder.AddBeam(controller.CatmullRom.Spline[i] + (ang:Up() * -Offset), LastAng, controller.CatmullRom.Spline[i+1] + (ang2:Up() * -Offset), NewAng, Radius )
+			Cylinder.AddBeam(controller.CatmullRom.Spline[i] + (ang:Up() * -Offset), LastAng, controller.CatmullRom.Spline[i+1] + (ang2:Up() * -Offset), NewAng, Radius, ThisSegment:GetTrackColor() )
 
 			//Side rails
-			Cylinder.AddBeam( posL, LastAng, nPosL, NewAng, 4 )
-			Cylinder.AddBeam( posR, LastAng, nPosR, NewAng, 4 )
+			Cylinder.AddBeam( posL, LastAng, nPosL, NewAng, 4, ThisSegment:GetTrackColor() )
+			Cylinder.AddBeam( posR, LastAng, nPosR, NewAng, 4, ThisSegment:GetTrackColor() )
 
 			if #Cylinder.Vertices > 50000 then// some arbitrary limit to split up the verts into seperate meshes
 
@@ -181,7 +182,7 @@ function TRACK:Generate( controller )
 			end	
 			Percent = 0
 		end
-		local verts = CreateStrutsMesh(Position, ang)
+		local verts = CreateStrutsMesh(Position, ang, CurNode:GetTrackColor())
 		table.Add( StrutVerts, verts ) //Combine the tables into da big table
 	end
 
@@ -203,7 +204,7 @@ end
 
 //I can't retrieve the triangles from a compiled model, SO LET'S MAKE OUR OWN
 //These are the triangular struts of the metal beam mesh track
-function CreateStrutsMesh(pos, ang)
+function CreateStrutsMesh(pos, ang, TrackColor)
 	local width = 5
 	local Offset = 15
 	local RailOffset = 25
@@ -234,6 +235,12 @@ function CreateStrutsMesh(pos, ang)
 
 	local colVec = Vector( 0, 0, 0 )
 
+	//And the user selected color too
+	local UserColor = Vector( 1, 1, 1 )
+	if TrackColor then
+		UserColor = Vector( TrackColor.r / 255, TrackColor.g / 255, TrackColor.b / 255 ) 
+	end
+
 	//Front triangle
 	colVec = render.ComputeLighting(F_Right, NormFwd )
 	colVec = colVec + render.GetAmbientLightColor()
@@ -243,7 +250,7 @@ function CreateStrutsMesh(pos, ang)
 		normal = NormFwd,
 		u = 0,
 		v = 0,
-		color = Color( colVec.x*255, colVec.y*255, colVec.z*255)
+		color = Color( colVec.x*UserColor.x*255, colVec.y*UserColor.y*255, colVec.z*UserColor.z*255)
 	}
 	colVec = render.ComputeLighting(F_Bottom, NormFwd )
 	colVec = colVec + render.GetAmbientLightColor()
@@ -253,7 +260,7 @@ function CreateStrutsMesh(pos, ang)
 		normal = NormFwd,
 		u = 0.5,
 		v = 1,
-		color = Color( colVec.x*255, colVec.y*255, colVec.z*255)
+		color = Color( colVec.x*UserColor.x*255, colVec.y*UserColor.y*255, colVec.z*UserColor.z*255)
 	}
 	colVec = render.ComputeLighting(F_Left, NormFwd )
 	colVec = colVec + render.GetAmbientLightColor()
@@ -263,7 +270,7 @@ function CreateStrutsMesh(pos, ang)
 		normal = NormFwd,
 		u = 1,
 		v = 0,
-		color = Color( colVec.x*255, colVec.y*255, colVec.z*255)
+		color = Color( colVec.x*UserColor.x*255, colVec.y*UserColor.y*255, colVec.z*UserColor.z*255)
 	}
 
 	//Back triangle
@@ -275,7 +282,7 @@ function CreateStrutsMesh(pos, ang)
 		normal = NormBkwd,
 		u = 0,
 		v = 0,
-		color = Color( colVec.x*255, colVec.y*255, colVec.z*255)
+		color = Color( colVec.x*UserColor.x*255, colVec.y*UserColor.y*255, colVec.z*UserColor.z*255)
 	}
 	colVec = render.ComputeLighting(B_Bottom, NormBkwd )
 	colVec = colVec + render.GetAmbientLightColor()
@@ -285,7 +292,7 @@ function CreateStrutsMesh(pos, ang)
 		normal = NormBkwd,
 		u = 0.5,
 		v = 1,
-		color = Color( colVec.x*255, colVec.y*255, colVec.z*255)
+		color = Color( colVec.x*UserColor.x*255, colVec.y*UserColor.y*255, colVec.z*UserColor.z*255)
 	}
 	colVec = render.ComputeLighting(B_Right, NormBkwd )
 	colVec = colVec + render.GetAmbientLightColor()
@@ -295,7 +302,7 @@ function CreateStrutsMesh(pos, ang)
 		normal = NormBkwd,
 		u = 1,
 		v = 0,
-		color = Color( colVec.x*255, colVec.y*255, colVec.z*255)
+		color = Color( colVec.x*UserColor.x*255, colVec.y*UserColor.y*255, colVec.z*UserColor.z*255)
 	}
 
 	//Top Quad
@@ -307,7 +314,7 @@ function CreateStrutsMesh(pos, ang)
 		normal = NormTop,
 		u = 0,
 		v = 0,
-		color = Color( colVec.x*255, colVec.y*255, colVec.z*255)
+		color = Color( colVec.x*UserColor.x*255, colVec.y*UserColor.y*255, colVec.z*UserColor.z*255)
 	}
 	colVec = render.ComputeLighting(B_Right, NormTop )
 	colVec = colVec + render.GetAmbientLightColor()
@@ -317,7 +324,7 @@ function CreateStrutsMesh(pos, ang)
 		normal = NormTop,
 		u = 0.5,
 		v = 1,
-		color = Color( colVec.x*255, colVec.y*255, colVec.z*255)
+		color = Color( colVec.x*UserColor.x*255, colVec.y*UserColor.y*255, colVec.z*UserColor.z*255)
 	}
 	colVec = render.ComputeLighting(F_Right, NormTop )
 	colVec = colVec + render.GetAmbientLightColor()
@@ -327,7 +334,7 @@ function CreateStrutsMesh(pos, ang)
 		normal = NormTop,
 		u = 1,
 		v = 0,
-		color = Color( colVec.x*255, colVec.y*255, colVec.z*255)
+		color = Color( colVec.x*UserColor.x*255, colVec.y*UserColor.y*255, colVec.z*UserColor.z*255)
 	}
 
 	colVec = render.ComputeLighting(F_Right, NormTop )
@@ -338,7 +345,7 @@ function CreateStrutsMesh(pos, ang)
 		normal = NormTop,
 		u = 0,
 		v = 0,
-		color = Color( colVec.x*255, colVec.y*255, colVec.z*255)
+		color = Color( colVec.x*UserColor.x*255, colVec.y*UserColor.y*255, colVec.z*UserColor.z*255)
 	}
 	colVec = render.ComputeLighting(F_Left, NormTop )
 	colVec = colVec + render.GetAmbientLightColor()
@@ -348,7 +355,7 @@ function CreateStrutsMesh(pos, ang)
 		normal = NormTop,
 		u = 0.5,
 		v = 1,
-		color = Color( colVec.x*255, colVec.y*255, colVec.z*255)
+		color = Color( colVec.x*UserColor.x*255, colVec.y*UserColor.y*255, colVec.z*UserColor.z*255)
 	}
 	colVec = render.ComputeLighting(B_Left, NormTop )
 	colVec = colVec + render.GetAmbientLightColor()
@@ -358,7 +365,7 @@ function CreateStrutsMesh(pos, ang)
 		normal = NormTop,
 		u = 1,
 		v = 0,
-		color = Color( colVec.x*255, colVec.y*255, colVec.z*255)
+		color = Color( colVec.x*UserColor.x*255, colVec.y*UserColor.y*255, colVec.z*UserColor.z*255)
 	}
 
 	//Left Quad
@@ -370,7 +377,7 @@ function CreateStrutsMesh(pos, ang)
 		normal = NormLeft,
 		u = 0,
 		v = 0,
-		color = Color( colVec.x*255, colVec.y*255, colVec.z*255)
+		color = Color( colVec.x*UserColor.x*255, colVec.y*UserColor.y*255, colVec.z*UserColor.z*255)
 	}
 	colVec = render.ComputeLighting(B_Bottom, NormLeft )
 	colVec = colVec + render.GetAmbientLightColor()
@@ -380,7 +387,7 @@ function CreateStrutsMesh(pos, ang)
 		normal = NormLeft,
 		u = 0.5,
 		v = 1,
-		color = Color( colVec.x*255, colVec.y*255, colVec.z*255)
+		color = Color( colVec.x*UserColor.x*255, colVec.y*UserColor.y*255, colVec.z*UserColor.z*255)
 	}
 	colVec = render.ComputeLighting(B_Left, NormLeft )
 	colVec = colVec + render.GetAmbientLightColor()
@@ -390,7 +397,7 @@ function CreateStrutsMesh(pos, ang)
 		normal = NormLeft,
 		u = 1,
 		v = 0,
-		color = Color( colVec.x*255, colVec.y*255, colVec.z*255)
+		color = Color( colVec.x*UserColor.x*255, colVec.y*UserColor.y*255, colVec.z*UserColor.z*255)
 	}
 
 	colVec = render.ComputeLighting(B_Left, NormLeft )
@@ -401,7 +408,7 @@ function CreateStrutsMesh(pos, ang)
 		normal = NormLeft,
 		u = 0,
 		v = 0,
-		color = Color( colVec.x*255, colVec.y*255, colVec.z*255)
+		color = Color( colVec.x*UserColor.x*255, colVec.y*UserColor.y*255, colVec.z*UserColor.z*255)
 	}
 	colVec = render.ComputeLighting(F_Left, NormLeft )
 	colVec = colVec + render.GetAmbientLightColor()
@@ -411,7 +418,7 @@ function CreateStrutsMesh(pos, ang)
 		normal = NormLeft,
 		u = 0.5,
 		v = 1,
-		color = Color( colVec.x*255, colVec.y*255, colVec.z*255)
+		color = Color( colVec.x*UserColor.x*255, colVec.y*UserColor.y*255, colVec.z*UserColor.z*255)
 	}
 	colVec = render.ComputeLighting(F_Bottom, NormLeft )
 	colVec = colVec + render.GetAmbientLightColor()
@@ -421,7 +428,7 @@ function CreateStrutsMesh(pos, ang)
 		normal = NormLeft,
 		u = 1,
 		v = 0,
-		color = Color( colVec.x*255, colVec.y*255, colVec.z*255)
+		color = Color( colVec.x*UserColor.x*255, colVec.y*UserColor.y*255, colVec.z*UserColor.z*255)
 	}
 
 	//Right Quad
@@ -433,7 +440,7 @@ function CreateStrutsMesh(pos, ang)
 		normal = NormRight,
 		u = 0,
 		v = 0,
-		color = Color( colVec.x*255, colVec.y*255, colVec.z*255)
+		color = Color( colVec.x*UserColor.x*255, colVec.y*UserColor.y*255, colVec.z*UserColor.z*255)
 	}
 	colVec = render.ComputeLighting(F_Right, NormRight )
 	colVec = colVec + render.GetAmbientLightColor()
@@ -443,7 +450,7 @@ function CreateStrutsMesh(pos, ang)
 		normal = NormRight,
 		u = 0.5,
 		v = 1,
-		color = Color( colVec.x*255, colVec.y*255, colVec.z*255)
+		color = Color( colVec.x*UserColor.x*255, colVec.y*UserColor.y*255, colVec.z*UserColor.z*255)
 	}
 	colVec = render.ComputeLighting(B_Right, NormRight )
 	colVec = colVec + render.GetAmbientLightColor()
@@ -453,7 +460,7 @@ function CreateStrutsMesh(pos, ang)
 		normal = NormRight,
 		u = 1,
 		v = 0,
-		color = Color( colVec.x*255, colVec.y*255, colVec.z*255)
+		color = Color( colVec.x*UserColor.x*255, colVec.y*UserColor.y*255, colVec.z*UserColor.z*255)
 	}
 
 	colVec = render.ComputeLighting(B_Right, NormRight )
@@ -464,7 +471,7 @@ function CreateStrutsMesh(pos, ang)
 		normal = NormRight,
 		u = 0,
 		v = 0,
-		color = Color( colVec.x*255, colVec.y*255, colVec.z*255)
+		color = Color( colVec.x*UserColor.x*255, colVec.y*UserColor.y*255, colVec.z*UserColor.z*255)
 	}
 	colVec = render.ComputeLighting(B_Bottom, NormRight )
 	colVec = colVec + render.GetAmbientLightColor()
@@ -474,7 +481,7 @@ function CreateStrutsMesh(pos, ang)
 		normal = NormRight,
 		u = 0.5,
 		v = 1,
-		color = Color( colVec.x*255, colVec.y*255, colVec.z*255)
+		color = Color( colVec.x*UserColor.x*255, colVec.y*UserColor.y*255, colVec.z*UserColor.z*255)
 	}
 	colVec = render.ComputeLighting(F_Bottom, NormRight )
 	colVec = colVec + render.GetAmbientLightColor()
@@ -484,7 +491,7 @@ function CreateStrutsMesh(pos, ang)
 		normal = NormRight,
 		u = 1,
 		v = 0,
-		color = Color( colVec.x*255, colVec.y*255, colVec.z*255)
+		color = Color( colVec.x*UserColor.x*255, colVec.y*UserColor.y*255, colVec.z*UserColor.z*255)
 	}
 
 

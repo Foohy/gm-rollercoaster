@@ -36,12 +36,25 @@ function TAB:LeftClick( trace, tool )
 
 			if IsValid( controller ) then
 				print("Editing settings for "..tostring(controller:GetCoasterID()))
+				Ent:SetTrackColor( r,g,b )
 				controller:SetTrackColor(r,g,b)
 				controller:SetTrackType(tracktype)
 			end
 		end
 	
 		return true
+	elseif IsValid( Ent ) && Ent:GetClass() == "coaster_physmesh" then
+		if SERVER then 
+			local controller = Ent.Controller
+			local node = controller.Nodes[ Ent.Segment ]
+			if IsValid( controller ) && IsValid( node ) then
+				node:SetTrackColor(r,g,b)
+				controller:SetTrackType(tracktype)
+			end
+		end
+	
+		return true
+
 	end
 end
 

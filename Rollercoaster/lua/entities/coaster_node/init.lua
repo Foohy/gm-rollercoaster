@@ -50,6 +50,9 @@ function ENT:Initialize()
 
 	self:SetLooped( false ) //Default to false
 
+	//Set the default color value for the track color
+	self:SetTrackColor( 255, 255, 255 )
+
 end
 
 function ENT:GetNumNodes()

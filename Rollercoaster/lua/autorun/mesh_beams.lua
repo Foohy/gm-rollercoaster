@@ -11,6 +11,7 @@ Cylinder = {}
 
 
 function Cylinder.Start(Radius, Num)
+
 	Cylinder.Vertices = {} //Table holding all of the current vertices in the correct format
 
 	Cylinder.CurVerts = {} //Holding the verts at the start of a cylinder
@@ -22,9 +23,12 @@ function Cylinder.Start(Radius, Num)
 	Cylinder.TriCount = 1 //Number of current vertices
 	Cylinder.TotalU = 0
 	Cylinder.TotalV = 0
+
+
+
 end
 
-function Cylinder.AddBeam( Pos1, Ang1, Pos2, Ang2, Radius )
+function Cylinder.AddBeam( Pos1, Ang1, Pos2, Ang2, Radius, TrackColor )
 	if Pos1 == nil || Ang1 == nil || Pos2 == nil || Ang2 == nil then 
 		print("FAILED TO CREATE CYLINDER, NIL VALUE")
 		return
@@ -87,6 +91,12 @@ function Cylinder.AddBeam( Pos1, Ang1, Pos2, Ang2, Radius )
 		//Create some variables for proper lightmapped color
 		local colVec = Vector( 0, 0, 0 )
 
+		//And the user selected color too
+		local SelectedColor = Vector( 1, 1, 1 )
+		if TrackColor then
+			SelectedColor = Vector( TrackColor.r / 255, TrackColor.g / 255, TrackColor.b / 255 ) 
+		end
+
 		//Create the 6 verts that make up a single quad
 		colVec = render.ComputeLighting( CurRight.pos, CurRight.norm )
 		colVec = colVec + render.GetAmbientLightColor()
@@ -96,7 +106,7 @@ function Cylinder.AddBeam( Pos1, Ang1, Pos2, Ang2, Radius )
 			normal = CurRight.norm, 
 			u = OldU,
 			v = Cylinder.TotalV,
-			color = Color( colVec.x*255, colVec.y*255, colVec.z*255)
+			color = Color( colVec.x*SelectedColor.x*255, colVec.y*SelectedColor.y*255, colVec.z*SelectedColor.z*255)
 		}
 		Cylinder.TriCount = Cylinder.TriCount + 1
 
@@ -108,7 +118,7 @@ function Cylinder.AddBeam( Pos1, Ang1, Pos2, Ang2, Radius )
 			normal = CurLeft.norm, 
 			u = OldU,
 			v = OldV,
-			color = Color( colVec.x*255, colVec.y*255, colVec.z*255)
+			color = Color( colVec.x*SelectedColor.x*255, colVec.y*SelectedColor.y*255, colVec.z*SelectedColor.z*255)
 		}
 		Cylinder.TriCount = Cylinder.TriCount + 1
 
@@ -120,7 +130,7 @@ function Cylinder.AddBeam( Pos1, Ang1, Pos2, Ang2, Radius )
 			normal = NextLeft.norm, 
 			u = Cylinder.TotalU,
 			v = OldV,
-			color = Color( colVec.x*255, colVec.y*255, colVec.z*255)
+			color = Color( colVec.x*SelectedColor.x*255, colVec.y*SelectedColor.y*255, colVec.z*SelectedColor.z*255)
 		}
 		Cylinder.TriCount = Cylinder.TriCount + 1
 
@@ -133,7 +143,7 @@ function Cylinder.AddBeam( Pos1, Ang1, Pos2, Ang2, Radius )
 			normal = NextLeft.norm, 
 			u = Cylinder.TotalU,
 			v = OldV,
-			color = Color( colVec.x*255, colVec.y*255, colVec.z*255)
+			color = Color( colVec.x*SelectedColor.x*255, colVec.y*SelectedColor.y*255, colVec.z*SelectedColor.z*255)
 		}
 		Cylinder.TriCount = Cylinder.TriCount + 1
 
@@ -145,7 +155,7 @@ function Cylinder.AddBeam( Pos1, Ang1, Pos2, Ang2, Radius )
 			normal = NextRight.norm, 
 			u = Cylinder.TotalU,
 			v = Cylinder.TotalV,
-			color = Color( colVec.x*255, colVec.y*255, colVec.z*255)
+			color = Color( colVec.x*SelectedColor.x*255, colVec.y*SelectedColor.y*255, colVec.z*SelectedColor.z*255)
 		}
 		Cylinder.TriCount = Cylinder.TriCount + 1
 
@@ -157,7 +167,7 @@ function Cylinder.AddBeam( Pos1, Ang1, Pos2, Ang2, Radius )
 			normal = CurRight.norm, 
 			u = OldU,
 			v = Cylinder.TotalV,
-			color = Color( colVec.x*255, colVec.y*255, colVec.z*255)
+			color = Color( colVec.x*SelectedColor.x*255, colVec.y*SelectedColor.y*255, colVec.z*SelectedColor.z*255)
 		}
 		Cylinder.TriCount = Cylinder.TriCount + 1
 

@@ -115,7 +115,7 @@ function ENT:SetTrackColor(r,g,b)
 end
 
 function ENT:GetTrackColor() 
-	return self.dt.TrackColor.x, self.dt.TrackColor.y, self.dt.TrackColor.z 
+	return Color( self.dt.TrackColor.x, self.dt.TrackColor.y, self.dt.TrackColor.z )
 end
 
 function ENT:SetSupportColor(r,g,b) 
