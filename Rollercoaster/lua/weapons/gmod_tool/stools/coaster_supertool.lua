@@ -54,20 +54,20 @@ function TOOL:Think()
 
 	// Class neccessary functions
 	if self.CurrentClass != class then
-		if self.CurrentClass then
+		if self.CurrentClass && self.CurrentClass.Holster then
 			self.CurrentClass:Holster( self )
 		end
 
-		if class then
+		if class && class.Equip then
 			class:Equip( self )
 
 			//Update the header HUD
-			if CLIENT then
+			//if CLIENT then
 				//print(class.Name)
 				//language.remove("Tool_coaster_supertool_name")
 				//language.Add( "Tool_coaster_supertool_name", class.Name )
 				//language.Add( "Tool_coaster_supertool_desc", class.Description )
-			end
+			//end
 		end
 
 		self.CurrentClass = class
