@@ -12,6 +12,7 @@ TAB.Icon = "coaster/cart"
 TAB.Position = 2
 
 TAB.ClientConVar["minSpeed"] = "0"
+TAB.ClientConVar["startSpeed"] = "4"
 TAB.ClientConVar["friction"] = "0.04"
 TAB.ClientConVar["allow_weapons"] = "0"
 TAB.ClientConVar["cart_amount"] = "1"
@@ -30,6 +31,7 @@ function TAB:LeftClick( trace, tool )
 	local CartNum 		= GetClientNumber( self, "cart_amount", tool)
 	local Friction 		= GetClientNumber( self, "friction", tool)
 	local minSpeed 		= GetClientNumber( self, "minSpeed", tool)
+	local startSpeed 	= GetClientNumber( self, "startSpeed", tool)
 	local allowWeapons	= GetClientNumber( self, "allow_weapons", tool)
 	local model 		= GetClientInfo( self, "model", tool)
 	local spin_override = tool:GetOwner():GetInfoNum("coaster_cart_spin_override")
@@ -57,6 +59,7 @@ function TAB:LeftClick( trace, tool )
 						train.WheelFriction = Friction
 						train.AllowWeapons = allowWeapons==1
 						train.MinSpeed = minSpeed
+						train.Velocity = startSpeed
 
 						//Only set it if it's true.
 						if spin_override==1 then
@@ -130,16 +133,16 @@ function TAB:BuildPanel()
 
 	panel:AddItem(propSelect)
 	//panel:AddControl( "PropSelect", { Label = "#WheelTool_model", ConVar = "coaster_cart_creator_model", Category = "Carts", Models = list.Get( "CartModels" ) } )
-	local cartSlider 		= panel:NumSlider("Number of carts: ","coaster_supertool_tab_cart_creator_cart_amount", 1, 8, 0)
+	panel:NumSlider("Number of carts: ","coaster_supertool_tab_cart_creator_cart_amount", 1, 8, 0)
 	panel:ControlHelp("How many carts should be spawned and attached as a single train")
 
-	local minSpeedSlider 	= panel:NumSlider("Minimum speed: ","coaster_supertool_tab_cart_creator_minSpeed", 0, 100, 3)
+	panel:NumSlider("Initial speed: ","coaster_supertool_tab_cart_creator_startSpeed", 0.01, 75, 3)
+
+	panel:NumSlider("Minimum speed: ","coaster_supertool_tab_cart_creator_minSpeed", 0, 75, 3)
 	panel:ControlHelp("Never let the cart slow beyond the specified speed. Use a minimum speed of 0 to disable.")
 
-	local FrictionSlider 	= panel:NumSlider("Frictional Coefficient: ","coaster_supertool_tab_cart_creator_friction", 0, 1, 3)
+	panel:NumSlider("Frictional Coefficient: ","coaster_supertool_tab_cart_creator_friction", 0, 1, 3)
 	panel:ControlHelp("The frictional coefficient of each cart. Higher = more friction.")
-
-	//panel:AddControl("CheckBox", {Label = "Use weapons while in cart", Description = "Aim and shoot weapons while in the cart.", Command = "coaster_cart_creator_allow_weapons"})
 
 	//Commented out for now, feature doesn't exist and it's sounding like it's gonna be a pain in the ass
 	/*
