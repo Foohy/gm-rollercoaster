@@ -33,7 +33,7 @@ function TAB:LeftClick( trace, tool )
 	local ID 		= ply:SteamID() .. "_" ..  GetClientInfo( self, "id", tool )
 	local Type 		= GetClientNumber( self, "tracktype", tool )
 	local RelRoll 	= GetClientNumber( self, "relativeroll", tool ) == 1
-	local matchZ = GetClientNumber( self, "prev_nodeheight", tool ) == 1
+	local matchZ 	= GetClientNumber( self, "prev_nodeheight", tool ) == 1
 	local plyAng	= ply:GetAngles()
 			
 	local newPos = trace.HitPos + Vector( 0, 0, Elevation )
@@ -94,7 +94,7 @@ function TAB:LeftClick( trace, tool )
 				if matchZ && IsValid( controller ) then
 					local VeryLastNode = controller.Nodes[ #controller.Nodes ]
 					if IsValid( VeryLastNode ) then
-						newPos.z = VeryLastNode:GetPos().z
+						newPos.z = VeryLastNode:GetPos().z + Elevation
 					end
 				end
 				local node = CoasterManager.CreateNode( ID, newPos, newAng, Type, ply )
@@ -278,7 +278,7 @@ function TAB:UpdateGhostNode( ent, tool )
 	if matchZ && IsValid( controller ) then
 		local LastNode = controller.Nodes[ #controller.Nodes ]
 		if IsValid( LastNode ) then
-			newPos.z = LastNode:GetPos().z
+			newPos.z = LastNode:GetPos().z + Elevation
 		end
 	end
 
@@ -327,7 +327,7 @@ function TAB:BuildPanel( )
 	panel:AddItem( easyelev )
 
 	//Set to the height of the previous node?
-	panel:CheckBox( "Set to previous node's elevation", "coaster_supertool_tab_node_creator_prev_nodeheight" )
+	panel:CheckBox( "Relative to previous node's elevation", "coaster_supertool_tab_node_creator_prev_nodeheight" )
 
 	local Seperator = vgui.Create("DLabel", panel)
 	Seperator:SetText("______________________________________________")
