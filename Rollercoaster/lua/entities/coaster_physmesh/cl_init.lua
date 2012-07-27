@@ -6,6 +6,10 @@ ENT.Controller = nil
 
 ENT.RenderGroup 	= RENDERGROUP_TRANSLUCENT
 
+function ENT:Initialize()
+
+end
+
 //Build the mesh for the specific segment
 //This function is NOT controller only, call it on the segment you want to update the mesh on
 function ENT:BuildMesh()
@@ -56,5 +60,8 @@ function ENT:BuildMesh()
 
 	self:PhysicsFromMesh( Remaining ) //THIS MOTHERFUCKER
 	self:EnableCustomCollisions( )
-
+	self:GetPhysicsObject():EnableMotion( false )
+	self:GetPhysicsObject():SetMass(500)
+	self:SetMoveType(MOVETYPE_NONE)
+	self:SetSolid(SOLID_VPHYSICS)
 end

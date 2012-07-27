@@ -12,6 +12,7 @@ ENT.Tri_Width 		= 30
 ENT.Tri_Height 		= 30
 ENT.Resolution 		= 10
 
+
 function ENT:SetupDataTables()
 	self:DTVar("Int", 0, "Segment")
 	self:DTVar("Int", 1, "Controller")
@@ -31,4 +32,15 @@ end
 
 function ENT:GetController()
 	return Entity(self.dt.Controller)
+end
+
+function ENT:Think()
+	local controller = self:GetController()
+	if !IsValid( controller ) then return end 
+
+	//DONT EVEN TRY ME
+	if self:GetPos() != controller:GetPos() then
+		self:SetPos( controller:GetPos() )
+		self:SetAngles( Angle(0,0,0))
+	end
 end

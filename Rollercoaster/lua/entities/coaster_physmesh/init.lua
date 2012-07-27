@@ -24,6 +24,7 @@ function ENT:Initialize()
 	self:SetSegment( self.Segment )
 	self:SetNoDraw( true )
 
+	self:GetPhysicsObject():SetMass(500)
 
 	timer.Simple(0.5, function()
 		if IsValid( self ) then
@@ -101,12 +102,6 @@ function ENT:PhysicsUpdate(physobj)
 	if !IsValid( self.Controller ) then return end
 	//self:SetPos( self.Controller:GetPos() )
 	//self:SetAngles( Angle( 0, 0, 0 ) )
-end
-
-function ENT:Think()
-	if IsValid( self.Controller ) then
-		self:SetPos( self.Controller:GetPos() )
-	end
 end
 
 function ENT:OnRemove()
