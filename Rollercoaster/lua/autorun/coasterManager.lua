@@ -183,7 +183,7 @@ if SERVER then
 	CreateConVar("coaster_maxcarts", "16", FCVAR_NOTIFY) //Maximum number of carts per person
 	CreateConVar("coaster_maxnodes", "70", FCVAR_NOTIFY) //Maximum numbr of nodes per person
 	CreateConVar("coaster_cart_explosive_damage", "1", FCVAR_NOTIFY, "Should the cart deal explosive damage and remove itself after going Off Da Railz?") //Should the cart do explosive damage?
-
+	CreateConVar("coaster_cart_cooldown", "1", FCVAR_NOTIFY, "Have a cooldown for screaming and vomiting")
 end
 
 
@@ -191,7 +191,7 @@ end
 hook.Add("PhysgunPickup", "PreventCoasterMeshPickup", function( ply, ent ) 
 	if ent:GetClass() == "coaster_physmesh" then return false end
 end )
-	
+
 if CLIENT then
 	//Language for admin limits
 	language.Add("SBoxLimit_maxcarts", "You've hit the Carts limit!")

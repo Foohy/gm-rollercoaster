@@ -1061,18 +1061,19 @@ concommand.Add("coaster_cart_click", function( ply, cmd, args )
 
 	//Mouse1 = scream
 	if tonumber(args[1]) == 1 then
-		if !ply.ScreamCooldown || ply.ScreamCooldown < CurTime() then 
+		if !ply.ScreamCooldown || ply.ScreamCooldown < CurTime() || !GetConVar("coaster_cart_cooldown"):GetBool() then 
 			ply.ScreamCooldown = CurTime() + 5
 			ply:Scream()
 		end
 
 	//Mouse2 = barf
 	else 
-		if !ply.BarfCooldown || ply.BarfCooldown < CurTime() then 
+		if !ply.BarfCooldown || ply.BarfCooldown < CurTime() || !GetConVar("coaster_cart_cooldown"):GetBool() then 
 			ply.BarfCooldown = CurTime() + 30 
 			ply:Puke()
 		end
 	end
 
 end )
+
 
