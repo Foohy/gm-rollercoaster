@@ -900,7 +900,7 @@ function ENT:Draw()
 
 
 	local controller = self:GetController()
-	if ( IsValid( controller ) && controller.Nodes && self == controller.Nodes[ #controller.Nodes ] ) or self:IsController() then //Don't draw if we are the start/end nodes
+	if ( IsValid( controller ) && controller.Nodes && self == controller.Nodes[ #controller.Nodes ] && #controller.Nodes > 2 ) or self:IsController() then //Don't draw if we are the start/end nodes
 		return
 	end
 
