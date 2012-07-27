@@ -40,27 +40,28 @@ function TAB:LeftClick( trace, tool )
 	local newAng = Angle(0, plyAng.y, 0) + Angle( 0, 0, 0 )
 	
 	if SERVER then
-		if IsValid( trace.Entity ) && trace.Entity:GetClass() == "coaster_node" then //Update an existing node's settings
-			trace.Entity:SetType( Type )
-			trace.Entity:SetRelativeRoll( RelRoll )
-			trace.Entity:SetRoll( Bank )
-			trace.Entity:Invalidate( true )
+		local Node = GetActualNodeEntity( trace.Entity )
+		if IsValid( Node ) && Node:GetClass() == "coaster_node" then //Update an existing node's settings
+			Node:SetType( Type )
+			Node:SetRelativeRoll( RelRoll )
+			Node:SetRoll( Bank )
+			Node:Invalidate( true )
 
-			local controller = trace.Entity:GetController()
+			local controller = Node:GetController()
 
 			if controller:Looped() then
-				local node = nil
-				if trace.Entity == controller.Nodes[2] then
-					node = controller.Nodes[#controller.Nodes - 1]
-				elseif trace.Entity == controller.Nodes[#controller.Nodes -1 ] then
-					node = controller.Nodes[2]
+				local prevnode = nil
+				if Node == controller.Nodes[2] then
+					prevnode = controller.Nodes[#controller.Nodes - 1]
+				elseif Node == controller.Nodes[#controller.Nodes -1 ] then
+					prevnode = controller.Nodes[2]
 				end
 
-				if IsValid( node ) then
-					node:SetType( Type )
-					node:SetRelativeRoll( RelRoll )
-					node:SetRoll( Bank )
-					node:Invalidate( true )
+				if IsValid( prevnode ) then
+					prevnode:SetType( Type )
+					prevnode:SetRelativeRoll( RelRoll )
+					prevnode:SetRoll( Bank )
+					prevnode:Invalidate( true )
 				end
 
 			end
@@ -126,8 +127,9 @@ function TAB:RightClick( trace, tool )
 	local plyAng	= ply:GetAngles()
 
 	if SERVER then
-		if IsValid( trace.Entity ) && trace.Entity:GetClass() == "coaster_node" then //Update an existing node's settings
-			local Cur_ID = trace.Entity:GetCoasterID()
+		local Node = GetActualNodeEntity( trace.Entity )
+		if IsValid( Node ) && Node:GetClass() == "coaster_node" then //Update an existing node's settings
+			local Cur_ID = Node:GetCoasterID()
 			local Controller = Rollercoasters[ Cur_ID ]
 			local FirstNode  = Controller:GetFirstNode()
 			local SecondToLast = Controller.Nodes[ #Controller.Nodes - 1 ]
@@ -216,33 +218,53 @@ function TAB:Think( tool )
 		
 		//Make the tooltip
 
-		if IsValid( trace.Entity ) && ( trace.Entity:GetClass() == "coaster_node") && CurTime() > self.WaitTime then
+		if IsValid( trace.Entity ) && ( ( trace.Entity:GetClass() == "coaster_node") || trace.Entity:GetClass() == "coaster_physmesh") && CurTime() > self.WaitTime then
 
-			SelectSingleNode( trace.Entity, Color( 180 - math.random( 0, 120 ), 220 - math.random( 0, 150 ), 255, 255 ))
+			//Get the node, depending on if we are the physics mesh or the controller
+			local Node = GetActualNodeEntity( trace.Entity )
+
+			if !IsValid( Node ) then return end
+
+			//Highlight the node
+			SelectSingleNode( Node, Color( 180 - math.random( 0, 120 ), 220 - math.random( 0, 150 ), 255, 255 ))
 
 			local toolText = "Rollercoaster Node"
-			if trace.Entity.GetCoasterID then
-				toolText = toolText .. " (" .. trace.Entity:GetCoasterID() .. ")"
+			if Node.GetCoasterID then
+				toolText = toolText .. " (" .. Node:GetCoasterID() .. ")"
 			end
-			if trace.Entity.IsController && trace.Entity:IsController() then 
+			if Node.IsController && Node:IsController() then 
 				toolText = toolText .. " (Controller)" 
-				toolText = toolText .. "\nLooped: " .. tostring( trace.Entity:Looped() )
+				toolText = toolText .. "\nLooped: " .. tostring( Node:Looped() )
 			end
-			toolText = toolText .. "\nType: " .. ( EnumNames.Nodes[ trace.Entity:GetType() ] or "Unknown(?)" )
-			toolText = toolText .. "\nRoll: " .. tostring( trace.Entity:GetRoll() )
+			toolText = toolText .. "\nType: " .. ( EnumNames.Nodes[ Node:GetType() ] or "Unknown(?)" )
+			toolText = toolText .. "\nRoll: " .. tostring( Node:GetRoll() )
 			//toolText = toolText .. "\nNext Node: " .. tostring( trace.Entity:GetNextNode() )
-			AddWorldTip( trace.Entity:EntIndex(), ( toolText ), 0.5, trace.Entity:GetPos(), trace.Entity  )
+			AddWorldTip( Node:EntIndex(), ( toolText ), 0.5, Node:GetPos(), Node )
 		else 
 			ClearNodeSelection()
 		end
 	end
-
 
 	if !IsValid( self.GhostEntity ) then
 		MakeGhostEntity( self, self.GhostModel, Vector( 0, 0, 0), Angle( 0, 0, 0) )
 	end
 
 	self:UpdateGhostNode( self.GhostEntity, tool )
+end
+
+
+//A helper function to return the node whether we are that same node or a physics mesh
+function GetActualNodeEntity( entity )
+	local Node = nil
+	if entity:GetClass() == "coaster_node" then 
+		Node = entity
+	else 
+		if IsValid( entity.Controller ) && entity.Controller.GetCoasterID then
+			Node = entity.Controller.Nodes[ entity.Segment ]
+		end
+	end
+
+	return Node
 end
 
 //TODO: include in rollercoaster table
@@ -262,7 +284,7 @@ function TAB:UpdateGhostNode( ent, tool )
 	local tr 		= util.GetPlayerTrace( ply, ply:GetCursorAimVector() )
 	local trace 	= util.TraceLine( tr )
 
-	if (!trace.Hit || trace.Entity:IsPlayer() || trace.Entity:GetClass() == "coaster_node" ) then
+	if (!trace.Hit || trace.Entity:IsPlayer() || trace.Entity:GetClass() == "coaster_node" || trace.Entity:GetClass() == "coaster_physmesh" ) then
 		ent:SetNoDraw( true )
 		return
 	end
