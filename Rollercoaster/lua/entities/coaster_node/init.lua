@@ -571,6 +571,11 @@ function ENT:OnRemove()
 							cont.Nodes[ k - 1]:Invalidate( true )
 						end
 						
+						//If it's a looped track and we are either the last or very last node	
+						if cont:Looped() && ( cont.Nodes[ #cont.Nodes ] == self || cont.Nodes[ #cont.Nodes - 1 ] == self ) then
+							cont:SetLooped( false )
+						end
+						
 						table.remove( cont.Nodes, k ) 
 					end
 				end
