@@ -268,7 +268,10 @@ function ENT:RefreshClientSpline()
 					ent.SupportModel:SetNoDraw( true )
 					ent.SupportModelBase:SetNoDraw( true )
 				end
+
+				ent:UpdateSupportDrawBounds()
 			end
+
 		end
 	end
 end
@@ -950,7 +953,7 @@ function ENT:Think()
 			end
 
 
-			break
+			break //We really only need to do this once, not on a per segment basis.
 		end
 	end
 	self:UpdateSupportDrawBounds()
