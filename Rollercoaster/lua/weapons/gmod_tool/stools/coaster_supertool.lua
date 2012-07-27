@@ -215,7 +215,7 @@ function TOOL.BuildCPanel(panel)
 	panel:AddItem( PropertySheet )
 	panel.Tabs = PropertySheet
 
-	panel:Button( "Build Clientside Mesh", "update_mesh")
+	panel:Button( "Build Clientside Mesh", "coaster_update_mesh")
 	panel:ControlHelp( "Note: Building the mesh is not realtime. You WILL experience a temporary freeze when building the mesh." )
 
 end

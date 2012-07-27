@@ -299,13 +299,23 @@ function ENT:UpdateClientSpline()
 end
 
 //Build all coaster's clientside mesh
-concommand.Add("update_mesh", function()
+concommand.Add("coaster_update_mesh", function()
 	for _, v in pairs( ents.FindByClass("coaster_node") ) do
 		if IsValid( v ) && v:IsController() then 
 			v:UpdateClientMesh()
 		end
 	end
+	GAMEMODE:AddNotify( "Updated rollercoaster mesh", NOTIFY_GENERIC, 4 )
 end )
+
+//Make doubly sure our client is up to date
+concommand.Add("coaster_update_nodes", function() 
+	for _, v in pairs( ents.FindByClass("coaster_node") ) do
+		if IsValid( v ) && v:IsController() then 
+			v:RefreshClientSpline()
+		end
+	end
+end)
 
 //Given spline index, return percent of a node
 //Util function
