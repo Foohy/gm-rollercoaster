@@ -431,7 +431,7 @@ function ENT:DrawTrackTranslucents()
 			elseif self.Nodes[i]:GetType() == COASTER_NODE_SPEEDUP then
 				self:DrawSpeedupModels(i)
 
-			elseif self.Nodes[i]:GetType() == COASTER_NODE_BREAKS then
+			elseif self.Nodes[i]:GetType() == COASTER_NODE_BRAKES then
 				self:DrawBreakModels( i )
 				
 			end

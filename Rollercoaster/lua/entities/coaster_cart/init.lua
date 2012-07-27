@@ -458,7 +458,7 @@ function ENT:PhysicsSimulate(phys, deltatime)
 		local angDif = math.AngleDifference( ang1.y, ang2.y )
 		local FakeFriction = 1.0003
 
-		if self:GetCurrentNode():GetType() == COASTER_NODE_BREAKS || self:GetCurrentNode():GetType() == COASTER_NODE_HOME then
+		if self:GetCurrentNode():GetType() == COASTER_NODE_BRAKES || self:GetCurrentNode():GetType() == COASTER_NODE_HOME then
 			FakeFriction = 1.04
 		end
 		//Make it so it doesnt rotate with the track
@@ -659,7 +659,7 @@ function ENT:BreakThink(dt)
 		for k, v in pairs(self.CartTable) do
 			if k > 1 || #self.CartTable == 1 then
 				local node = v:GetCurrentNode()
-				if IsValid( node ) && node:GetType() == COASTER_NODE_BREAKS then
+				if IsValid( node ) && node:GetType() == COASTER_NODE_BRAKES then
 					OnBreaks = true
 					BreakForce = node.BreakForce
 					MinSpeed = node.BreakSpeed
@@ -690,7 +690,7 @@ end
 /*
 //Basically the exact opposite of speedup
 function ENT:BreakThink(dt)
-	if self:GetCurrentNode():GetType() == COASTER_NODE_BREAKS && self.Velocity > self.BreakSpeed then
+	if self:GetCurrentNode():GetType() == COASTER_NODE_BRAKES && self.Velocity > self.BreakSpeed then
 		local Acceleration = self.BreakForce / self:GetPhysicsObject():GetMass() //F = MA. thus, (F / M) = A
 		local Velocity = Acceleration * dt //A = VelocityChange / TimeChange. thus, V = AT
 
