@@ -90,9 +90,8 @@ usermessage.Hook("Coaster_RefreshTrack", function( um )
 	if !IsValid( self ) || !self.IsController then return end
 
 	if self:IsController() then
-		//self:SetupTrack()
 		self:RefreshClientSpline()
-		//self:UpdateClientMesh()
+		self:SupportFullUpdate()
 	end	
 
 end )
@@ -108,9 +107,9 @@ usermessage.Hook("Coaster_AddNode", function( um )
 	if !self.IsController then return end //Shared functions don't exist yet.
 
 	if (self:IsController()) then
-
-		self:RefreshClientSpline()
 		
+		self:RefreshClientSpline()
+
 		//Invalidate nearby nodes
 		if self.Nodes != nil then
 			last = #self.Nodes
@@ -128,6 +127,8 @@ usermessage.Hook("Coaster_AddNode", function( um )
 				self.Nodes[ last - 3 ].Invalidated = true
 			end
 		end
+
+		self:SupportFullUpdate()
 	end
 end )
 
@@ -259,20 +260,25 @@ function ENT:RefreshClientSpline()
 
 		//And the clientside mesh
 		self:UpdateClientsidePhysics()
+		self:SupportFullUpdate()
+	end
+end
 
-		for i=1, #self.Nodes do
-			local ent = self.Nodes[i]
-			if IsValid(ent.SupportModel) && IsValid(ent.SupportModelStart) && IsValid(ent.SupportModelBase) then
-				if !ent:DrawSupport() then
-					ent.SupportModelStart:SetNoDraw( true )
-					ent.SupportModel:SetNoDraw( true )
-					ent.SupportModelBase:SetNoDraw( true )
-				end
+//Update the entirety of the supports - their draw bounds, their colors, their positions, whether or not to draw, etc.
+function ENT:SupportFullUpdate()
+	for i=1, #self.Nodes do
+		local ent = self.Nodes[i]
 
-				ent:UpdateSupportDrawBounds()
+		if IsValid(ent.SupportModel) && IsValid(ent.SupportModelStart) && IsValid(ent.SupportModelBase) then
+			if !ent:DrawSupport() then
+				ent.SupportModelStart:SetNoDraw( true )
+				ent.SupportModel:SetNoDraw( true )
+				ent.SupportModelBase:SetNoDraw( true )
 			end
 
+			ent:UpdateSupportDrawBounds()
 		end
+
 	end
 end
 
@@ -366,6 +372,9 @@ function ENT:UpdateClientMesh()
 
 		self:ValidateNodes()
 		self.BuildingMesh = false
+
+		//One more update can't hurt
+		self:SupportFullUpdate()
 	end
 end
 
