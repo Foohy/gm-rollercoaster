@@ -18,6 +18,7 @@ TAB.ClientConVar["orig_spawn"] = "1"
 TAB.GhostModel = Model("models/Combine_Helicopter/helicopter_bomb01.mdl")
 TAB.WaitTime	= 0 //Time to wait to make sure the dtvars are updated
 TAB.CoolDown 	= 0 //For some reason, LeftClick is called four times when pressed once. :/
+TAB.CoolDownR	= 0
 
 //Some uniquely named global variables
 coaster_saver_ClipboardTrack = {} //The coaster track loaded into the 'clipboard', to be saved or loaded
@@ -53,13 +54,16 @@ function TAB:LeftClick( trace, tool )
 end
 
 function TAB:RightClick( trace, tool )
+	if CurTime() < self.CoolDownR then return end //Prevent from being called many times per click
+	self.CoolDownR = CurTime() + 0.10
+
 	local ply   = tool:GetOwner()
 	
-	if IsValid( trace.Entity ) && trace.Entity:GetClass() == "coaster_node" then
-		if IsValid( trace.Entity:GetController() ) &&  CLIENT then
+	if IsValid( trace.Entity ) && ( trace.Entity:GetClass() == "coaster_node" || trace.Entity:GetClass() == "coaster_physmesh" ) then
+		if IsValid( trace.Entity:GetController() ) && CLIENT then
 
 			CreateTrackTable( trace.Entity:GetController() )
-
+			GAMEMODE:AddNotify( "Track copied into clipboard", NOTIFY_GENERIC, 3 )
 
 		elseif SinglePlayer() then
 			//Tell the client to do something. I have to do this because this isn't called clientside in singleplayer
@@ -212,7 +216,7 @@ end
 function OpenCoasterSaveMenu()
 
 	local form = vgui.Create( "DFrame" )
-	form:SetSize( 250, 300 ) //289
+	form:SetSize( 250, 332 ) //289
 	form:SetTitle("Save Rollercoaster")
 	form:Center()
 	form:SetVisible( true )
@@ -267,8 +271,23 @@ function OpenCoasterSaveMenu()
 	end
 	panel:AddItem( btnSave )
 
+	local btnSaveUp = vgui.Create("Button")
+	btnSaveUp:SetText("Save and Upload")
+	btnSaveUp.DoClick = function() 
+		print(table.Count(coaster_saver_ClipboardTrack) )
+		if coaster_saver_ClipboardTrack != nil && #coaster_saver_ClipboardTrack > 0 then
+			SaveTrack(DName:GetValue(), DDesc:GetValue(), true ); form:Close(); 
+			surface.PlaySound("garrysmod/content_downloaded.wav") 
+		else
+			GAMEMODE:AddNotify( "No track selected!", NOTIFY_ERROR, 6 )
+	       	surface.PlaySound( "buttons/button10.wav" )
+		end
+	end
+	panel:AddItem( btnSaveUp )
+
 	local btnCancel = vgui.Create("Button")
 	btnCancel:SetText("Cancel")
+
 	btnCancel.DoClick = function() form:Close() end
 	panel:AddItem( btnCancel )
 end
@@ -315,6 +334,7 @@ function OpenCoasterUploadMenu()
 		local line = tracklist:GetLine( tracklist:GetSelectedLine() )
 		if line then 
 			UploadFile( line:GetValue(3) ); 
+			GAMEMODE:AddNotify( "Uploading " .. line:GetValue(1) .. " to the server!", NOTIFY_GENERIC, 4 )
 		end
 		form:Close(); 
 		surface.PlaySound("garrysmod/content_downloaded.wav")
@@ -374,7 +394,7 @@ function RemoveInvalidChars(str)
 	return str
 end
 
-function SaveTrack(name, desc)
+function SaveTrack(name, desc, upload)
 	if coaster_saver_ClipboardTrack != nil && #coaster_saver_ClipboardTrack > 0 then
 		name = RemoveInvalidChars( name )
 		name = string.Replace(name, ".", "_")
@@ -396,6 +416,12 @@ function SaveTrack(name, desc)
 
 		//Update with the newly saved track
 		UpdateTrackList()
+
+		//The user wanted to save and upload
+		if upload then
+			UploadFile( "Rollercoasters/" .. name .. ".txt" ); 
+			GAMEMODE:AddNotify( "Uploading " .. name .. " to the server!", NOTIFY_GENERIC, 4 )
+		end
 	else
 		print("Failed to save rollercoaster: " .. coaster_saver_ClipboardTrack )
 	end
