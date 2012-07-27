@@ -264,23 +264,6 @@ function ENT:RefreshClientSpline()
 	end
 end
 
-//Update the entirety of the supports - their draw bounds, their colors, their positions, whether or not to draw, etc.
-function ENT:SupportFullUpdate()
-	for i=1, #self.Nodes do
-		local ent = self.Nodes[i]
-
-		if IsValid(ent.SupportModel) && IsValid(ent.SupportModelStart) && IsValid(ent.SupportModelBase) then
-			if !ent:DrawSupport() then
-				ent.SupportModelStart:SetNoDraw( true )
-				ent.SupportModel:SetNoDraw( true )
-				ent.SupportModelBase:SetNoDraw( true )
-			end
-
-			ent:UpdateSupportDrawBounds()
-		end
-
-	end
-end
 
 //Update the client spline, less perfomance heavy than above function
 //Use only when nodes have moved position.
@@ -850,6 +833,25 @@ function ENT:UpdateSupportDrawBounds()
 	end
 end
 
+//Update the entirety of the supports - their draw bounds, their colors, their positions, whether or not to draw, etc.
+function ENT:SupportFullUpdate()
+	for i=1, #self.Nodes do
+		local ent = self.Nodes[i]
+
+		if IsValid(ent.SupportModel) && IsValid(ent.SupportModelStart) && IsValid(ent.SupportModelBase) then
+			if !ent:DrawSupport() then
+				ent.SupportModelStart:SetNoDraw( true )
+				ent.SupportModel:SetNoDraw( true )
+				ent.SupportModelBase:SetNoDraw( true )
+			end
+
+			ent:UpdateSupportDrawBounds()
+		end
+
+	end
+end
+
+
 function ENT:DrawSupport()
 	local controller = self:GetController()
 	if !IsValid( controller ) then return end
@@ -871,7 +873,9 @@ function ENT:DrawSupport()
 		trace.mask = MASK_SOLID_BRUSHONLY
 		trace = util.TraceLine(trace)
 		
+
 	local Distance = self:GetPos():Distance( trace.HitPos + Vector( 0, 0, self.BaseHeight) )
+
 	//Set their colors
 	local color = self:GetColor()
 	
@@ -898,11 +902,17 @@ function ENT:DrawSupport()
 	else
 		self.SupportModel:SetNoDraw( true )
 	end
-		
-	local skin = self.MatSkins[trace.MatType]
-	self.SupportModelBase:SetSkin( skin or 1 )
-	self.SupportModelBase:SetPos( trace.HitPos )
-	self.SupportModelBase:SetAngles( Angle( 0, self:GetAngles().y, 0 ) )
+	
+	if self:GetPos():Distance( trace.HitPos ) > self.BaseHeight + 10 then
+		local skin = self.MatSkins[trace.MatType]
+		self.SupportModelBase:SetSkin( skin or 1 )
+		self.SupportModelBase:SetPos( trace.HitPos )
+		self.SupportModelBase:SetAngles( Angle( 0, self:GetAngles().y, 0 ) )
+	else
+		self.SupportModelBase:SetNoDraw( true )
+		self.SupportModelStart:SetPos( trace.HitPos )
+		self.SupportModelStart:SetModelScale( Vector( 1, 1, self:GetPos():Distance( trace.HitPos ) / (self.PoleHeight) ) )
+	end
 
 	return true
 end
