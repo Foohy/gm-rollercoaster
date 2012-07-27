@@ -127,29 +127,6 @@ if SERVER then
 		end )
 	end )
 
-	//Manage cart collisions (So trains don't collide with themselves, but collide with other trains)
-	hook.Add("ShouldCollide","RollercoasterShouldCartCollide",function(ent1,ent2)
-		//Prevent carts from colliding with the physics mesh of the tracks
-		if ent1:GetClass() == "coaster_cart" and ent2:GetClass() == "coaster_physmesh" && ent1.CoasterID == ent2.Controller:GetCoasterID() then return false end
-		if ent2:GetClass() == "coaster_cart" and ent1:GetClass() == "coaster_physmesh" && ent2.CoasterID == ent1.Controller:GetCoasterID() then return false end
-
-		
-		if ent1:GetClass() != "coaster_cart" or ent2:GetClass() != "coaster_cart" then return end
-
-		//If either of the carts are off da railz, collide the hell outta them
-		if ent1.IsOffDaRailz || ent2.IsOffDaRailz then return true end
-
-		//Prevent trains from colliding with itself but collide them with other trains
-		if ent1.CartTable == nil or ent2.CartTable == nil then return false end
-
-		//the first entry in the cart table is ALWAYS the dummy cart. don't fuck that up.
-		if ent1.CartTable[1] == ent1 && #ent1.CartTable > 1 then return false end
-		if ent2.CartTable[1] == ent2 && #ent2.CartTable > 1 then return false end
-
-		if ent1.CartTable == ent2.CartTable then return false else return true end
-	end )
-
-
 	//Be 1000% sure cart dummies are NEVER left over after their train has since exploded
 	hook.Add("Think", "RemoveGhostedDummies", function() 
 		if !CoasterManager.NextThink || CoasterManager.NextThink < CurTime() then
@@ -186,10 +163,38 @@ if SERVER then
 	CreateConVar("coaster_cart_cooldown", "1", FCVAR_NOTIFY, "Have a cooldown for screaming and vomiting")
 end
 
-
 //Don't let the physics mesh be picked up.
 hook.Add("PhysgunPickup", "PreventCoasterMeshPickup", function( ply, ent ) 
 	if ent:GetClass() == "coaster_physmesh" then return false end
+end )
+
+//Manage cart collisions (So trains don't collide with themselves, but collide with other trains)
+hook.Add("ShouldCollide","RollercoasterShouldCartCollide",function(ent1,ent2)
+	//Prevent two coaster physics meshes from colliding
+	if ent1:GetClass() == "coaster_physmesh" && ent2:GetClass() == "coaster_physmesh" then return false end
+
+	//These aren't shared because their variables really don't need to be networked
+	if SERVER then
+		//Prevent carts from colliding with the physics mesh of the tracks
+		if ent1:GetClass() == "coaster_cart" and ent2:GetClass() == "coaster_physmesh" && ent1.CoasterID == ent2.Controller:GetCoasterID() then return false end
+		if ent2:GetClass() == "coaster_cart" and ent1:GetClass() == "coaster_physmesh" && ent2.CoasterID == ent1.Controller:GetCoasterID() then return false end
+
+		//If none of the ents arent a coaster_cart, stop executing here
+		if ent1:GetClass() != "coaster_cart" || ent2:GetClass() != "coaster_cart" then return end
+
+		//If either of the carts are off da railz, collide the hell outta them
+		if ent1.IsOffDaRailz || ent2.IsOffDaRailz then return true end
+
+		//Prevent trains from colliding with itself but collide them with other trains
+		if ent1.CartTable == nil || ent2.CartTable == nil then return false end
+
+		//the first entry in the cart table is ALWAYS the dummy cart. don't fuck that up.
+		if ent1.CartTable[1] == ent1 && #ent1.CartTable > 1 then return false end
+		if ent2.CartTable[1] == ent2 && #ent2.CartTable > 1 then return false end
+
+		if ent1.CartTable == ent2.CartTable then return false else return true end
+	end
+
 end )
 
 if CLIENT then
