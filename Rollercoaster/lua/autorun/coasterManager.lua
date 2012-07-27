@@ -182,6 +182,9 @@ hook.Add("ShouldCollide","RollercoasterShouldCartCollide",function(ent1,ent2)
 		//If none of the ents arent a coaster_cart, stop executing here
 		if ent1:GetClass() != "coaster_cart" || ent2:GetClass() != "coaster_cart" then return end
 
+		//If both carts are derailed, do not let them collide
+		if ent1.IsOffDaRailz && ent2.IsOffDaRailz then return false end
+
 		//If either of the carts are off da railz, collide the hell outta them
 		if ent1.IsOffDaRailz || ent2.IsOffDaRailz then return true end
 
