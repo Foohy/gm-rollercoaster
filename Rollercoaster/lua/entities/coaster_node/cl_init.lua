@@ -986,10 +986,6 @@ function ENT:Think()
 		end
 	end
 	self:UpdateSupportDrawBounds()
-
-	self:NextThink( CurTime() + 0.5 )
-
-	return true
 end
 
 function ENT:OnRemove()

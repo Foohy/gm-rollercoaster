@@ -243,11 +243,11 @@ end
 local function NoCartHoldOrFreeze(ctable)
 	local notheld = true
 	for k, v in pairs(ctable) do
-		if v:IsPlayerHolding() then
+		if IsValid(v) && v:IsPlayerHolding() then
 			notheld = false
 			return notheld
 		end
-		if !v:GetPhysicsObject():IsMotionEnabled() then
+		if IsValid(v) && !v:GetPhysicsObject():IsMotionEnabled() then
 			notheld = false
 			return notheld
 		end
