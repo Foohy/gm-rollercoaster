@@ -22,6 +22,7 @@ function ENT:Initialize()
 	self:SetAngles( Angle( 0, 0, 0 ) )
 
 	self:SetSegment( self.Segment )
+	self:SetNoDraw( true )
 
 
 	timer.Simple(0.5, function()

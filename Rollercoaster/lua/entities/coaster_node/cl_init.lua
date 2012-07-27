@@ -898,6 +898,12 @@ function ENT:Draw()
 		return
 	end
 
+
+	local controller = self:GetController()
+	if ( IsValid( controller ) && controller.Nodes && self == controller.Nodes[ #controller.Nodes ] ) or self:IsController() then //Don't draw if we are the start/end nodes
+		return
+	end
+
 	self:DrawModel()
 
 	//Usually for proper lighting to work we need to draw the mesh after we draw a proper model
