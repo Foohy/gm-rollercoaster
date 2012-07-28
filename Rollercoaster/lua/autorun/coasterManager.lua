@@ -37,7 +37,6 @@ resource.AddFile("models/sunabouzu/sonic_the_carthog.mdl")
 
 if SERVER then
 
-
 	//For use with spawning coasters from a file. Less automagic bs, but you have to know what you're doing
 	function CoasterManager.CreateNodeSimple( id, pos, ang ) //For use with spawning coasters from a file. Less automagic bs
 		local node = ents.Create("coaster_node")		
@@ -257,6 +256,18 @@ if CLIENT then
 			end
 		end
 	end )
+
+	//Conflict 'fixer'
+	/*
+	hook.Add( "Think", "CoasterExpressDominance", function()
+		if !CoasterManager.NextThink || CoasterManager.NextThink < CurTime() then
+			CoasterManager.NextThink = CurTime() + 10
+
+			//Express dominance
+			hook.Remove("PreDrawOpaqueRenderables", "ScaleUpdate")
+		end
+	end )
+	*/
 
 	//Add all ents of a track to the glow filter
 	function SelectAllNodes(controller, color)

@@ -25,6 +25,7 @@ local mat_debug	= Material("phoenix_storms/dome") //models/wireframe // phoenix_
 local mat_chain = Material("sunabouzu/old_chain") //sunabouzu/old_chain
 
 function ENT:Initialize()
+
 	//Default to being invalidated
 	self.Invalidated = true
  
@@ -918,6 +919,8 @@ end
 
 //Draw the node
 function ENT:Draw()
+	self:SetModelScale( Vector( 1, 1, 1 ) ) //I love addons that change the scale of other entities even when their tool isn't out! It's wonderful!
+	
 	// Don't draw if we're taking pictures
 	local wep = LocalPlayer():GetActiveWeapon()
 	if wep:IsValid() && wep:GetClass() == "gmod_camera" && !self:IsController() then
