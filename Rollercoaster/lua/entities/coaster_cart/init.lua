@@ -148,12 +148,6 @@ function ENT:OffDaRailz(safemode)
 	end
 end
 
-//Reconnect the cart to a new track
-function ENT:OnDaRailz()
-
-
-end
-
 
 local function UCT(ctable,x)
 	//this supplements the working of RollercoasterUpdateCartTable()
@@ -933,6 +927,9 @@ function ENT:PhysicsCollide(data, physobj)
 		self.Percent 	= Percent
 		self.Controller = controller
 
+		//The mass is changed when the carts fly off for realism, set the mass back
+		self:GetPhysicsObject():SetMass( self.InitialMass )
+
 		//If the yaw is in this range, the cart is boarding the track going the opposite direction
 		local trackang = self:AngleAt(self.CurSegment, self.Percent)
 		local curang = data.OurOldVelocity:Angle()
@@ -960,7 +957,7 @@ function ENT:PhysicsCollide(data, physobj)
 			effectdata:SetScale( 1 )
 			effectdata:SetRadius( 16 )
 		util.Effect( "Sparks", effectdata )
-		//self:SetCurrentNode( controller.Nodes[ Segment ] )
+		
 
 		return
 	end
