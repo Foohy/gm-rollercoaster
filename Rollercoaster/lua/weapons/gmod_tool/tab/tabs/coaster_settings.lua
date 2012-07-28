@@ -30,32 +30,26 @@ function TAB:LeftClick( trace, tool )
 
 	local Ent = trace.Entity
 	
-	if IsValid( Ent ) && Ent:GetClass() == "coaster_node" then
-		if SERVER then 
+	if IsValid( Ent ) && Ent:GetClass() == "coaster_node" || Ent:GetClass() == "coaster_physmesh" then
+		if SERVER then
 			local controller = Ent:GetController()
+			if !IsValid( controller ) then return end
 
-			if IsValid( controller ) then
-				print("Editing settings for "..tostring(controller:GetCoasterID()))
-				Ent:SetTrackColor( r,g,b )
+			local node = nil
+
+			if Ent:GetClass() == "coaster_node" then node = Ent 
+			else node = controller.Nodes[ Ent.Segment ] end
+
+			if IsValid( node ) then
+				node:SetTrackColor( r,g,b )
 				controller:SetTrackColor(r,g,b)
 				controller:SetTrackType(tracktype)
 			end
 		end
-	
-		return true
-	elseif IsValid( Ent ) && Ent:GetClass() == "coaster_physmesh" then
-		if SERVER then 
-			local controller = Ent.Controller
-			local node = controller.Nodes[ Ent.Segment ]
-			if IsValid( controller ) && IsValid( node ) then
-				node:SetTrackColor(r,g,b)
-				controller:SetTrackType(tracktype)
-			end
-		end
-	
-		return true
 
+		return true
 	end
+
 end
 
 function TAB:RightClick( trace, tool )

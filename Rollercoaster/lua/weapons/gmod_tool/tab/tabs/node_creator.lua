@@ -259,8 +259,8 @@ function GetActualNodeEntity( entity )
 	if entity:GetClass() == "coaster_node" then 
 		Node = entity
 	else 
-		if IsValid( entity.Controller ) && entity.Controller.GetCoasterID then
-			Node = entity.Controller.Nodes[ entity.Segment ]
+		if entity.GetController && IsValid( entity:GetController() ) && entity:GetController().GetCoasterID then
+			Node = entity:GetController().Nodes[ entity.Segment ]
 		end
 	end
 

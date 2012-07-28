@@ -221,7 +221,6 @@ function ENT:BuildSegmentMesh()
 	if IsValid( self.PhysMesh ) then
 		//Make sure it's information is up to date
 		self.PhysMesh.Segment = Segment
-		self.PhysMesh.Controller = controller
 		self.PhysMesh:SetController( controller )
 	else
 		//Create the physics mesh entity
@@ -231,7 +230,6 @@ function ENT:BuildSegmentMesh()
 
 		//Give the entity some nice information about it
 		physmesh.Segment		= Segment
-		physmesh.Controller 	= controller
 
 		//Spawn it and store it
 		physmesh:Spawn()

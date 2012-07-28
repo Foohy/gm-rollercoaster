@@ -147,7 +147,6 @@ end )
 function ENT:UpdateClientsidePhysics( )
 	for k, v in pairs( ents.FindByClass("coaster_physmesh") ) do
 		if v.GetController && v:GetController() == self then
-			v.Controller = v:GetController()
 			v:BuildMesh()
 		end
 	end
