@@ -63,7 +63,6 @@ function TAB:LeftClick( trace, tool )
 					prevnode:SetRoll( Bank )
 					prevnode:Invalidate( true )
 				end
-
 			end
 			
 		else //If we didn't click on an existing node, create a new one		
@@ -76,15 +75,13 @@ function TAB:LeftClick( trace, tool )
 				if IsValid( LastNode ) && IsValid( VeryLastNode ) && VeryLastNode.FinalNode then
 					LastNode:SetPos( newPos )
 					LastNode:SetAngles( newAng )
-					//LastNode:SetChains( Chains==1 )
 					LastNode:SetType( Type )
-					LastNode:SetRelativeRoll( RelRoll)
+					//LastNode:SetRelativeRoll( RelRoll)
 					
 					VeryLastNode:SetPos( newPos )
 					VeryLastNode:SetAngles( newAng )
-					//VeryLastNode:SetChains( Chains==1 )
 					VeryLastNode:SetType( Type )
-					VeryLastNode:SetRelativeRoll( RelRoll )
+					//VeryLastNode:SetRelativeRoll( RelRoll )
 					
 					VeryLastNode.FinalNode = false
 				end
@@ -102,7 +99,19 @@ function TAB:LeftClick( trace, tool )
 				if !IsValid( node ) then return end
 
 				node:SetRoll( Bank )
-				node:SetRelativeRoll( RelRoll)
+				//node:SetRelativeRoll( RelRoll )
+
+				//Set the previous node to use the current values, to make things have more sense
+				local controller = Rollercoasters[ID]
+				if #controller.Nodes > 2 then
+					local LastNode = controller.Nodes[ #controller.Nodes - 1 ]
+					if IsValid( LastNode ) then
+						LastNode:SetPos( newPos )
+						LastNode:SetAngles( newAng )
+						LastNode:SetType( Type )
+					end
+				end
+				
 
 				if node:IsController() then
 					node:SetOwner( ply )

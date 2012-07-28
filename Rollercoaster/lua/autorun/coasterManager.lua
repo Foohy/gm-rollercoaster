@@ -224,7 +224,6 @@ if CLIENT then
 		for k, v in pairs( ents.FindByClass("coaster_node") ) do
 			if v:IsController() then
 				v:SupportFullUpdate()
-				print("aaaa")
 			end
 		end
 	end )
