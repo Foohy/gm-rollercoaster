@@ -20,7 +20,6 @@ function TOOL:LeftClick(trace)
 end
 
 function TOOL:RightClick(trace)
-
 	local class = self:GetCurrentTab()
 
 	if class then
@@ -29,7 +28,6 @@ function TOOL:RightClick(trace)
 end
 
 function TOOL:Reload(trace)
-
 	local class = self:GetCurrentTab()
 
 	if class then
@@ -217,7 +215,7 @@ function TOOL.BuildCPanel(panel)
 
 	panel:Button( "Build Clientside Mesh", "coaster_update_mesh")
 	panel:ControlHelp( "Note: Building the mesh is not realtime. You WILL experience a temporary freeze when building the mesh." )
-
+	local version = panel:Help( "Rollercoaster version: " .. COASTER_VERSION )
 end
 
 

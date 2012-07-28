@@ -21,6 +21,7 @@ TAB.CoolDown 	= 0 //For some reason, LeftClick is called four times when pressed
 TAB.CoolDownR	= 0
 
 //Some uniquely named global variables
+TAB.SelectedController = nil
 coaster_saver_ClipboardTrack = {} //The coaster track loaded into the 'clipboard', to be saved or loaded
 coaster_saver_selectedfilename = ""
 coaster_saver_preview_trackmesh = nil
@@ -33,6 +34,9 @@ coaster_save_preview_material = Material("Models/effects/comball_tape")
 //Useful enums
 TRANSFER_TRACKLIST 	= 1
 TRANSFER_PREVIEW	= 2
+TRANSFER_TRACK  	= 3
+TRANSFER_SAVE		= 4
+TRANSFER_UPLOAD 	= 5
 
 if SERVER then
 	util.AddNetworkString("Coaster_transferInfo")
@@ -64,8 +68,17 @@ function TAB:RightClick( trace, tool )
 	local ply   = tool:GetOwner()
 	
 	if IsValid( trace.Entity ) && ( trace.Entity:GetClass() == "coaster_node" || trace.Entity:GetClass() == "coaster_physmesh" ) then
-		if IsValid( trace.Entity:GetController() ) && CLIENT then
+		if IsValid( trace.Entity:GetController() ) then
+			self.SelectedController = trace.Entity:GetController()
 
+			if CLIENT then
+				GAMEMODE:AddNotify( "Selected " .. tostring( self.SelectedController:GetCoasterID() ), NOTIFY_GENERIC, 3 )
+			end
+		end
+
+		/*
+		if IsValid( trace.Entity:GetController() ) && CLIENT then
+			self.SelectedController = trace.Entity:GetController()
 			CreateTrackTable( trace.Entity:GetController() )
 			GAMEMODE:AddNotify( "Track copied into clipboard", NOTIFY_GENERIC, 3 )
 
@@ -76,7 +89,7 @@ function TAB:RightClick( trace, tool )
 				umsg.Entity( tool:GetOwner() )
 			umsg.End()
 		end
-
+		*/
 		return true
 	end
 end
@@ -84,7 +97,7 @@ end
 usermessage.Hook("coaster_rightclick_sp", function( um ) 
 	local ply = um:ReadEntity()
 
-	if !IsValid( ply ) then print("ASLKDJAK") return end
+	if !IsValid( ply ) then return end
 
 	local trace = {}
 	trace.start  = ply:GetShootPos()
@@ -118,7 +131,6 @@ function CreateTrackTable( controller )
 
 	coaster_saver_ClipboardTrack.numnodes = #controller.Nodes
 	coaster_saver_ClipboardTrack.looped = tostring(controller:Looped())
-
 end
 
 function TAB:Reload( trace )
@@ -214,10 +226,18 @@ function TAB:SpawnTrack( tool )
 		RunConsoleCommand( "coaster_supertool_tab_saver_spawntrack", coaster_saver_selectedfilename, LocalPlayer():SteamID() .. "_" .. tostring( GetClientNumber( self, "id", tool ) ),  GetClientNumber( self, "orig_spawn", tool ), coaster_saver_preview_trackcenter )
 		print("Building \"" .. coaster_saver_selectedfilename .. "\"")
 	end
-
 end
 
+
 function OpenCoasterSaveMenu()
+	//Move this to before we open the save menu
+	local controller = nil
+	local tool = LocalPlayer():GetTool()
+
+	if tool.Name == "Rollercoaster SuperTool" && tool:GetCurrentTab().UniqueName == "saver" then
+		controller = tool:GetCurrentTab().SelectedController
+	end
+
 
 	local form = vgui.Create( "DFrame" )
 	form:SetSize( 250, 332 ) //289
@@ -262,11 +282,12 @@ function OpenCoasterSaveMenu()
 	panel.DDesc = DDesc
 
 	local btnSave = vgui.Create("Button")
-	btnSave:SetText("Save")
+	btnSave:SetText("Save locally only")
+	btnSave:SetToolTip( "Save the file on only your computer and not on the server.")
 	btnSave.DoClick = function() 
 		print(table.Count(coaster_saver_ClipboardTrack) )
-		if coaster_saver_ClipboardTrack != nil && #coaster_saver_ClipboardTrack > 0 then
-			SaveTrack(DName:GetValue(), DDesc:GetValue()); form:Close(); 
+		if IsValid( controller ) then
+			SaveTrack(DName:GetValue(), DDesc:GetValue(), controller, false ); form:Close(); 
 			surface.PlaySound("garrysmod/content_downloaded.wav") 
 		else
 			GAMEMODE:AddNotify( "No track selected!", NOTIFY_ERROR, 6 )
@@ -277,10 +298,11 @@ function OpenCoasterSaveMenu()
 
 	local btnSaveUp = vgui.Create("Button")
 	btnSaveUp:SetText("Save and Upload")
+	btnSaveUp:SetToolTip( "Save the file on both your local computer and the server.\nIt will be available in the server track list.")
 	btnSaveUp.DoClick = function() 
 		print(table.Count(coaster_saver_ClipboardTrack) )
-		if coaster_saver_ClipboardTrack != nil && #coaster_saver_ClipboardTrack > 0 then
-			SaveTrack(DName:GetValue(), DDesc:GetValue(), true ); form:Close(); 
+		if IsValid( controller ) then
+			SaveTrack(DName:GetValue(), DDesc:GetValue(), controller, true ); form:Close(); 
 			surface.PlaySound("garrysmod/content_downloaded.wav") 
 		else
 			GAMEMODE:AddNotify( "No track selected!", NOTIFY_ERROR, 6 )
@@ -383,7 +405,8 @@ function UploadFile( filepath )
 		local tbl = util.KeyValuesToTable( contents )
 
 		net.Start("Coaster_transferInfo")
-		net.WriteTable( tbl )
+			net.WriteInt( TRANSFER_UPLOAD, 4 )
+			net.WriteTable( tbl )
 		net.SendToServer(LocalPlayer())
 	end
 
@@ -398,7 +421,15 @@ function RemoveInvalidChars(str)
 	return str
 end
 
-function SaveTrack(name, desc, upload)
+function SaveTrack(name, desc, controller, saveOnServer )
+	net.Start("Coaster_transferInfo")
+		net.WriteInt( TRANSFER_SAVE, 4 )
+		net.WriteInt( saveOnServer and 1 or 0, 2)
+		net.WriteEntity( controller )
+		net.WriteString( name )
+		net.WriteString( desc )
+	net.SendToServer( LocalPlayer() )
+	/*
 	if coaster_saver_ClipboardTrack != nil && #coaster_saver_ClipboardTrack > 0 then
 		name = RemoveInvalidChars( name )
 		name = string.Replace(name, ".", "_")
@@ -429,12 +460,13 @@ function SaveTrack(name, desc, upload)
 	else
 		print("Failed to save rollercoaster: " .. coaster_saver_ClipboardTrack )
 	end
+	*/
 end
 
 
 function UpdateTrackList()
 	local panel = GetTabPanel( "saver" )
-	print( panel )
+
 	if panel && panel.tracklist != nil then
 		print("Updating local track list...")
 		panel.tracklist:Clear()
@@ -481,7 +513,7 @@ function RequestTrackList(ply)
 
 	//Send it to the client
 	net.Start("Coaster_transferInfo")
-		net.WriteInt( TRANSFER_TRACKLIST, 2 )
+		net.WriteInt( TRANSFER_TRACKLIST, 4 )
 		net.WriteTable( tracklist )
 	net.Send( ply )
 
@@ -718,7 +750,7 @@ if SERVER then
 
 				//Send it to the client
 				net.Start("Coaster_transferInfo")
-					net.WriteInt( TRANSFER_PREVIEW, 2 )
+					net.WriteInt( TRANSFER_PREVIEW, 4 )
 					net.WriteString( filename )
 					net.WriteTable( PreviewTable )
 				net.Send( ply )
@@ -779,21 +811,76 @@ end
 if SERVER then
 
 	net.Receive("Coaster_transferInfo", function( length, client )
-		local Track = net.ReadTable()
-		print("Received track " .. Track["name"] .. " from " .. client:GetName())
+		local transferType = net.ReadInt( 4 )
 
-		local towrite = util.TableToKeyValues(Track) 
+		if transferType == TRANSFER_UPLOAD then
+			local Track = net.ReadTable()
+			print("Received track " .. Track["name"] .. " from " .. client:GetName())
 
-		local dirlist = file.FindDir("Rollercoasters/Server", "DATA" )
-		if #dirlist < 1 then
-			file.CreateDir("Rollercoasters/Server")
-			print("Creating new directory..")
+			local towrite = util.TableToKeyValues(Track) 
+
+			local dirlist = file.FindDir("Rollercoasters/Server", "DATA" )
+			if #dirlist < 1 then
+				file.CreateDir("Rollercoasters/Server")
+				print("Creating new directory..")
+			end
+
+			file.Write("Rollercoasters/Server/" .. Track["name"] .. ".txt", towrite)
+
+			//Update them with the newest files
+			RequestTrackList(client)
+		elseif transferType == TRANSFER_SAVE then
+			local save 			= net.ReadInt(2)
+			local controller 	= net.ReadEntity()
+			local name 			= net.ReadString()
+			local desc 			= net.ReadString()
+
+			name = RemoveInvalidChars( name )
+			name = string.Replace(name, ".", "_")
+
+			if !IsValid( controller ) then return end
+			local trackTable = {}
+
+			print("Generating track table \"" .. name .. "\" for " .. client:GetName() )
+
+			for k, v in pairs( controller.Nodes ) do
+				trackTable[k] = {}
+				trackTable[k].Pos = tostring(v:GetPos())
+				trackTable[k].Ang = tostring(v:GetAngles())
+				trackTable[k].Type = v:GetType()
+				trackTable[k].Roll = v:GetRoll()
+				trackTable[k].Color = v:GetColor()
+				trackTable[k].TrackColor = v:GetTrackColor()
+			end
+
+			trackTable.numnodes = #controller.Nodes
+			trackTable.looped = tostring(controller:Looped())
+			trackTable.name = name
+			trackTable.author = client:GetName() // self:GetOwner():Name()
+			trackTable.description = desc
+
+			//Send the complete table to the client
+			//The reason we generate the table on the server is that the client doesn't have all the information it needs
+			//Not to mention, the client does not know about entities outside it's PVS, making saving long trains impossible
+			net.Start("Coaster_transferInfo")
+				net.WriteInt( TRANSFER_TRACK, 4 )
+				net.WriteTable( trackTable )
+			net.Send( client )
+
+			if save == 1 then
+				Msg("Saving " .. name .."...")
+				//Convert the table into a format ready to be written to a file
+				local towrite = util.TableToKeyValues(trackTable) 
+
+				local dirlist = file.FindDir("Rollercoasters/Server", "DATA" )
+				if #dirlist < 1 then
+					file.CreateDir("Rollercoasters/Server")
+				end
+
+				file.Write("Rollercoasters/Server/" .. name .. ".txt", towrite)
+				Msg("Done!\n")
+			end
 		end
-
-		file.Write("Rollercoasters/Server/" .. Track["name"] .. ".txt", towrite)
-
-		//Update them with the newest files
-		RequestTrackList(client)
 	end )
 
 end
@@ -802,7 +889,7 @@ if CLIENT then
 
 	net.Receive("Coaster_transferInfo", function( length, client )
 
-		local transferType = net.ReadInt( 2 )
+		local transferType = net.ReadInt( 4 )
 
 		if transferType == TRANSFER_TRACKLIST then
 			local TrackTable = net.ReadTable()
@@ -847,6 +934,22 @@ if CLIENT then
 					end
 				end
 			end
+		elseif transferType == TRANSFER_TRACK then //The server is sending us the track it generated for us
+			local tracktable = net.ReadTable()
+			local name = tracktable.name
+
+			local towrite = util.TableToKeyValues(tracktable) 
+
+			local dirlist = file.FindDir("Rollercoasters", "DATA" )
+			if #dirlist < 1 then
+				file.CreateDir("Rollercoasters")
+				print("Creating new directory..")
+			end
+
+			file.Write("Rollercoasters/" .. name .. ".txt", towrite)
+			GAMEMODE:AddNotify("Track \"" .. name .. "\" was saved successfully!", NOTIFY_GENERIC, 3 )
+			//Update with the newly saved track
+			UpdateTrackList()
 		end
 	end )
 
