@@ -35,6 +35,8 @@ resource.AddFile("materials/models/sunabouzu/coaster_pole_start.vmt")
 resource.AddFile("materials/models/sunabouzu/sonic_the_carthog.vmt")
 resource.AddFile("models/sunabouzu/sonic_the_carthog.mdl")
 
+cleanup.Register("Rollercoaster")
+
 if SERVER then
 
 	//For use with spawning coasters from a file. Less automagic bs, but you have to know what you're doing
@@ -86,6 +88,8 @@ if SERVER then
 			Rollercoasters[id]:SetController(true)
 			Rollercoasters[id]:SetModel( "models/props_junk/PopCan01a.mdl" )
 			Rollercoasters[id]:AddTrackNode( node, ply ) //The first node is always the controller node
+
+			cleanup.Add( ply, "Rollercoaster", node )
 		else //The ID IS an actual rollercoaster, so let's append to it
 			//Nocollide the node with the main node so that the remover gun removes all nodes
 			constraint.NoCollide( node, Rollercoasters[id], 0, 0 )
@@ -203,6 +207,8 @@ if CLIENT then
 	//Language for admin limits
 	language.Add("SBoxLimit_maxcarts", "You've hit the Carts limit!")
 	language.Add("SBoxLimit_maxnodes", "You've hit the Nodes limit!")
+	language.Add("Cleanup_Rollercoaster", "Rollercoasters")
+	language.Add("Cleaned_Rollercoaster", "Cleaned up all rollercoasters")
 
 	CoasterBlur = 0.00003 //Blur multiplier
 
