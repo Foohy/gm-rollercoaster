@@ -218,6 +218,17 @@ if CLIENT then
 	CreateClientConVar("coaster_cart_spin_override", 0, false, true) //Override cart spawning to make it spin like the carousel
 	CreateClientConVar("coaster_autoswitch", 0, true, false ) //Automatically switch to the tool gun on left click with C menu open
 
+	//Change callbacks
+	cvars.AddChangeCallback( "coaster_supports", function()
+		//Go through all of the nodes and tell them to update their shit
+		for k, v in pairs( ents.FindByClass("coaster_node") ) do
+			if v:IsController() then
+				v:SupportFullUpdate()
+				print("aaaa")
+			end
+		end
+	end )
+
 	//Motion blur
 	local function GetMotionBlurValues( x, y, fwd, spin )
 		if LocalPlayer():GetInfoNum("coaster_motionblur") == 0 then return end
