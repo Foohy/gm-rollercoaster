@@ -909,8 +909,8 @@ function ENT:PhysicsCollide(data, physobj)
 
 		if data.HitEntity:GetClass() == "coaster_physmesh" then
 			Segment 	= data.HitEntity.Segment
-			NewID 		= data.HitEntity.Controller:GetCoasterID()
-			controller 	= data.HitEntity.Controller
+			NewID 		= data.HitEntity:GetController():GetCoasterID()
+			controller 	= data.HitEntity:GetController()
 		else
 			Segment 	= data.HitEntity.Segment
 			NewID 		= data.HitEntity:GetCoasterID()
@@ -931,8 +931,17 @@ function ENT:PhysicsCollide(data, physobj)
 		self.CoasterID 	= NewID
 		self.CurSegment = Segment
 		self.Percent 	= Percent
-		self.Velocity 	= data.OurOldVelocity:Length() / 25
 		self.Controller = controller
+
+		//If the yaw is in this range, the cart is boarding the track going the opposite direction
+		local trackang = self:AngleAt(self.CurSegment, self.Percent)
+		local curang = data.OurOldVelocity:Angle()
+		local yawDif = trackang.y - curang.y 
+		if yawDif > 270 || yawDif < 90 then 
+			self.Velocity = data.OurOldVelocity:Length() / -25
+		else
+			self.Velocity = data.OurOldVelocity:Length() / 25
+		end
 
 		//Recreate the cart table
 		self.CartTable = {}
