@@ -41,6 +41,10 @@ end
 function TAB:LeftClick( trace, tool )
 	if CurTime() < self.CoolDown then return end
 
+	if SinglePlayer() then 
+		if tool:GetOwner().SpawningCoaster then return false end
+	end
+
 	if CLIENT || SinglePlayer() then
 		if !coaster_saver_selectedfilename or coaster_saver_selectedfilename == "" && !SinglePlayer() then return false end
 
@@ -661,6 +665,7 @@ if SERVER then
 				umsg.Start("Coaster_AddNode")
 					umsg.Short( controllernode:EntIndex() )
 				umsg.End()
+				ply.SpawningCoaster = false
 			end )
 
 			undo.Create("Saved Rollercoaster")
@@ -722,7 +727,11 @@ if SERVER then
 	end )
 
 	concommand.Add("coaster_supertool_tab_saver_spawntrack", function(ply, cmd, args)
-		print( args[2], args[3] )
+		if !IsValid( ply ) || ply.SpawningCoaster then 
+			if IsValid( ply ) then ply:SendLua("GAMEMODE:AddNotify( " .. "\"You cannot spawn a coaster while another is still spawning!\"" .. ", NOTIFY_ERROR, 3 )") end  //I know I'm going to regret this, but I don't want to do it 'right'
+			return 
+		end //Don't do anything until they've stopped spawning a coaster
+
 		local filename = args[1]
 		local id = args[2] or ""
 		local orig_spawn = math.Round(tonumber(args[3] ) ) == 1
@@ -746,7 +755,7 @@ if SERVER then
 				//local controllernode = nil
 
 				if IsValid( Rollercoasters[id] ) then Rollercoasters[id]:Remove() end
-
+				ply.SpawningCoaster = true
 				for i=1, tbl.numnodes do
 					local nodeinfo = tbl[i]
 					local looped = tbl.looped == "true"

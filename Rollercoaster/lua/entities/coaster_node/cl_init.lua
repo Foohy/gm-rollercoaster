@@ -620,15 +620,16 @@ local node = -1
 local Dist = 0
 local AngVec = Vector(0,0,0)
 local ang = Angle( 0, 0, 0 )
-
 local Roll = 0
+local NextSegment = nil
+local ThisSegment = nil
 
 function ENT:DrawSideRail( segment, offset )
 	if not (segment > 1 && (#self.CatmullRom.PointsList > segment )) then return end
 	if self.CatmullRom.Spline == nil or #self.CatmullRom.Spline < 1 then return end
 
-	local NextSegment = self.Nodes[ segment + 1 ]
-	local ThisSegment = self.Nodes[ segment ]
+	NextSegment = self.Nodes[ segment + 1 ]
+	ThisSegment = self.Nodes[ segment ]
 
 	if !IsValid( NextSegment ) || !IsValid( ThisSegment ) then return end
 	if !NextSegment.GetRoll || !ThisSegment.GetRoll then return end
