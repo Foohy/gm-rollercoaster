@@ -173,25 +173,32 @@ function TOOL:DrawToolScreen( TEX_SIZE )
 	DrawScrollingText( text, 64, TEX_SIZE )
 end
 
+function toSortedTable( T, member )
+	local max = Count( T )
+	local num = 1
+	local newTbl = {}
 
+	for i=1, 6 do
+		for k, v in pairs( T ) do
+			if v.Position == i then
+				newTbl[i] = T[k]
+				break
+			end
+		end
+	end
 
-//THANKS ZAAAAAAK
-function toSortedTable(T, mbr)
- local v, C, O
- C = {} O = {}
- repeat v = next(T, v) if v then C[v] = T[v] else break end until false
-
- while next(C, nil) do
-  local low = 999999, low_v, x
-  repeat x = next(C, x)
-  if x and C[x][mbr] < low then low = C[x][mbr] low_v = x end 
-  until x == nil
-
-  table.insert(O, C[low_v]) C[low_v] = nil
- end
- return O
+	return newTbl
 end
 
+//I dont know what garry's table.Count does, but it returns the wrong answer if all the indices are strings. So I made my own.
+function Count( tbl )
+	local count = 0
+	for k, v in pairs( tbl ) do
+		count = count + 1
+	end
+	
+	return count
+end
 
 function TOOL.BuildCPanel(panel)	
 	//panel:AddControl( "Header", { Text = "#Tool_coaster_supertool_name", Description = "#Tool_coaster_supertool_desc" }  )
