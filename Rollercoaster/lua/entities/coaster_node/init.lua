@@ -36,6 +36,8 @@ function ENT:Initialize()
 
 	self:SetCollisionGroup( COLLISION_GROUP_WORLD)
 
+	self:DrawShadow( false )
+
 	local phys = self:GetPhysicsObject()
 
 	if phys:IsValid() then
