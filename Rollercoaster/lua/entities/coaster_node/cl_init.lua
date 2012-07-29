@@ -1110,9 +1110,12 @@ function ENT:Think()
 
 	if !self:IsController() then return end
 
-
 	for k, v in pairs( self.Nodes ) do	
 		if IsValid( v ) && v:GetVelocity():Length() > 0 && v != self then
+			if !self.WasBeingHeld then
+				self.WasBeingHeld = true
+				self:SupportFullUpdate() //Update all of the nodes when we let go of the node
+			end
 
 			//So we can see the beams move while me move a node
 			self:UpdateClientSpline() 
@@ -1142,6 +1145,11 @@ function ENT:Think()
 
 
 			break //We really only need to do this once, not on a per segment basis.
+		else
+			if self.WasBeingHeld then
+				self.WasBeingHeld = false
+				self:SupportFullUpdate() //Update all of the nodes when we let go of the node
+			end
 		end
 	end
 	self:UpdateSupportDrawBounds()
