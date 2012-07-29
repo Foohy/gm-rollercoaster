@@ -74,6 +74,11 @@ function TAB:RightClick( trace, tool )
 			if CLIENT then
 				GAMEMODE:AddNotify( "Selected " .. tostring( self.SelectedController:GetCoasterID() ), NOTIFY_GENERIC, 3 )
 			end
+
+			if SinglePlayer() then
+				umsg.Start( "coaster_rightclick_sp", ply )
+				umsg.End()
+			end
 		end
 
 		/*
@@ -95,9 +100,13 @@ function TAB:RightClick( trace, tool )
 end
 
 usermessage.Hook("coaster_rightclick_sp", function( um ) 
-	local ply = um:ReadEntity()
+	local ply = LocalPlayer()
 
 	if !IsValid( ply ) then return end
+	local tool = LocalPlayer():GetTool()
+	local tab = nil
+	if tool.Name != "Rollercoaster SuperTool" || tool:GetCurrentTab().UniqueName != "saver" then return end
+	tab = tool:GetCurrentTab()
 
 	local trace = {}
 	trace.start  = ply:GetShootPos()
@@ -105,11 +114,10 @@ usermessage.Hook("coaster_rightclick_sp", function( um )
 	trace.filter = ply
 	trace = util.TraceLine(trace)
 
-	if IsValid( trace.Entity ) && trace.Entity:GetClass() == "coaster_node" then
-		if IsValid( trace.Entity:GetController() )  then
-
-			CreateTrackTable( trace.Entity:GetController() )
-			print("created track table in singleplayer!")
+	if IsValid( trace.Entity ) && ( trace.Entity:GetClass() == "coaster_node" || trace.Entity:GetClass() == "coaster_physmesh" ) then
+		if IsValid( trace.Entity:GetController() ) then
+			tab.SelectedController = trace.Entity:GetController()
+			GAMEMODE:AddNotify( "Selected " .. tostring( tab.SelectedController:GetCoasterID() ), NOTIFY_GENERIC, 3 )
 		end
 
 	end
@@ -240,7 +248,7 @@ function OpenCoasterSaveMenu()
 
 
 	local form = vgui.Create( "DFrame" )
-	form:SetSize( 250, 332 ) //289
+	form:SetSize( 250, 300 ) //289
 	form:SetTitle("Save Rollercoaster")
 	form:Center()
 	form:SetVisible( true )
@@ -282,8 +290,8 @@ function OpenCoasterSaveMenu()
 	panel.DDesc = DDesc
 
 	local btnSave = vgui.Create("Button")
-	btnSave:SetText("Save locally only")
-	btnSave:SetToolTip( "Save the file on only your computer and not on the server.")
+	btnSave:SetText("Save")
+	btnSave:SetToolTip( "Save the file on your local computer.")
 	btnSave.DoClick = function() 
 		print(table.Count(coaster_saver_ClipboardTrack) )
 		if IsValid( controller ) then
@@ -296,20 +304,24 @@ function OpenCoasterSaveMenu()
 	end
 	panel:AddItem( btnSave )
 
-	local btnSaveUp = vgui.Create("Button")
-	btnSaveUp:SetText("Save and Upload")
-	btnSaveUp:SetToolTip( "Save the file on both your local computer and the server.\nIt will be available in the server track list.")
-	btnSaveUp.DoClick = function() 
-		print(table.Count(coaster_saver_ClipboardTrack) )
-		if IsValid( controller ) then
-			SaveTrack(DName:GetValue(), DDesc:GetValue(), controller, true ); form:Close(); 
-			surface.PlaySound("garrysmod/content_downloaded.wav") 
-		else
-			GAMEMODE:AddNotify( "No track selected!", NOTIFY_ERROR, 6 )
-	       	surface.PlaySound( "buttons/button10.wav" )
+	if !SinglePlayer() then
+		form:SetSize( 250, 332 ) //289
+
+		local btnSaveUp = vgui.Create("Button")
+		btnSaveUp:SetText("Save and Upload")
+		btnSaveUp:SetToolTip( "Save the file on both your local computer and the server.\nIt will be available in the server track list.")
+		btnSaveUp.DoClick = function() 
+			print(table.Count(coaster_saver_ClipboardTrack) )
+			if IsValid( controller ) then
+				SaveTrack(DName:GetValue(), DDesc:GetValue(), controller, true ); form:Close(); 
+				surface.PlaySound("garrysmod/content_downloaded.wav") 
+			else
+				GAMEMODE:AddNotify( "No track selected!", NOTIFY_ERROR, 6 )
+		       	surface.PlaySound( "buttons/button10.wav" )
+			end
 		end
+		panel:AddItem( btnSaveUp )
 	end
-	panel:AddItem( btnSaveUp )
 
 	local btnCancel = vgui.Create("Button")
 	btnCancel:SetText("Cancel")
