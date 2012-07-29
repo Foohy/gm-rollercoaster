@@ -7,6 +7,7 @@ ENT.PoleHeight = 512 //How tall, in source units, the coaster support poles are
 ENT.BaseHeight = 38 //How tall, in source units, the coaster base is
 ENT.BuildingMesh = false //Are we currently building a mesh? if so, don't draw them
 ENT.TrackMeshes = {} //Store generated track meshes to render
+ENT.WheelPositions = {} //Store the positions of where break and speedup wheels will be placed
 
 ENT.SupportModel 		= nil
 ENT.SupportModelStart 	= nil
@@ -93,6 +94,13 @@ usermessage.Hook("Coaster_RefreshTrack", function( um )
 	if self:IsController() then
 		self:RefreshClientSpline()
 		self:SupportFullUpdate()
+
+		//Update the positions of the wheels
+		for num, node in pairs( self.Nodes ) do 
+			if node:GetType() == COASTER_NODE_BRAKES || node:GetType() == COASTER_NODE_SPEEDUP then
+				self:UpdateWheelPositions( num )
+			end
+		end
 	end	
 
 end )
@@ -126,6 +134,13 @@ usermessage.Hook("Coaster_AddNode", function( um )
 			end
 			if IsValid( self.Nodes[ last - 3 ] ) then
 				self.Nodes[ last - 3 ].Invalidated = true
+			end
+		end
+
+		//Update the positions of the wheels
+		for num, node in pairs( self.Nodes ) do 
+			if node:GetType() == COASTER_NODE_BRAKES || node:GetType() == COASTER_NODE_SPEEDUP then
+				self:UpdateWheelPositions( num )
 			end
 		end
 
@@ -411,7 +426,6 @@ function ENT:DrawTrack()
 	//if true then return end
 	if #self.CatmullRom.PointsList > 3 then
 
-
 		render.SetMaterial( mat_debug )
 		self:DrawRailMesh()
 
@@ -419,26 +433,32 @@ function ENT:DrawTrack()
 
 end
 
+local nodeType = nil
+local CTime = 0
 //Draws track supports, track preview beams, track mesh
 function ENT:DrawTrackTranslucents()
 	if self.CatmullRom == nil then return end //Shit
+
 	if #self.CatmullRom.PointsList < 4 then return end
 
-	local CTime = CurTime()
-		
+	CTime = CurTime()
+	
 	for i = 2, (#self.CatmullRom.PointsList - 2) do
 		if IsValid( self.Nodes[i] ) then
-			if self.Nodes[i]:GetType() == COASTER_NODE_CHAINS then
+			nodeType = self.Nodes[i]:GetType()
+			
+			if nodeType == COASTER_NODE_CHAINS then
 				render.SetMaterial( mat_chain ) //mat_chain
 				self:DrawSegment( i, CTime )
-
-			elseif self.Nodes[i]:GetType() == COASTER_NODE_SPEEDUP then
+			elseif nodeType == COASTER_NODE_SPEEDUP then
 				self:DrawSpeedupModels(i)
 
-			elseif self.Nodes[i]:GetType() == COASTER_NODE_BRAKES then
+			elseif nodeType == COASTER_NODE_BRAKES then
 				self:DrawBreakModels( i )
 				
 			end
+			
+
 		end 
 	end
 
@@ -485,7 +505,154 @@ function ENT:DrawSegment(segment)
 
 end
 
+
 local WheelOffset = 1
+local WheelNode = nil
+local ThisSegment = nil
+local NextSegment = nil
+local WheelPercent = 0
+local WheelAngle = Angle( 0, 0, 0)
+local WheelPosition = Vector( 0, 0, 0 )
+local Roll = 0
+//Generate the positions to set the break and wheel models
+function ENT:UpdateWheelPositions( segment )
+	if not (segment > 1 && (#self.CatmullRom.PointsList > segment )) then return end
+	if not self.CatmullRom || !self.CatmullRom.Spline then return end
+	if !IsValid( self.WheelModel ) then return end
+
+	ThisSegment = self.Nodes[ segment ]
+	NextSegment = self.Nodes[ segment + 1 ]
+
+	WheelPercent = 0
+	WheelAngle = Angle( 0, 0, 0)
+	WheelPosition = Vector( 0, 0, 0 )
+	Roll = 0
+	local numwheels = 0
+
+	if !IsValid( ThisSegment ) || !IsValid( NextSegment ) then return end 
+	self.WheelPositions[segment] = {}
+
+	Multiplier = self:GetMultiplier(segment, WheelPercent)
+
+	//Move ourselves forward along the track
+	//Percent = ( Percent + ( Multiplier * 2 ) ) / 2 //move ourselves one half forward, so the wheels are between track struts
+	WheelPercent = Multiplier / 2
+
+	while WheelPercent < 1 do
+
+		WheelAngle = self:AngleAt( segment, WheelPercent)
+
+		//Change the roll depending on the track
+		Roll = -Lerp( WheelPercent, math.NormalizeAngle( ThisSegment:GetRoll() ), NextSegment:GetRoll())	
+		
+		//Set the roll for the current track peice
+		WheelAngle.r = Roll
+		//ang.y = ang.y - 90
+		//ang:RotateAroundAxis( ang:Up(), -90 )
+		WheelPosition = self.CatmullRom:Point(segment, WheelPercent)
+
+		//ang:RotateAroundAxis( ang:Right(), CurTime() * 1000 ) //BAM
+
+		//Now... manage moving throughout the track evenly
+		//Each spline has a certain multiplier so the cart travel at a constant speed throughout the track
+		Multiplier = self:GetMultiplier(segment, WheelPercent)
+			
+		numwheels = numwheels + 1
+
+		self.WheelPositions[segment][numwheels] = {}
+		self.WheelPositions[segment][numwheels].pos = WheelPosition
+		self.WheelPositions[segment][numwheels].ang = WheelAngle
+
+
+		//Move ourselves forward along the track
+		WheelPercent = WheelPercent + ( Multiplier * WheelOffset )
+
+	end
+
+end
+
+function ENT:DrawSpeedupModels( segment )
+	if !self.WheelPositions[segment] then self:UpdateWheelPositions( segment ) return end
+	if #self.WheelPositions[segment] < 1 then return end
+	if !IsValid( self.WheelModel ) then return end
+
+	local segment = self.WheelPositions[segment]
+	local position = Vector( 0, 0, 0 )
+	local ang = Angle( 0, 0, 0)
+
+	self.WheelModel:SetNoDraw( false )
+	for i=1, #segment do
+		if i > GetConVar("coaster_maxwheels"):GetInt() then return end
+
+		if i % 2 == 0 then //Draw every other wheel
+			position = segment[i].pos
+			ang = Angle( segment[i].ang.p, segment[i].ang.y, segment[i].ang.r ) //Create a new instance of the angle so we don't modify the source
+
+			position = position + ang:Up() * -13
+			ang:RotateAroundAxis( ang:Right(), CurTime() * 1300 ) //Rotate the wheel
+
+
+			self.WheelModel:SetRenderOrigin( position )
+			render.SetLightingOrigin( position )
+			self.WheelModel:SetAngles( ang )
+			self.WheelModel:SetupBones()
+			self.WheelModel:DrawModel()
+		end
+	end
+
+	self.WheelModel:SetNoDraw( true )
+
+end
+
+local PositionL = Vector( 0, 0, 0 )
+local PositionR = Vector( 0, 0, 0 )
+function ENT:DrawBreakModels( segment )
+	if !self.WheelPositions[segment] then self:UpdateWheelPositions( segment ) return end
+	if #self.WheelPositions[segment] < 1 then return end
+	if !IsValid( self.WheelModel ) then return end
+
+	local segment = self.WheelPositions[segment]
+	local position = Vector( 0, 0, 0 )
+	local ang = Angle( 0, 0, 0)
+	self.WheelModel:SetNoDraw( false )
+
+	for i=1, #segment do
+		if i > GetConVar("coaster_maxwheels"):GetInt() then return end
+
+		if i % 2 == 0 then //Draw every other wheel
+			position = segment[i].pos
+			ang = Angle( segment[i].ang.p, segment[i].ang.y, segment[i].ang.r ) //Create a new instance of the angle so we don't modify the source
+			position = position + WheelAngle:Up() * 13
+
+			PositionL = position + ( ang:Up() * -13 ) + ( ang:Right() * 15 )
+			PositionR = position + ( ang:Up() * -13 ) + ( ang:Right() * -15 )
+
+			ang:RotateAroundAxis( ang:Right(), CurTime() * -140 ) //Rotate the wheel
+
+			self.WheelModel:SetRenderOrigin( PositionL )
+			render.SetLightingOrigin( PositionL )
+			self.WheelModel:SetAngles( ang )
+			self.WheelModel:SetupBones()
+			self.WheelModel:DrawModel()
+
+			self.WheelModel:SetRenderOrigin( PositionR )
+			render.SetLightingOrigin( PositionR )
+			self.WheelModel:SetupBones()
+			self.WheelModel:DrawModel()
+		end
+	end
+
+	self.WheelModel:SetNoDraw( true )
+
+end
+/*
+local WheelOffset = 1
+local WheelNode = nil
+local ThisSegment = nil
+local NextSegment = nil
+local WheelPercent = 0
+local WheelAngle = Angle( 0, 0, 0)
+local WheelPosition = Vector( 0, 0, 0 )
 
 function ENT:DrawSpeedupModels( segment )
 	if not (segment > 1 && (#self.CatmullRom.PointsList > segment )) then return end
@@ -604,7 +771,6 @@ function ENT:DrawBreakModels( segment )
 
 			self.WheelModel:SetRenderOrigin( PositionR )
 			render.SetLightingOrigin( PositionR )
-			//self.WheelModel:SetAngles( ang )
 			self.WheelModel:SetupBones()
 			self.WheelModel:DrawModel()
 		end
@@ -616,7 +782,7 @@ function ENT:DrawBreakModels( segment )
 	end
 	self.WheelModel:SetNoDraw( true )
 end
-
+*/
 //Move these variables out to prevent excess garbage collection
 local node = -1
 local Dist = 0
@@ -901,6 +1067,7 @@ end
 
 //Draw the node
 function ENT:Draw()
+
 	self:SetModelScale( Vector( 1, 1, 1 ) ) //I love addons that change the scale of other entities even when their tool isn't out! It's wonderful!
 	
 	// Don't draw if we're taking pictures
@@ -949,6 +1116,14 @@ function ENT:Think()
 
 			//So we can see the beams move while me move a node
 			self:UpdateClientSpline() 
+
+			//Update the positions of the wheels
+			for num, node in pairs( self.Nodes ) do 
+				if node:GetType() == COASTER_NODE_BRAKES || node:GetType() == COASTER_NODE_SPEEDUP then
+					self:UpdateWheelPositions( num )
+				end
+			end
+
 			v:UpdateSupportDrawBounds()
 
 			//Set the positions of the clientside support models
