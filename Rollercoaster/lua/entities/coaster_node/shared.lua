@@ -15,8 +15,8 @@ function ENT:SetupDataTables()
 	self:DTVar("Bool", 0, "IsController")
 	self:DTVar("Bool", 1, "RelativeRoll")
 	self:DTVar("Bool", 2, "Looped")
-	self:DTVar("Entity", 0, "FirstNode")
-	self:DTVar("Entity", 1, "NextNode")
+	self:DTVar("Entity", 0, "NextNode")
+	self:DTVar("Entity", 1, "Controller")
 	self:DTVar("Int", 0, "Type")
 	self:DTVar("Int", 1, "TrackType")
 	self:DTVar("Float", 0, "Roll")
@@ -36,12 +36,20 @@ function ENT:IsBeingDriven()
 	return false
 end
 
-function ENT:SetController(bController)
+function ENT:SetIsController(bController)
 	self.dt.IsController = bController
 end
 
 function ENT:IsController()
 	return self.dt.IsController or false
+end
+
+function ENT:SetController( cont )
+	self.dt.Controller = cont
+end
+
+function ENT:GetController()
+	return self.dt.Controller
 end
 
 function ENT:SetRelativeRoll(bRelRoll)
@@ -58,14 +66,6 @@ end
 
 function ENT:Looped()
 	return self.dt.Looped or false
-end
-
-function ENT:SetFirstNode(node)
-	self.dt.FirstNode = node
-end
-
-function ENT:GetFirstNode()
-	return self.dt.FirstNode
 end
 
 function ENT:SetNextNode(node)

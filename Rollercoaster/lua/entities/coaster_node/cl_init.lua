@@ -219,7 +219,8 @@ function ENT:RefreshClientSpline()
 	//Set ourselves as the first node as we're used to calculate the track's spline
 	self.CatmullRom:AddPointAngle( 1, self:GetPos(), self:GetAngles(), 1.0 ) 
 	table.insert( self.Nodes, self )
-	local firstNode = self:GetFirstNode()
+	local firstNode = self:GetNextNode()
+
 
 	if !IsValid(firstNode) then return end
 	
@@ -231,6 +232,7 @@ function ENT:RefreshClientSpline()
 		node = firstNode:GetNextNode()
 	end
 
+
 	if !IsValid(node) then return end
 
 	//Recurse through all the nodes, adding them, until they are no longer valid
@@ -241,7 +243,7 @@ function ENT:RefreshClientSpline()
 
 			self.CatmullRom:AddPointAngle( amt, node:GetPos(), node:GetAngles(), 1.0 )
 			table.insert( self.Nodes, node )
-			//print("ADDED POINT: " .. tostring(node) .. ", " .. tostring(amt) .. ", Index: " .. node:EntIndex() .. "\n")
+
 			if node.GetNextNode then
 				node = node:GetNextNode()
 
@@ -252,7 +254,7 @@ function ENT:RefreshClientSpline()
 		else
 			End = true
 		end
-	until (!IsValid(node) || node == firstNode || End)
+	until (!IsValid(node) || node:IsController() || node == firstNode || End)
 
 	//If there are enough nodes (4 for catmull-rom), calculate the curve
 	if #self.CatmullRom.PointsList > 3 then
@@ -792,27 +794,6 @@ function ENT:DrawRail(offset)
 		render.AddBeam(pos, 4, 6, color_white )
 	end	
 	render.EndBeam()
-end
-
-//Get the controller entity of this node
-//I should make a shared function to do this
-//This is bad
-//Really bad
-function ENT:GetController()
-	if self:IsController() then return self end
-
-	for _, v in pairs( ents.FindByClass( self:GetClass() )) do
-		if v.IsController && v:IsController() then
-			if v.Nodes && #v.Nodes > 0 then
-				for _, node in pairs( v.Nodes ) do
-					if node == self then
-						return v
-					end
-				end
-			end
-		end
-	end
-
 end
 
 function ENT:UpdateSupportDrawBounds()

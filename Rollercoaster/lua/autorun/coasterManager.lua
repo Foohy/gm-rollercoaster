@@ -5,7 +5,7 @@ include("trackmanager.lua")
 //I should probably make this a package and combine these two global tables into one.
 Rollercoasters = {} //Holds all the rollercoasters
 CoasterManager = {} //Holds all the methods and variables for rollercoasters
-COASTER_VERSION = 8
+COASTER_VERSION = 9
 
 //Some content (Remove these lines if you don't want clients to download)
 resource.AddFile("sound/coaster_ride.wav")
@@ -44,16 +44,16 @@ if SERVER then
 		local node = ents.Create("coaster_node")		
 		node:SetCoasterID( id )
 		node:SetTrackType( COASTER_TRACK_METAL )
-		
+		node:SetController( Rollercoasters[id] or node )
+
 		node:SetPos( pos )
 		node:SetAngles( ang )
 		node:Spawn()
 		node:Activate()
 
 		if !IsValid( Rollercoasters[id] ) then
-
 			Rollercoasters[id] = node
-			Rollercoasters[id]:SetController(true)
+			Rollercoasters[id]:SetIsController(true)
 			Rollercoasters[id]:SetModel( "models/props_junk/PopCan01a.mdl" )
 		else
 			//Nocollide the node with the main node so that the remover gun removes all nodes
@@ -76,6 +76,8 @@ if SERVER then
 		node:SetCoasterID( id )
 		node:SetType( type )
 		node:SetTrackType( COASTER_TRACK_METAL )
+
+		node:SetController( Rollercoasters[id] or node )
 		
 		node:SetPos( pos )
 		node:SetAngles( ang )
@@ -85,9 +87,10 @@ if SERVER then
 		if !IsValid( Rollercoasters[id] ) then //The ID isn't an existing rollercoaster, so lets create one
 			Msg("Creating a new rollercoaster with ID: "..tostring(id).."\n" )
 			Rollercoasters[id] = node
-			Rollercoasters[id]:SetController(true)
+			Rollercoasters[id]:SetIsController(true)
 			Rollercoasters[id]:SetModel( "models/props_junk/PopCan01a.mdl" )
 			Rollercoasters[id]:AddTrackNode( node, ply ) //The first node is always the controller node
+			node:SetController( node )
 
 			cleanup.Add( ply, "Rollercoaster", node )
 		else //The ID IS an actual rollercoaster, so let's append to it

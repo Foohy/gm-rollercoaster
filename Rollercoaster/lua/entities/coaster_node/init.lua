@@ -371,11 +371,6 @@ function ENT:GetSegmentLength()
 	self.SegLength = Dist
 end
 
-//Return the controller in charge of this node, which is also a node
-function ENT:GetController()
-	return Rollercoasters[self:GetCoasterID()]
-end
-
 function ENT:SetTrain(ply, model, cartnum)
 	if #self.Nodes < 4 then
 		umsg.Start("Coaster_CartFailed", ply)
@@ -482,6 +477,15 @@ function ENT:SetTrain(ply, model, cartnum)
 	end	
 	RollercoasterUpdateCartTable(cartgroup)
 	return Train
+end
+
+//Function to simply store the first node
+function ENT:GetFirstNode()
+	return self.FirstNode
+end
+
+function ENT:SetFirstNode( node )
+	self.FirstNode = node
 end
 
 //Get the multiplier for the current spline (to make things smooth )
