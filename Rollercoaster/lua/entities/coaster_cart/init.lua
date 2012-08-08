@@ -777,7 +777,7 @@ function ENT:AngleAt(i, perc )
 
 	AngVec = Vec1 - Vec2
 
-	return AngVec:Normalize():Angle()
+	return AngVec:GetNormal():Angle()
 end
 
 //Get the multiplier for the current spline (to make things smooth )
