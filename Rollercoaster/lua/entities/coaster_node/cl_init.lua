@@ -387,7 +387,7 @@ function ENT:AngleAt(i, perc )
 
 	AngVec = Vec1 - Vec2
 
-	return AngVec:Normalize():Angle()
+	return AngVec:GetNormal():Angle()
 end
 
 //Set invalid nodes to valid (for when the mesh is first built)
