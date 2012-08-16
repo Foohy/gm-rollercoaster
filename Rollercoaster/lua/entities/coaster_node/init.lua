@@ -1,6 +1,6 @@
 AddCSLuaFile( "cl_init.lua" )
 AddCSLuaFile( "shared.lua" )
-AddCSLuaFile( "mesh_beams.lua")
+AddCSLuaFile( "autorun/mesh_beams.lua")
 include( "shared.lua" )
 
 ENT.TrackEnts		= {} //List of all the track entities
