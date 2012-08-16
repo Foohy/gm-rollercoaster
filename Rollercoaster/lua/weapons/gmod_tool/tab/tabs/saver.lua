@@ -655,7 +655,7 @@ function GeneratePreview( positions_tbl )
 	local Verts = Cylinder.EndBeam()
 	print( #Verts )
 
-	coaster_saver_preview_trackmesh = NewMesh()
+	coaster_saver_preview_trackmesh = Mesh()
 	coaster_saver_preview_trackmesh:BuildFromTriangles( Verts )
 end
 

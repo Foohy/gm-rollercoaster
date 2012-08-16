@@ -132,7 +132,7 @@ function TRACK:Generate( controller )
 
 	for i=1, #Vertices do
 		if #Vertices[i] > 2 then
-			Meshes[i] = NewMesh()
+			Meshes[i] = Mesh()
 			Meshes[i]:BuildFromTriangles( Vertices[i] )
 		end
 	end
