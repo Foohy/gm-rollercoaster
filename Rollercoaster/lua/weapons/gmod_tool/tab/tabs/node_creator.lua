@@ -258,7 +258,7 @@ function TAB:Think( tool )
 		MakeGhostEntity( self, self.GhostModel, Vector( 0, 0, 0), Angle( 0, 0, 0) )
 	end
 
-	self:UpdateGhostNode( self.GhostEntity, tool )
+	self:UpdateGhostNode( tool )
 end
 
 
@@ -285,16 +285,19 @@ function GetControllerFromID( id )
 end
 
 
-function TAB:UpdateGhostNode( ent, tool )
+function TAB:UpdateGhostNode( tool )
+	if (self.GhostEntity == nil) then return end
+	if (!self.GhostEntity:IsValid()) then self.GhostEntity = nil return end
+
 	local ply = tool:GetOwner()
 
-	if ( !ent || !ent:IsValid() ) then return end
+	if ( !self.GhostEntity || !self.GhostEntity:IsValid() ) then return end
 
-	local tr 		= util.GetPlayerTrace( ply, ply:GetCursorAimVector() )
+	local tr 		= util.GetPlayerTrace( ply )
 	local trace 	= util.TraceLine( tr )
 
 	if (!trace.Hit || trace.Entity:IsPlayer() || trace.Entity:GetClass() == "coaster_node" || trace.Entity:GetClass() == "coaster_physmesh" ) then
-		ent:SetNoDraw( true )
+		self.GhostEntity:SetNoDraw( true )
 		return
 	end
 
@@ -313,10 +316,10 @@ function TAB:UpdateGhostNode( ent, tool )
 		end
 	end
 
-	ent:SetAngles( newAng )
-	ent:SetPos( newPos )
+	self.GhostEntity:SetAngles( newAng )
+	self.GhostEntity:SetPos( newPos )
 
-	ent:SetNoDraw( false )
+	self.GhostEntity:SetNoDraw( false )
 
 end
 
