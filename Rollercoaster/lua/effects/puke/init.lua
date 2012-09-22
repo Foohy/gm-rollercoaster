@@ -14,7 +14,7 @@ function EFFECT:Init( data )
 	self.Length = CurTime() + 1.25;
 	self.Emitter = ParticleEmitter( self.Player:GetPos() );
 	
-	WorldSound( table.Random(pukesounds), self.Player:GetShootPos(), 100, 100 );
+	sound.Play( table.Random(pukesounds), self.Player:GetShootPos(), 100, 100 );
 end
 
 local function CollideCallback( particle, pos, normal )
@@ -29,7 +29,7 @@ end
 
 // think
 function EFFECT:Think( )
-	if ( !ValidEntity( self.Player ) ) then
+	if ( !IsValid( self.Player ) ) then
 	
 		return false;
 		
