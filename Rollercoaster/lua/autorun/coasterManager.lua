@@ -5,7 +5,7 @@ include("trackmanager.lua")
 //I should probably make this a package and combine these two global tables into one.
 Rollercoasters = {} //Holds all the rollercoasters
 CoasterManager = {} //Holds all the methods and variables for rollercoasters
-COASTER_VERSION = 13
+COASTER_VERSION = 15
 
 //Some content (Remove these lines if you don't want clients to download)
 resource.AddFile("sound/coaster_ride.wav")
