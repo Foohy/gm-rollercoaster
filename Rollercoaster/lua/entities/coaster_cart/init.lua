@@ -43,7 +43,7 @@ ENT.BreakSpeed = 4 //The minimum speed of the car when in break zone
 
 //Credits to LPine for code on how to use a shadow controller 
 ENT.PhysShadowControl = {}
-ENT.PhysShadowControl.secondstoarrive  = .01
+ENT.PhysShadowControl.secondstoarrive  = .0001
 ENT.PhysShadowControl.pos              = Vector(0, 0, 0)
 ENT.PhysShadowControl.angle            = Angle(0, 0, 0)
 ENT.PhysShadowControl.maxspeed         = 1000000000000
