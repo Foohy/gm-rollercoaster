@@ -406,7 +406,7 @@ function ENT:SetTrain(ply, model, cartnum)
 		end
 
 		//Limit a player's maximum number of carts
-		if !SinglePlayer() && IsValid( ply ) && ply:NumActiveCarts() >= GetConVarNumber("coaster_maxcarts") then
+		if !game.SinglePlayer() && IsValid( ply ) && ply:NumActiveCarts() >= GetConVarNumber("coaster_maxcarts") then
 			ply:LimitHit("maxcarts")
 			return Train
 		end

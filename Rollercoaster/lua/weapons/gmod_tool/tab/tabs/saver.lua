@@ -45,12 +45,12 @@ end
 function TAB:LeftClick( trace, tool )
 	if CurTime() < self.CoolDown then return end
 
-	if SinglePlayer() then 
+	if game.SinglePlayer() then 
 		if tool:GetOwner().SpawningCoaster then return false end
 	end
 
-	if CLIENT || SinglePlayer() then
-		if !coaster_saver_selectedfilename or coaster_saver_selectedfilename == "" && !SinglePlayer() then return false end
+	if CLIENT || game.SinglePlayer() then
+		if !coaster_saver_selectedfilename or coaster_saver_selectedfilename == "" && !game.SinglePlayer() then return false end
 
 		self:SpawnTrack( tool )
 		self.CoolDown = CurTime() + .25
@@ -75,7 +75,7 @@ function TAB:RightClick( trace, tool )
 				GAMEMODE:AddNotify( "Selected " .. tostring( self.SelectedController:GetCoasterID() ), NOTIFY_GENERIC, 3 )
 			end
 
-			if SinglePlayer() then
+			if game.SinglePlayer() then
 				umsg.Start( "coaster_rightclick_sp", ply )
 				umsg.End()
 			end
@@ -87,9 +87,9 @@ function TAB:RightClick( trace, tool )
 			CreateTrackTable( trace.Entity:GetController() )
 			GAMEMODE:AddNotify( "Track copied into clipboard", NOTIFY_GENERIC, 3 )
 
-		elseif SinglePlayer() then
-			//Tell the client to do something. I have to do this because this isn't called clientside in singleplayer
-			//This is due to no prediction in singleplayer, but it'd be nice if garry had this called clientside anyway
+		elseif game.SinglePlayer() then
+			//Tell the client to do something. I have to do this because this isn't called clientside in game.SinglePlayer
+			//This is due to no prediction in game.SinglePlayer, but it'd be nice if garry had this called clientside anyway
 			umsg.Start("coaster_rightclick_sp")
 				umsg.Entity( tool:GetOwner() )
 			umsg.End()
@@ -201,7 +201,7 @@ function TAB:BuildPanel( )
 	local btnLoad = panel:Button("Load Selected")
 	btnLoad.DoClick = function() LoadSelectedTrack() end
 
-	if !SinglePlayer() then
+	if !game.SinglePlayer() then
 		local upload = panel:Button("Upload...")
 		upload.DoClick = function() OpenCoasterUploadMenu() end
 	end
@@ -224,7 +224,7 @@ function TAB:BuildPanel( )
 end
 
 function TAB:SpawnTrack( tool )
-	if SinglePlayer() then //I'm seriously sending a usermessage to the client, who is the host. WHY IS LEFTCLICK NOT CALLED ON THE CLIENT IN SINGLEPLAYER
+	if game.SinglePlayer() then //I'm seriously sending a usermessage to the client, who is the host. WHY IS LEFTCLICK NOT CALLED ON THE CLIENT IN game.SinglePlayer
 		umsg.Start("Coaster_spawntrack_sp")
 			umsg.String( tool:GetOwner():SteamID() .. "_" .. tostring( GetClientNumber( self, "id", tool ) ) )
 			umsg.Short( GetClientNumber( self, "orig_spawn", tool ) )
@@ -304,7 +304,7 @@ function OpenCoasterSaveMenu()
 	end
 	panel:AddItem( btnSave )
 
-	if !SinglePlayer() then
+	if !game.SinglePlayer() then
 		form:SetSize( 250, 332 ) //289
 
 		local btnSaveUp = vgui.Create("Button")
@@ -483,7 +483,7 @@ function UpdateTrackList()
 		print("Updating local track list...")
 		panel.tracklist:Clear()
 
-		if SinglePlayer() then //update from locally saved files
+		if game.SinglePlayer() then //update from locally saved files
 			local list, folders = file.Find("Rollercoasters/*.txt", "DATA")
 			for _, f in pairs( list ) do
 				local contents = file.Read( "Rollercoasters/" .. f ) //Is there a way to get the full file path of the file?
@@ -736,7 +736,7 @@ if SERVER then
 		local filename = args[1]
 
 		local directory ="Rollercoasters/Server/"
-		if SinglePlayer() then directory = "Rollercoasters/" end
+		if game.SinglePlayer() then directory = "Rollercoasters/" end
 
 		if !file.Exists(directory .. filename, "DATA") then print("\"" .. filename .. "\" does not exist!" ) end
 
@@ -785,7 +785,7 @@ if SERVER then
 
 
 		local directory ="Rollercoasters/Server/"
-		if SinglePlayer() then directory = "Rollercoasters/" end
+		if game.SinglePlayer() then directory = "Rollercoasters/" end
 
 		if file.Exists(directory .. filename, "DATA") then
 

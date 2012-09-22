@@ -29,8 +29,8 @@ function MakeGhostEntity( tab, model, pos, angle )
 	
 	-- We do ghosting serverside in single player
 	-- It's done clientside in multiplayer
-	if (SERVER && !SinglePlayer()) then return end
-	if (CLIENT && SinglePlayer()) then return end
+	if (SERVER && !game.SinglePlayer()) then return end
+	if (CLIENT && game.SinglePlayer()) then return end
 	
 	-- Release the old ghost entity
 	ReleaseGhostEntity( tab )
@@ -74,8 +74,8 @@ function StartGhostEntity( tab, ent )
 	
 	-- We do ghosting serverside in single player
 	-- It's done clientside in multiplayer
-	if (SERVER && !SinglePlayer()) then return end
-	if (CLIENT && SinglePlayer()) then return end
+	if (SERVER && !game.SinglePlayer()) then return end
+	if (CLIENT && game.SinglePlayer()) then return end
 	
 	MakeGhostEntity( tab, ent:GetModel(), ent:GetPos(), ent:GetAngles() )
 	

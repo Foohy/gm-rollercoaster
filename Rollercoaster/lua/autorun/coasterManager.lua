@@ -67,7 +67,7 @@ if SERVER then
 	//Spawn a new rollercoaster the simple way
 	function CoasterManager.CreateNode( id, pos, ang, type, ply )
 		//Make sure we're allowed to spawn one
-		if !SinglePlayer() && IsValid( ply ) && ply:NumCoasterNodes() >= GetConVarNumber("coaster_maxnodes") then
+		if !game.SinglePlayer() && IsValid( ply ) && ply:NumCoasterNodes() >= GetConVarNumber("coaster_maxnodes") then
 			ply:LimitHit("maxnodes")
 			return nil 
 		end
