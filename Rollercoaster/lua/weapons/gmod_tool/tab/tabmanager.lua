@@ -14,7 +14,7 @@ end
 
 
 function LoadClasses()
-	local fileList = file.Find("weapons/gmod_tool/tab/tabs/*", LUA_PATH )
+	local fileList = file.Find("weapons/gmod_tool/tab/tabs/*", "LUA" )
 	
 	for _, name in pairs( fileList ) do
 	

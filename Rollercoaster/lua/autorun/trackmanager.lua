@@ -15,8 +15,7 @@ end
 
 
 function LoadClasses()
-	local fileList = file.Find("autorun/tracktypes/*", LUA_PATH )
-	
+	local fileList = file.Find("autorun/tracktypes/*", "LUA" )
 	for _, name in pairs( fileList ) do
 	
 		local loadName = "tracktypes/" .. name
