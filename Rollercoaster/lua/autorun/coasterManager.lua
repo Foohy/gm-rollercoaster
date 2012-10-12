@@ -5,7 +5,7 @@ include("trackmanager.lua")
 //I should probably make this a package and combine these two global tables into one.
 Rollercoasters = {} //Holds all the rollercoasters
 CoasterManager = {} //Holds all the methods and variables for rollercoasters
-COASTER_VERSION = 16
+COASTER_VERSION = 17
 
 //Some content (Remove these lines if you don't want clients to download)
 resource.AddFile("sound/coaster_ride.wav")
@@ -309,6 +309,51 @@ if CLIENT then
 		effects.halo.Add( coaster_track_creator_HoverEnts, coaster_track_creator_HoverColor, size, size, 1, true, false )
 
 	end )
+
+	function _R.Entity.SetModelScaleOld(self,scale)
+
+			local bbp = self.BuildBonePositions
+
+			if self._LastScale and self._LastScale == scale then return end
+
+			local sz = (math.min(scale.x,scale.y,scale.z) + (scale.x+scale.y+scale.z)/3)/2
+
+			self:SetModelScale(sz)
+		   
+			local newbbp = function(s)
+
+					local name = s:GetBoneName(0)
+					if name then
+							if s:LookupBone(name) then
+									local m = s:GetBoneMatrix(bone)
+									if m then
+											m:Scale(Vector(scale.x,scale.y,scale.z)/sz or Vector(1,1,1))
+											s:SetBoneMatrix(bone, m)
+									end
+							end
+					end
+			   
+			end
+		   
+			if not self._LastBBP then
+					self._LastBBP = newbbp
+		   
+					self.BuildBonePositions = function(...)
+							if bbp then
+									bbp(...)
+							end
+							self._LastBBP(...)
+					end
+
+			end
+		   
+			if self._LastBBP and self._LastBBP ~= newbbp then
+					self._LastBBP = newbbp
+			end
+		   
+			self._LastScale = scale
+		   
+	end
 
 end
 

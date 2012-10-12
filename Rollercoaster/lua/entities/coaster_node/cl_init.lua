@@ -60,7 +60,7 @@ function ENT:Initialize()
 	self.WheelModel	= ClientsideModel( "models/props_vehicles/carparts_wheel01a.mdl")
 
 	self.WheelModel:SetPos( Vector( 100000, 100000, -100000 ) )
-	self.WheelModel:SetModelScale( Vector( 1.6, 1.6, 1.6))
+	SetModelScale(self.WheelModel,  Vector( 1.6, 1.6, 1.6))
 
 	//Create the index to hold all compiled track meshes
 	self.TrackMeshes = {}
@@ -503,6 +503,16 @@ function ENT:DrawSegment(segment)
 	render.AddBeam(self.CatmullRom.PointsList[segment + 1], 32, Dist*0.05, color_white)
 	render.EndBeam()
 
+end
+
+//Re-add the old scaling functionality (garry it's called renaming a function, not replacing it)
+local scalefix = Matrix()
+function SetModelScale( ent, scale )
+	if !IsValid( ent ) then return end
+	scalefix = Matrix()
+	scalefix:Scale( scale )
+
+	ent:EnableMatrix("RenderMultiply", scalefix)
 end
 
 
@@ -1039,13 +1049,13 @@ function ENT:DrawSupport()
 	//Draw the first pole
 	self.SupportModelStart:SetPos( trace.HitPos + Vector( 0, 0, self.BaseHeight ) ) //Add 64 units so it's right on top of the base
 	local height = math.Clamp( Distance, 1, self.PoleHeight - self.BaseHeight )
-	self.SupportModelStart:SetModelScale( Vector( 1, 1, height / (self.PoleHeight  ) ) )
+	SetModelScale( self.SupportModelStart, Vector( 1, 1, height / (self.PoleHeight  ) ) )
 	self.SupportModelStart:SetAngles( Angle( 0, self:GetAngles().y, 0 ) )
 
 	//Draw the second pole (if applicable)
 	if Distance > self.PoleHeight - self.BaseHeight then
 		self.SupportModel:SetPos(trace.HitPos + Vector(0, 0, self.PoleHeight ))
-		self.SupportModel:SetModelScale( Vector( 1, 1, ( (Distance - self.PoleHeight + self.BaseHeight) / self.PoleHeight)   ) )
+		SetModelScale( self.SupportModel,Vector( 1, 1, ( (Distance - self.PoleHeight + self.BaseHeight) / self.PoleHeight)   ) )
 		self.SupportModel:SetAngles( Angle( 0, self:GetAngles().y, 0 ) )				
 	else
 		self.SupportModel:SetNoDraw( true )
@@ -1059,7 +1069,7 @@ function ENT:DrawSupport()
 	else
 		self.SupportModelBase:SetNoDraw( true )
 		self.SupportModelStart:SetPos( trace.HitPos )
-		self.SupportModelStart:SetModelScale( Vector( 1, 1, self:GetPos():Distance( trace.HitPos ) / (self.PoleHeight) ) )
+		SetModelScale( self.SupportModelStart, Vector( 1, 1, self:GetPos():Distance( trace.HitPos ) / (self.PoleHeight) ) )
 	end
 
 	return true
@@ -1068,7 +1078,7 @@ end
 //Draw the node
 function ENT:Draw()
 
-	self:SetModelScale( Vector( 1, 1, 1 ) ) //I love addons that change the scale of other entities even when their tool isn't out! It's wonderful!
+	SetModelScale( self, Vector( 1, 1, 1 ) ) //I love addons that change the scale of other entities even when their tool isn't out! It's wonderful!
 	
 	// Don't draw if we're taking pictures
 	local wep = LocalPlayer():GetActiveWeapon()
