@@ -15,6 +15,8 @@ ENT.Timer = math.huge
 
 ENT.RenderGroup 	= RENDERGROUP_TRANSLUCENT
 
+language.Add( "coaster_cart", "Rollercoaster Cart" )
+
 //Create the sounds
 function ENT:Initialize()
 	self.CoastSound = CreateSound( self, "coaster_ride.wav" )
