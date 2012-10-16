@@ -469,7 +469,7 @@ end
 //Draw invalid nodes, otherwise known as track preview
 function ENT:DrawInvalidNodes()
 	if self.Nodes == nil then return end
-	if LocalPlayer():GetInfoNum("coaster_previews") == 0 then return end
+	if LocalPlayer():GetInfoNum("coaster_previews", 0) == 0 then return end
 	for k, v in pairs( self.Nodes ) do
 		if v.Invalidated && k + 1 < #self.Nodes then //Don't draw the last node
 			self:DrawSideRail( k, -15 )
@@ -1013,7 +1013,7 @@ end
 function ENT:DrawSupport()
 	local controller = self:GetController()
 	if !IsValid( controller ) then return end
-	if LocalPlayer():GetInfoNum("coaster_supports") == 0 then return end //Don't draw if they don't want us to draw.
+	if LocalPlayer():GetInfoNum("coaster_supports", 0) == 0 then return end //Don't draw if they don't want us to draw.
 	if self:IsController() || controller.Nodes[ #controller.Nodes ] == self then return false end //Don't draw the controller or the very last (unconnected) node
 	if math.abs( math.NormalizeAngle( self:GetRoll() ) ) > 90 then return false end //If a track is upside down, don't draw the supports
 	if controller:Looped() && controller.Nodes[ 2 ] == self then return false end //Don't draw the supports for the second node ONLY if the track is looped

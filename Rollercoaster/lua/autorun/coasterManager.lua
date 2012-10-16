@@ -125,11 +125,12 @@ if SERVER then
 		
 
 		//sv_tags, why not
+		/*
 		local tag = GetConVar("sv_tags"):GetString()
 		tag = string.gsub( tag, "Rollercoaster", "")
 
 		RunConsoleCommand( "sv_tags", tag .. ",Rollercoaster" )
-
+		*/
 	end )
 
 	//Tell newly joining players to update their shit
@@ -250,7 +251,7 @@ if CLIENT then
 
 	//Motion blur
 	local function GetMotionBlurValues( x, y, fwd, spin )
-		if LocalPlayer():GetInfoNum("coaster_motionblur") == 0 then return end
+		if LocalPlayer():GetInfoNum("coaster_motionblur", 0) == 0 then return end
 
 		if IsValid(LocalPlayer():GetVehicle()) && IsValid(LocalPlayer():GetVehicle():GetParent()) then
 			return x, y, LocalPlayer():GetVehicle():GetParent():GetVelocity():Length() * CoasterBlur, spin //HOLY SHIT
@@ -322,50 +323,6 @@ if CLIENT then
 
 	end )
 
-	function _R.Entity.SetModelScaleOld(self,scale)
-
-			local bbp = self.BuildBonePositions
-
-			if self._LastScale and self._LastScale == scale then return end
-
-			local sz = (math.min(scale.x,scale.y,scale.z) + (scale.x+scale.y+scale.z)/3)/2
-
-			self:SetModelScale(sz)
-		   
-			local newbbp = function(s)
-
-					local name = s:GetBoneName(0)
-					if name then
-							if s:LookupBone(name) then
-									local m = s:GetBoneMatrix(bone)
-									if m then
-											m:Scale(Vector(scale.x,scale.y,scale.z)/sz or Vector(1,1,1))
-											s:SetBoneMatrix(bone, m)
-									end
-							end
-					end
-			   
-			end
-		   
-			if not self._LastBBP then
-					self._LastBBP = newbbp
-		   
-					self.BuildBonePositions = function(...)
-							if bbp then
-									bbp(...)
-							end
-							self._LastBBP(...)
-					end
-
-			end
-		   
-			if self._LastBBP and self._LastBBP ~= newbbp then
-					self._LastBBP = newbbp
-			end
-		   
-			self._LastScale = scale
-		   
-	end
 
 end
 

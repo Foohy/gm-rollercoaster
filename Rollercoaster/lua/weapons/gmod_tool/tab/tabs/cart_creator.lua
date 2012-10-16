@@ -34,7 +34,7 @@ function TAB:LeftClick( trace, tool )
 	local startSpeed 	= GetClientNumber( self, "startSpeed", tool)
 	local allowWeapons	= GetClientNumber( self, "allow_weapons", tool)
 	local model 		= GetClientInfo( self, "model", tool)
-	local spin_override = tool:GetOwner():GetInfoNum("coaster_cart_spin_override")
+	local spin_override = tool:GetOwner():GetInfoNum("coaster_cart_spin_override", 0)
 
 	//if ( !util.IsValidModel( model ) ) then return false end
 	

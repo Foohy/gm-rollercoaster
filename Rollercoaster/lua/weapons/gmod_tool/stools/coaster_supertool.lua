@@ -279,7 +279,7 @@ if CLIENT then
 	//"Polish" - bletotum
 	function coasterClick( clicked, mousecode )
 		if clicked && mousecode == MOUSE_LEFT && LocalPlayer():GetTool() && LocalPlayer():GetTool().Name == "Rollercoaster SuperTool" then
-			if LocalPlayer():GetInfoNum("coaster_autoswitch") == 0 then return end
+			if LocalPlayer():GetInfoNum("coaster_autoswitch", 0) == 0 then return end
 			RunConsoleCommand("use", "gmod_tool") //select the tool gun
 		end
 
