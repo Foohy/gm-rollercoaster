@@ -952,8 +952,8 @@ if CLIENT then
 
 			local towrite = util.TableToKeyValues(tracktable) 
 
-			local dirlist = file.FindDir("Rollercoasters", "DATA" )
-			if #dirlist < 1 then
+			local files, dirs = file.Find("Rollercoasters", "DATA" )
+			if #dirs < 1 then
 				file.CreateDir("Rollercoasters")
 				print("Creating new directory..")
 			end

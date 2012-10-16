@@ -98,7 +98,7 @@ function ENT:Think()
 				self.CoastSound:PlayEx( 0.5, 100)
 			end
 
-			self.CoastSound:ChangePitch(math.Clamp( (self:GetVelocity():Length() / 8) , 1, 240 ) )
+			self.CoastSound:ChangePitch(math.Clamp( (self:GetVelocity():Length() / 8) , 1, 240 ), FrameTime() )
 		else
 			self.CoastSound = CreateSound( self, "coaster_ride.wav" )
 		end
@@ -108,10 +108,10 @@ function ENT:Think()
 				self.WindSound:PlayEx(0, 100)
 			end
 
-			self.WindSound:ChangeVolume(math.Clamp( (self:GetVelocity():Length() / 1100) , 0, 1 ) )
+			self.WindSound:ChangeVolume(math.Clamp( (self:GetVelocity():Length() / 1100) , 0, 1 ), FrameTime() )
 
 			local pitch = 90 + (self:GetVelocity():Length() / 15)
-			self.WindSound:ChangePitch(math.Clamp( pitch , 90, 120 ) )
+			self.WindSound:ChangePitch(math.Clamp( pitch , 90, 120 ), FrameTime() )
 		else
 			self.WindSound = CreateSound( self, "coaster_wind.wav" )
 		end
