@@ -4,12 +4,12 @@ local TAB = {}
 TAB.ClientConVar = {}
 local UNIQUENAME = "node_creator"
 
-TAB.Name = "Track"
-TAB.UniqueName = UNIQUENAME
-TAB.Description = "Create specific track nodes"
-TAB.Instructions = "Left click on the world to create a node. Click on an existing node to update it's settings. Right click on any node to loop the track. Reload to retrieve a node's settings."
-TAB.Icon = "coaster/track"
-TAB.Position = 1
+TAB.Name 			= "Track"
+TAB.UniqueName 		= UNIQUENAME
+TAB.Description 	= "Create specific track nodes"
+TAB.Instructions 	= "Left click on the world to create a node. Click on an existing node to update it's settings. Right click on any node to loop the track. Reload to retrieve a node's settings."
+TAB.Icon 			= "coaster/track"
+TAB.Position 		= 1
 
 TAB.ClientConVar["id"] = "1"
 
@@ -23,7 +23,6 @@ TAB.ClientConVar["relativeroll"] = "0"
 
 TAB.GhostModel = Model("models/Combine_Helicopter/helicopter_bomb01.mdl")
 TAB.WaitTime	= 0 //Time to wait to make sure the dtvars are updated
-TAB.CoolDown 	= 0 //Woah there lil' doggy
 
 function TAB:LeftClick( trace, tool )
 	local ply   = tool:GetOwner()

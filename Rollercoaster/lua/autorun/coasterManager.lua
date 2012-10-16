@@ -5,7 +5,7 @@ include("trackmanager.lua")
 //I should probably make this a package and combine these two global tables into one.
 Rollercoasters = {} //Holds all the rollercoasters
 CoasterManager = {} //Holds all the methods and variables for rollercoasters
-COASTER_VERSION = 17
+COASTER_VERSION = 18
 
 //Some content (Remove these lines if you don't want clients to download)
 resource.AddFile("sound/coaster_ride.wav")
@@ -55,10 +55,16 @@ if SERVER then
 			Rollercoasters[id] = node
 			Rollercoasters[id]:SetIsController(true)
 			Rollercoasters[id]:SetModel( "models/props_junk/PopCan01a.mdl" )
+
+			//Call the hook telling a new coaster was created
+			hook.Call("Coaster_NewCoaster", node )
 		else
 			//Nocollide the node with the main node so that the remover gun removes all nodes
 			constraint.NoCollide( node, Rollercoasters[id], 0, 0 )
 		end
+
+		//Call the hook telling a new node was created
+		hook.Call("Coaster_NewNode", node )
 
 		Rollercoasters[id]:AddNodeSimple( node )
 		return node
@@ -87,19 +93,25 @@ if SERVER then
 		if !IsValid( Rollercoasters[id] ) then //The ID isn't an existing rollercoaster, so lets create one
 			Msg("Creating a new rollercoaster with ID: "..tostring(id).."\n" )
 			Rollercoasters[id] = node
-			Rollercoasters[id]:SetIsController(true)
-			Rollercoasters[id]:SetModel( "models/props_junk/PopCan01a.mdl" )
-			Rollercoasters[id]:AddTrackNode( node, ply ) //The first node is always the controller node
+			node:SetIsController(true)
+			node:SetModel( "models/props_junk/PopCan01a.mdl" )
+			node:AddTrackNode( node, ply ) //The first node is always the controller node
 			node:SetController( node )
 
 			cleanup.Add( ply, "Rollercoaster", node )
+
+			//Call the hook telling a new coaster was created
+			hook.Call("Coaster_NewCoaster", node )
 		else //The ID IS an actual rollercoaster, so let's append to it
 			//Nocollide the node with the main node so that the remover gun removes all nodes
 			constraint.NoCollide( node, Rollercoasters[id], 0, 0 )
 
 			Rollercoasters[id]:AddTrackNode( node, ply )
-			Msg("Creating a new node: "..tostring(Rollercoasters[id]:GetNumNodes()).." for coaster ID: "..tostring(id).."\n")
+			//Msg("Creating a new node: "..tostring(Rollercoasters[id]:GetNumNodes()).." for coaster ID: "..tostring(id).."\n")
 		end
+
+		//Call the hook telling a new node was created
+		hook.Call("Coaster_NewNode", node )
 		
 		return node
 

@@ -220,8 +220,54 @@ function TOOL.BuildCPanel(panel)
 	panel:AddItem( PropertySheet )
 	panel.Tabs = PropertySheet
 
-	panel:Button( "Build Clientside Mesh", "coaster_update_mesh")
-	panel:ControlHelp( "Note: Building the mesh is not realtime. You WILL experience a temporary freeze when building the mesh." )
+	//The little property sheet to hold all of the tracks to build
+	local AllTracks = vgui.Create("DForm", panel )
+	AllTracks:SetName("Specific Track Building")
+
+	local trackList = vgui.Create("DCoasterList", AllTracks )
+	trackList:SetName("Track List")
+	trackList:UpdateTrackList()
+	trackList:SetSize( 360, 120 )
+	panel.CoasterList = trackList 
+
+	AllTracks:AddItem(trackList)
+
+	AllTracks:SetExpanded( false )
+
+
+	panel:AddItem(AllTracks)
+
+
+	local btnBuildMine = vgui.Create("DButton", panel )
+	btnBuildMine:SetText("Build Mine")
+	btnBuildMine:SetTooltip("Build only the meshes of your own tracks")
+	btnBuildMine.DoClick = function()
+		for _, v in pairs( ents.FindByClass("coaster_node") ) do
+			if IsValid( v ) && v:IsController() && v:GetOwner() == LocalPlayer() then 
+				v:UpdateClientMesh()
+			end
+		end
+	end
+
+	local btnBuildAll = vgui.Create("DButton", panel )
+	btnBuildAll:SetText("Build All")
+	btnBuildAll:SetTooltip("Build the mesh for all existing tracks")
+	btnBuildAll:SetConsoleCommand("coaster_update_mesh")
+
+	panel:AddItem( btnBuildMine, btnBuildAll )
+
+	btnBuildMine:Dock( RIGHT )
+	btnBuildMine:SetWidth(140)
+
+	btnBuildAll:Dock( LEFT )
+	btnBuildAll:SetWidth(140)
+
+
+	btnBuildAll:GetParent():SetHeight(30)
+
+
+	//panel:Button( "Build All Meshes", "coaster_update_mesh")
+	panel:ControlHelp( "Note: Building the mesh is not realtime. Your game WILL freeze when building mesh." )
 	local version = panel:Help( "Rollercoaster version: " .. COASTER_VERSION )
 end
 
@@ -231,7 +277,7 @@ if CLIENT then
 
 	//Get when something was clicked and our tool was out to automagically switch to our tool
 	//"Polish" - bletotum
-	function coasterClick(  clicked, mousecode )
+	function coasterClick( clicked, mousecode )
 		if clicked && mousecode == MOUSE_LEFT && LocalPlayer():GetTool() && LocalPlayer():GetTool().Name == "Rollercoaster SuperTool" then
 			if LocalPlayer():GetInfoNum("coaster_autoswitch") == 0 then return end
 			RunConsoleCommand("use", "gmod_tool") //select the tool gun
@@ -239,6 +285,28 @@ if CLIENT then
 
 	end
 	hook.Add( "VGUIMousePressed", "CoasterAutoswitchtool", coasterClick ) 
+
+	hook.Add("OnEntityCreated", "Coaster_UpdateList", function( ent )
+		local panel = controlpanel.Get("coaster_supertool")
+
+		if IsValid( ent ) && ent:GetClass() == "coaster_node" && panel && panel.CoasterList then
+			timer.Simple(0, function() 
+				panel.CoasterList:UpdateTrackList()
+			end )
+		end
+
+	end )
+
+	hook.Add("EntityRemoved", "Coaster_UpdateList", function( ent )
+		local panel = controlpanel.Get("coaster_supertool")
+
+		if IsValid( ent ) && ent:GetClass() == "coaster_node" && panel && panel.CoasterList then
+			timer.Simple(0, function() 
+				panel.CoasterList:UpdateTrackList()
+			end )
+		end
+
+	end )
 
 	language.Add( "tool.coaster_supertool.name", "" )
 	language.Add( "tool.coaster_supertool.desc", "" )

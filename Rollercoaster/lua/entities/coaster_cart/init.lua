@@ -40,10 +40,9 @@ ENT.StopTime = 5 //Time to stop and wait for people to leave/board
 ENT.BreakForce = 1400 //Force of which to deccelerate the car
 ENT.BreakSpeed = 4 //The minimum speed of the car when in break zone
 
-
 //Credits to LPine for code on how to use a shadow controller 
 ENT.PhysShadowControl = {}
-ENT.PhysShadowControl.secondstoarrive  = .0001
+ENT.PhysShadowControl.secondstoarrive  = 0.00000001 //SMALL NUMBERS
 ENT.PhysShadowControl.pos              = Vector(0, 0, 0)
 ENT.PhysShadowControl.angle            = Angle(0, 0, 0)
 ENT.PhysShadowControl.maxspeed         = 1000000000000
