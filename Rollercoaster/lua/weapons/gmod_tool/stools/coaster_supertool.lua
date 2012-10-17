@@ -224,9 +224,16 @@ function TOOL.BuildCPanel(panel)
 	local AllTracks = vgui.Create("DForm", panel )
 	AllTracks:SetName("Specific Track Building")
 
-	local trackList = vgui.Create("DCoasterList", AllTracks )
+	local trackList = vgui.Create("DListView", AllTracks )
 	trackList:SetName("Track List")
-	trackList:UpdateTrackList()
+	trackList:AddColumn("Owner")
+	trackList:AddColumn("ID")
+	local build = trackList:AddColumn("Build Track")
+	build:SetWidth(30)
+
+
+	UpdateTrackList( trackList )
+
 	trackList:SetSize( 360, 120 )
 	panel.CoasterList = trackList 
 
@@ -286,12 +293,63 @@ if CLIENT then
 	end
 	hook.Add( "VGUIMousePressed", "CoasterAutoswitchtool", coasterClick ) 
 
+	language.Add( "tool.coaster_supertool.name", "" )
+	language.Add( "tool.coaster_supertool.desc", "" )
+	language.Add( "tool.coaster_supertool.0", "" )
+
+
+	function UpdateTrackList( panel )
+		panel:Clear()
+
+		local found = {}
+		local exists = false
+		local coasterid = "dicks"
+
+		for k, v in pairs( ents.FindByClass("coaster_node") ) do
+			exists = false
+			coasterid = v:GetCoasterID()
+
+			for m, t in pairs( found ) do
+				if coasterid == m then 
+					exists = true
+					continue
+				end
+			end
+
+			if !exists then
+				found[coasterid] = v
+			end
+		end
+
+		for k, v in pairs( found ) do
+			btn = vgui.Create("DButton", panel )
+			btn:SetText( "Build" )
+			btn:CenterHorizontal()
+			btn:SetWidth( 30 )
+			btn:SetHeight( 10 )
+			btn.DoClick = function()
+				if !IsValid( v ) || !IsValid( v:GetController() ) then return end
+				
+				v:GetController():UpdateClientMesh()
+			end
+
+			local line = panel:AddLine( v:GetOwner():Name(), k, btn )
+			
+			if line.Columns[3] then
+				line.Columns[3]:Remove()
+			end
+			line.Columns[3] = btn
+			btn:SetParent( line )
+		end
+	end
+
+
 	hook.Add("OnEntityCreated", "Coaster_UpdateList", function( ent )
 		local panel = controlpanel.Get("coaster_supertool")
 
 		if IsValid( ent ) && ent:GetClass() == "coaster_node" && panel && panel.CoasterList then
 			timer.Simple(0, function() 
-				panel.CoasterList:UpdateTrackList()
+				UpdateTrackList(panel.CoasterList)
 			end )
 		end
 
@@ -302,15 +360,11 @@ if CLIENT then
 
 		if IsValid( ent ) && ent:GetClass() == "coaster_node" && panel && panel.CoasterList then
 			timer.Simple(0, function() 
-				panel.CoasterList:UpdateTrackList()
+				UpdateTrackList(panel.CoasterList)
 			end )
 		end
 
 	end )
-
-	language.Add( "tool.coaster_supertool.name", "" )
-	language.Add( "tool.coaster_supertool.desc", "" )
-	language.Add( "tool.coaster_supertool.0", "" )
 
 end
 
