@@ -227,9 +227,10 @@ function TOOL.BuildCPanel(panel)
 	local trackList = vgui.Create("DListView", AllTracks )
 	trackList:SetName("Track List")
 	trackList:AddColumn("Owner")
-	trackList:AddColumn("ID")
+	local id = trackList:AddColumn("ID")
 	local build = trackList:AddColumn("Build Track")
 	build:SetWidth(30)
+	id:SetWidth( 5 )
 
 
 	UpdateTrackList( trackList )
@@ -332,8 +333,8 @@ if CLIENT then
 				
 				v:GetController():UpdateClientMesh()
 			end
-
-			local line = panel:AddLine( v:GetOwner():Name(), k, btn )
+			local expld = string.Explode("_", k )
+			local line = panel:AddLine( v:GetOwner():Name(), expld[#expld], btn )
 			
 			if line.Columns[3] then
 				line.Columns[3]:Remove()
