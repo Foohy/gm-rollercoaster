@@ -200,7 +200,7 @@ hook.Add("PhysgunPickup", "PreventCoasterMeshPickup", function( ply, ent )
 end )
 
 //Manage cart collisions (So trains don't collide with themselves, but collide with other trains)
-hook.Add("ShouldCollide","RollercoasterShouldCartCollide",function(ent1,ent2)
+hook.Add("ShouldCollide","CoasterShouldCartCollide",function(ent1,ent2)
 	//Prevent two coaster physics meshes from colliding
 	if ent1:GetClass() == "coaster_physmesh" && ent2:GetClass() == "coaster_physmesh" then return false end
 
