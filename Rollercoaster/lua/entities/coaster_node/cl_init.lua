@@ -52,6 +52,7 @@ function ENT:Initialize()
 	}
 
 	if !self:IsController() then return end //Don't continue executing -- the rest of this stuff is for only the controller
+	CoasterUpdateTrackTime = 0 //Tell the thingy that it's time to update its cache of coasters
 
 	//The controller handles the drawing of the track mesh -- so we always want it to draw.
 	self:SetRenderBoundsWS(Vector(-1000000,-1000000,-1000000), Vector( 1000000, 1000000, 1000000 ) ) //There must be a better way to do this
@@ -470,6 +471,7 @@ end
 function ENT:DrawInvalidNodes()
 	if self.Nodes == nil then return end
 	if LocalPlayer():GetInfoNum("coaster_previews", 0) == 0 then return end
+
 	for k, v in pairs( self.Nodes ) do
 		if v.Invalidated && k + 1 < #self.Nodes then //Don't draw the last node
 			self:DrawSideRail( k, -15 )
@@ -1185,7 +1187,6 @@ function ENT:OnRemove()
 
 
 	if IsValid( self ) && self:IsController() then
-		self:UpdateClientSpline()
 
 		if IsValid( self.WheelModel ) then 
 			self.WheelModel:Remove() 
@@ -1207,7 +1208,7 @@ function ENT:OnRemove()
 end
 
 concommand.Add("coaster_refresh_drawbounds", function()
-	for k, v in pairs( ents.FindByClass("coaster_node")) do
+	for k, v in pairs( CoasterTracks ) do
 		if IsValid( v ) then
 			v:UpdateSupportDrawBounds()
 		end

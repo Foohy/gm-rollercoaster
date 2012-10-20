@@ -478,7 +478,7 @@ end
 
 function UpdateTrackList()
 	local panel = GetTabPanel( "saver" )
-
+	print("PENIS")
 	if panel && panel.tracklist != nil then
 		print("Updating local track list...")
 		panel.tracklist:Clear()
@@ -738,7 +738,7 @@ if SERVER then
 		local directory ="Rollercoasters/Server/"
 		if game.SinglePlayer() then directory = "Rollercoasters/" end
 
-		if !file.Exists(directory .. filename, "DATA") then print("\"" .. filename .. "\" does not exist!" ) end
+		if !file.Exists(directory .. filename, "DATA") then print("\"" .. filename .. "\" does not exist!" )  return end
 
 		//Load the file
 		local contents = file.Read( directory .. filename )
@@ -831,12 +831,7 @@ if SERVER then
 
 			local towrite = util.TableToKeyValues(Track) 
 
-			local dirlist = file.FindDir("Rollercoasters/Server", "DATA" )
-			if #dirlist < 1 then
-				file.CreateDir("Rollercoasters/Server")
-				print("Creating new directory..")
-			end
-
+			file.CreateDir("Rollercoasters/Server")
 			file.Write("Rollercoasters/Server/" .. Track["name"] .. ".txt", towrite)
 
 			//Update them with the newest files
@@ -884,10 +879,7 @@ if SERVER then
 				//Convert the table into a format ready to be written to a file
 				local towrite = util.TableToKeyValues(trackTable) 
 
-				local dirlist = file.FindDir("Rollercoasters/Server", "DATA" )
-				if #dirlist < 1 then
-					file.CreateDir("Rollercoasters/Server")
-				end
+				file.CreateDir("Rollercoasters/Server")
 
 				file.Write("Rollercoasters/Server/" .. name .. ".txt", towrite)
 				Msg("Done!\n")
@@ -952,11 +944,7 @@ if CLIENT then
 
 			local towrite = util.TableToKeyValues(tracktable) 
 
-			local files, dirs = file.Find("Rollercoasters", "DATA" )
-			if #dirs < 1 then
-				file.CreateDir("Rollercoasters")
-				print("Creating new directory..")
-			end
+			file.CreateDir("Rollercoasters")
 
 			file.Write("Rollercoasters/" .. name .. ".txt", towrite)
 			GAMEMODE:AddNotify("Track \"" .. name .. "\" was saved successfully!", NOTIFY_GENERIC, 3 )

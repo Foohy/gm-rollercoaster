@@ -5,7 +5,7 @@ include("trackmanager.lua")
 //I should probably make this a package and combine these two global tables into one.
 Rollercoasters = {} //Holds all the rollercoasters
 CoasterManager = {} //Holds all the methods and variables for rollercoasters
-COASTER_VERSION = 19
+COASTER_VERSION = 20
 
 //Some content (Remove these lines if you don't want clients to download)
 resource.AddFile("sound/coaster_ride.wav")
@@ -117,6 +117,18 @@ if SERVER then
 
 	end
 
+	hook.Add("EntityRemoved", "CoasterEntityRemoved", function(ent) 
+		if IsValid( ent ) && ent:GetClass() == "coaster_node" then  
+			//Call the hook telling a node was removed
+			hook.Call("Coaster_NodeRemoved", ent )
+
+			if ent:IsController() then
+				//Call the hook telling a new node was created
+				hook.Call("Coaster_CoasterRemoved", node )
+			end
+		end
+	end )
+
 	//Because rollercoaster can go faster than what source allows, change what source allows.
 	hook.Add("InitPostEntity", "CoasterSetPerfSettings", function()
 		CoasterManager.Settings = {}
@@ -134,7 +146,7 @@ if SERVER then
 	end )
 
 	//Tell newly joining players to update their shit
-	hook.Add( "PlayerInitialSpawn", "UpdateWitAllTracks", function( ply )
+	hook.Add( "PlayerInitialSpawn", "UpdateWithAllTracks", function( ply )
 		timer.Simple( 5, function() //is there a hook when the player is able to receive umsgs?
 			for k, v in pairs( ents.FindByClass("coaster_node") ) do
 				if IsValid( v ) && v:IsController() then
@@ -227,6 +239,7 @@ if CLIENT then
 	language.Add("Cleaned_Rollercoaster", "Cleaned up all rollercoasters")
 
 	CoasterBlur = 0.00003 //Blur multiplier
+	CoasterTracks = {}
 
 	//Perfomance settings
 	CreateClientConVar("coaster_supports", 1, false, false )
@@ -261,10 +274,26 @@ if CLIENT then
 	end
 	hook.Add( "GetMotionBlurValues", "Coaster_motionblur", GetMotionBlurValues )
 
+	//Every little bit update the clientside 'tracklist' of tracks to update/draw/etc.
+	local CoasterUpdateTrackTime = 0
+	hook.Add( "Think", "CoasterCacheTracks", function()
+		if CurTime() > CoasterUpdateTrackTime then
+			CoasterTracks = {}
+
+			for k, v in pairs( ents.FindByClass( "coaster_node" ) ) do
+				if IsValid( v ) && v:IsController() then
+					table.insert( CoasterTracks, v )
+				end
+			end
+
+			CoasterUpdateTrackTime = CurTime() + 1.0
+		end
+	end )
+
 	//Track rendering. Renders meshes
 	hook.Add( "PreDrawOpaqueRenderables", "CoasterDrawTrack", function()
-		for k, v in pairs( ents.FindByClass( "coaster_node" ) ) do
-			if IsValid( v ) && v:IsController() then
+		for k, v in pairs( CoasterTracks ) do
+			if IsValid( v ) then
 				v:DrawTrack()
 			end
 		end
@@ -272,8 +301,8 @@ if CLIENT then
 
 	//Track rendering. Renders previews/beams/transluecent
 	hook.Add( "PostDrawTranslucentRenderables", "CoasterDrawTrackTranslucents", function()
-		for k, v in pairs( ents.FindByClass( "coaster_node" ) ) do
-			if IsValid( v ) && v:IsController() then
+		for k, v in pairs( CoasterTracks ) do
+			if IsValid( v ) then
 				v:DrawTrackTranslucents()
 			end
 		end

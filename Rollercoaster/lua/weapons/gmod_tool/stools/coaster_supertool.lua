@@ -233,7 +233,7 @@ function TOOL.BuildCPanel(panel)
 	id:SetWidth( 5 )
 
 
-	UpdateTrackList( trackList )
+	UpdateTrackPanel( trackList )
 
 	trackList:SetSize( 360, 120 )
 	panel.CoasterList = trackList 
@@ -299,7 +299,9 @@ if CLIENT then
 	language.Add( "tool.coaster_supertool.0", "" )
 
 
-	function UpdateTrackList( panel )
+	function UpdateTrackPanel( panel )
+		if panel == nil then return end 
+		
 		panel:Clear()
 
 		local found = {}
@@ -323,6 +325,7 @@ if CLIENT then
 		end
 
 		for k, v in pairs( found ) do
+			
 			btn = vgui.Create("DButton", panel )
 			btn:SetText( "Build" )
 			btn:CenterHorizontal()
@@ -333,14 +336,17 @@ if CLIENT then
 				
 				v:GetController():UpdateClientMesh()
 			end
-			local expld = string.Explode("_", k )
-			local line = panel:AddLine( v:GetOwner():Name(), expld[#expld], btn )
 			
+			local expld = string.Explode("_", k )
+			
+			local line = panel:AddLine( v:GetOwner():Name(), expld[#expld], btn )
+			/*
 			if line.Columns[3] then
 				line.Columns[3]:Remove()
 			end
 			line.Columns[3] = btn
 			btn:SetParent( line )
+			*/
 		end
 	end
 
@@ -350,7 +356,7 @@ if CLIENT then
 
 		if IsValid( ent ) && ent:GetClass() == "coaster_node" && panel && panel.CoasterList then
 			timer.Simple(0, function() 
-				UpdateTrackList(panel.CoasterList)
+				UpdateTrackPanel(panel.CoasterList)
 			end )
 		end
 
@@ -361,7 +367,7 @@ if CLIENT then
 
 		if IsValid( ent ) && ent:GetClass() == "coaster_node" && panel && panel.CoasterList then
 			timer.Simple(0, function() 
-				UpdateTrackList(panel.CoasterList)
+				UpdateTrackPanel(panel.CoasterList)
 			end )
 		end
 
