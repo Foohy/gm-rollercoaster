@@ -223,6 +223,22 @@ function ENT:Invalidate( controller, minimal_invalidation )
 	end
 
 	controller:UpdateClientsidePhysics()
+
+	//Tell the track panel to update itself
+	UpdateTrackPanel( controlpanel.Get("coaster_supertool").CoasterList )
+end
+
+//Return if the track has any unbuilt nodes
+function ENT:HasInvalidNodes()
+	local controller = self
+	if !controller:IsController() then controller = self:GetController() end
+	if !IsValid( controller ) then return end
+
+	for k, v in pairs( controller.Nodes ) do
+		if v.Invalidated then return true end
+	end
+
+	return false
 end
 
 //Refresh the client spline for track previews and mesh generation
@@ -376,6 +392,9 @@ function ENT:UpdateClientMesh()
 
 		//One more update can't hurt
 		self:SupportFullUpdate()
+
+		//Tell the track panel to update itself
+		UpdateTrackPanel( controlpanel.Get("coaster_supertool").CoasterList )
 	end
 end
 
@@ -1009,6 +1028,9 @@ function ENT:SupportFullUpdate()
 		end
 
 	end
+
+	//Tell the track panel to update itself
+	UpdateTrackPanel( controlpanel.Get("coaster_supertool").CoasterList )
 end
 
 

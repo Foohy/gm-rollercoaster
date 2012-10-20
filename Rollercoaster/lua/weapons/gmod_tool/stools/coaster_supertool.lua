@@ -301,7 +301,6 @@ if CLIENT then
 
 	function UpdateTrackPanel( panel )
 		if panel == nil then return end 
-		
 		panel:Clear()
 
 		local found = {}
@@ -325,7 +324,6 @@ if CLIENT then
 		end
 
 		for k, v in pairs( found ) do
-			
 			btn = vgui.Create("DButton", panel )
 			btn:SetText( "Build" )
 			btn:CenterHorizontal()
@@ -336,17 +334,15 @@ if CLIENT then
 				
 				v:GetController():UpdateClientMesh()
 			end
+			if IsValid( v ) && IsValid( v:GetController() ) then
+				if v:HasInvalidNodes() then
+					btn:SetColor( Color( 255, 0, 0 ))
+				end
+			end
 			
 			local expld = string.Explode("_", k )
 			
 			local line = panel:AddLine( v:GetOwner():Name(), expld[#expld], btn )
-			/*
-			if line.Columns[3] then
-				line.Columns[3]:Remove()
-			end
-			line.Columns[3] = btn
-			btn:SetParent( line )
-			*/
 		end
 	end
 
