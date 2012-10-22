@@ -232,12 +232,9 @@ function TRACK:PassVerticalSupports( controller )
 		local angBeam = Angle( ang.p, ang.y, ang.r )
 		angBeam:RotateAroundAxis( angBeam:Forward(), -90 )
 
-		if math.random(1, 10 ) != 7 then
-			Cylinder.AddBeamSquare( posL, ang, OffsetL, Angle( 0, ang.y, 0 ), self.BeamWidth )
-		end
-		if math.random(1, 10 ) != 7 then
-			Cylinder.AddBeamSquare( posR, ang, OffsetR, Angle( 0, ang.y, 0 ), self.BeamWidth )
-		end
+		Cylinder.AddBeamSquare( posL, ang, OffsetL, Angle( 0, ang.y, 0 ), self.BeamWidth )
+		Cylinder.AddBeamSquare( posR, ang, OffsetR, Angle( 0, ang.y, 0 ), self.BeamWidth )
+
 
 		Cylinder.AddBeamSquare( posL, angBeam, posR, angBeam, 5 )
 
@@ -290,7 +287,7 @@ function TRACK:PassHorizontalSupports( controller )
 			if self.FixedSplines[i].Pos.z > lowestPos && self.FixedSplines[i].PosLeftBottom.z < lowestPos &&
 				self.FixedSplines[i+1].Pos.z > lowestPos && self.FixedSplines[i+1].PosLeftBottom.z < lowestPos then
 					
-				if math.random(1, 5) != 5 && (self:GetValidHeight(i, lowestPos)) then 
+				if (self:GetValidHeight(i, lowestPos)) then 
 					ang = self.FixedSplines[i].Ang
 					ang2 = self.FixedSplines[i+1].Ang
 
