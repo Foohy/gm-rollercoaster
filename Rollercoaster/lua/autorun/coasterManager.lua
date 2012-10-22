@@ -231,6 +231,34 @@ hook.Add("ShouldCollide","CoasterShouldCartCollide",function(ent1,ent2)
 
 end )
 
+function table.Find(tab,entry)
+	for k, v in pairs(tab) do
+			if entry == v then
+					return true, k
+			end
+	end
+	return false, nil
+end
+ 
+function ents.FindAllButExclusions(exclusions, classes)
+	exclusions = exclusions or {}
+	local entities = classes or {}
+	local eligibleentities = {}
+	for k, v in pairs(entities) do
+			if !table.Find(exclusions,v) then
+					table.insert(eligibleentities,v)
+			end
+	end
+	local returntable = {}
+	for k, v in pairs(ents.GetAll()) do
+			if table.Find(eligibleentities,v:GetClass()) then
+					table.insert(returntable,v)
+			end
+	end
+	return returntable
+end
+
+
 if CLIENT then
 	//Language for admin limits
 	language.Add("SBoxLimit_maxcarts", "You've hit the Carts limit!")

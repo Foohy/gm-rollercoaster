@@ -28,6 +28,146 @@ function Cylinder.Start(Radius, Num)
 
 end
 
+local function CreateSquare( P1, P2, P3, P4, Normal, TrackColor )	//BACKRIGHT, BACKLEFT, FRONT LEFT, FRONT RIGHT
+	local u = P1:Distance( P2 ) / 200
+	local v = P2:Distance( P3 ) / 200
+
+	//Create some variables for proper lightmapped color
+	local colVec = Vector( 0, 0, 0 )
+
+	//And the user selected color too
+	local SelectedColor = Vector( 1, 1, 1 )
+	if TrackColor then
+		SelectedColor = Vector( TrackColor.r / 255, TrackColor.g / 255, TrackColor.b / 255 ) 
+	end
+	
+	//Create the 6 verts that make up a single quad
+	colVec = render.ComputeLighting( P1, Normal )
+	colVec = colVec + render.GetAmbientLightColor()
+	colVec = colVec + render.ComputeDynamicLighting(P1, Normal)
+	Cylinder.Vertices[Cylinder.TriCount] = { 
+		pos = P1, 
+		normal = Normal, 
+		u = u,
+		v = 0,
+		color = Color( colVec.x*SelectedColor.x*255, colVec.y*SelectedColor.y*255, colVec.z*SelectedColor.z*255)
+	}
+	Cylinder.TriCount = Cylinder.TriCount + 1
+
+	colVec = render.ComputeLighting( P2, Normal )
+	colVec = colVec + render.GetAmbientLightColor()
+	colVec = colVec + render.ComputeDynamicLighting(P2, Normal)
+	Cylinder.Vertices[Cylinder.TriCount] = { 
+		pos = P2, 
+		normal = Normal, 
+		u = 0,
+		v = 0,
+		color = Color( colVec.x*SelectedColor.x*255, colVec.y*SelectedColor.y*255, colVec.z*SelectedColor.z*255)
+	}
+	Cylinder.TriCount = Cylinder.TriCount + 1
+
+	colVec = render.ComputeLighting( P3, Normal )
+	colVec = colVec + render.GetAmbientLightColor()
+	colVec = colVec + render.ComputeDynamicLighting(P3, Normal )
+	Cylinder.Vertices[Cylinder.TriCount] = { 
+		pos = P3, 
+		normal = Normal, 
+		u = 0,
+		v = v,
+		color = Color( colVec.x*SelectedColor.x*255, colVec.y*SelectedColor.y*255, colVec.z*SelectedColor.z*255)
+	}
+	Cylinder.TriCount = Cylinder.TriCount + 1
+	
+	
+
+
+	//Second tri
+	colVec = render.ComputeLighting( P3, Normal )
+	colVec = colVec + render.GetAmbientLightColor()
+	colVec = colVec + render.ComputeDynamicLighting(P3, Normal )
+	Cylinder.Vertices[Cylinder.TriCount] = { 
+		pos = P3, 
+		normal = Normal, 
+		u = 0,
+		v = v,
+		color = Color( colVec.x*SelectedColor.x*255, colVec.y*SelectedColor.y*255, colVec.z*SelectedColor.z*255)
+	}
+	Cylinder.TriCount = Cylinder.TriCount + 1
+
+	colVec = render.ComputeLighting( P4, Normal )
+	colVec = colVec + render.GetAmbientLightColor()
+	colVec = colVec + render.ComputeDynamicLighting(P4, Normal )
+	Cylinder.Vertices[Cylinder.TriCount] = { 
+		pos = P4, 
+		normal = Normal, 
+		u = u,
+		v = v,
+		color = Color( colVec.x*SelectedColor.x*255, colVec.y*SelectedColor.y*255, colVec.z*SelectedColor.z*255)
+	}
+	Cylinder.TriCount = Cylinder.TriCount + 1
+
+	colVec = render.ComputeLighting( P1, Normal)
+	colVec = colVec + render.GetAmbientLightColor()
+	colVec = colVec + render.ComputeDynamicLighting(P1, Normal )
+	Cylinder.Vertices[Cylinder.TriCount] = { 
+		pos = P1, 
+		normal = Normal, 
+		u = u,
+		v = 0,
+		color = Color( colVec.x*SelectedColor.x*255, colVec.y*SelectedColor.y*255, colVec.z*SelectedColor.z*255)
+	}
+	Cylinder.TriCount = Cylinder.TriCount + 1
+	
+end
+
+local function Point( Position, Ang, Offset, Corner )
+	local ang = Angle(Ang.p,Ang.y,Ang.r)
+	ang:RotateAroundAxis(ang:Up(), (90 * (Corner-1)) + 45 )
+	return Position + (ang:Right() * Offset)
+end
+
+function Cylinder.AddBeamSquare( Pos1, Ang1, Pos2, Ang2, Width, TrackColor )
+	if Pos1 == nil || Ang1 == nil || Pos2 == nil || Ang2 == nil then 
+		print("FAILED TO CREATE CYLINDER, NIL VALUE")
+		return
+	end
+
+	Cylinder.Radius = Width or Cylinder.Radius
+
+	local offset = math.sqrt( 2 * math.pow(Width/2, 2) )
+
+	//Calculate the positions
+	local TopFrontLeft = Point(Pos1, Ang1, Width, 1 ) //Pos1 + Point( Vector( -offset, offset, 0), Ang1 ) // Vector( -offset, offset, 0)
+	local TopFrontRight = Point(Pos1, Ang1, Width, 4 )//Pos1 + Point( Vector( offset, offset, 0), Ang1 ) //Vector( offset, offset, 0)
+	local TopBackLeft = Point(Pos1, Ang1, Width, 2 )//Pos1 + Point( Vector( -offset, -offset, 0), Ang1 ) //Vector( -offset, -offset, 0)
+	local TopBackRight = Point(Pos1, Ang1, Width, 3 )//Pos1 + Point( Vector( offset, -offset, 0), Ang1 ) //Vector( offset, -offset, 0)
+ 
+	local BottomFrontLeft = Point(Pos2, Ang2, Width, 1 )//Pos2 + Vector( -offset, offset, 0)
+	local BottomFrontRight = Point(Pos2, Ang2, Width, 4 )// Pos2 + Vector( offset, offset, 0)
+	local BottomBackLeft = Point(Pos2, Ang2, Width, 2 )//Pos2 + Vector( -offset, -offset, 0)
+	local BottomBackRight = Point(Pos2, Ang2, Width, 3 )//Pos2 + Vector( offset, -offset, 0)
+
+	//Calculate normals
+	local normtop = TopFrontLeft - BottomFrontLeft
+	normtop:Normalize()
+	local normLeft = TopFrontLeft - TopFrontRight
+	normLeft:Normalize()
+	local normFront = TopFrontLeft - TopBackLeft
+	normFront:Normalize()
+
+	//Top
+	CreateSquare( TopBackRight, TopBackLeft, TopFrontLeft, TopFrontRight, normtop )
+
+	//Sides
+	CreateSquare( BottomBackLeft, BottomFrontLeft, TopFrontLeft, TopBackLeft, normLeft )
+	CreateSquare( BottomBackRight, BottomBackLeft, TopBackLeft, TopBackRight, -normFront )
+	CreateSquare( TopFrontRight, TopFrontLeft, BottomFrontLeft, BottomFrontRight, normFront )
+	CreateSquare( BottomFrontRight, BottomBackRight, TopBackRight, TopFrontRight, -normLeft )
+
+	//Bottom
+	CreateSquare( BottomFrontRight, BottomFrontLeft, BottomBackLeft, BottomBackRight, -normtop ) //BottomBackRight, BottomBackLeft, BottomFrontLeft, BottomFrontRight 
+end
+
 function Cylinder.AddBeam( Pos1, Ang1, Pos2, Ang2, Radius, TrackColor )
 	if Pos1 == nil || Ang1 == nil || Pos2 == nil || Ang2 == nil then 
 		print("FAILED TO CREATE CYLINDER, NIL VALUE")
@@ -179,5 +319,5 @@ function Cylinder.AddBeam( Pos1, Ang1, Pos2, Ang2, Radius, TrackColor )
 end
 
 function Cylinder.EndBeam()
-	return Cylinder.Vertices
+	return Cylinder.Vertices 
 end

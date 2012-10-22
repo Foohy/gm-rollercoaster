@@ -366,9 +366,11 @@ function ENT:UpdateClientMesh()
 		//Destroy ALL meshes
 		if self.TrackMeshes then
 			for k,v in pairs( self.TrackMeshes ) do
-				if IsValid ( v ) then
-					v:Destroy() 
-					v = nil
+				for x, y in pairs( v ) do 
+					if IsValid ( y ) then
+						y:Destroy() 
+						y = nil
+					end
 				end
 			end
 		end
@@ -1038,6 +1040,7 @@ function ENT:DrawSupport()
 	local controller = self:GetController()
 	if !IsValid( controller ) then return end
 	if LocalPlayer():GetInfoNum("coaster_supports", 0) == 0 then return end //Don't draw if they don't want us to draw.
+	if controller.TrackClass && controller.TrackClass.SupportOverride then return end //Dont' draw supports if the current track makes its own
 	if self:IsController() || controller.Nodes[ #controller.Nodes ] == self then return false end //Don't draw the controller or the very last (unconnected) node
 	if math.abs( math.NormalizeAngle( self:GetRoll() ) ) > 90 then return false end //If a track is upside down, don't draw the supports
 	if controller:Looped() && controller.Nodes[ 2 ] == self then return false end //Don't draw the supports for the second node ONLY if the track is looped

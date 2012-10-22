@@ -87,7 +87,7 @@ function TAB:LeftClick( trace, tool )
 				
 				//controller.Looped = false
 				controller:SetLooped( false )
-			else
+			else //The coaster is NOT looped, so create a new node normally
 				if matchZ && IsValid( controller ) then
 					local VeryLastNode = controller.Nodes[ #controller.Nodes ]
 					if IsValid( VeryLastNode ) then

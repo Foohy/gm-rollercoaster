@@ -158,7 +158,10 @@ function TRACK:Generate( controller )
 		end
 	end
 
-	return Meshes
+	//Create a new variable that will hold each section of the mesh
+	local Sections = {}
+	Sections[1] = Meshes
+	return Sections
 end
 
 function TRACK:Draw( controller, Meshes )
@@ -166,7 +169,7 @@ function TRACK:Draw( controller, Meshes )
 
 	if !Meshes || #Meshes < 1 then return end
 
-	for k, v in pairs( Meshes ) do
+	for k, v in pairs( Meshes[1] ) do
 		render.SetMaterial(self.Material)
 		if v then 
 			v:Draw() //TODO: I think IMesh resets color modulation upon drawing. Figure out a way around this?
