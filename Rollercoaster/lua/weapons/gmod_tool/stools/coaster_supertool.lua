@@ -331,7 +331,10 @@ if CLIENT then
 			
 			local expld = string.Explode("_", k )
 			
-			local line = panel:AddLine( v:GetOwner():Name(), expld[#expld], btn )
+			local name = "UNKNOWN"
+			if IsValid( v:GetOwner() ) then name = v:GetOwner():Name() end
+			
+			local line = panel:AddLine( name, expld[#expld], btn )
 		end
 	end
 
