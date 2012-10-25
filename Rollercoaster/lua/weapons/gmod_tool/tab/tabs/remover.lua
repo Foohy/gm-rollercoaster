@@ -20,7 +20,7 @@ function TAB:LeftClick( trace, tool )
 		if SERVER then 
 			local controller = Ent:GetController()
 
-			if IsValid( controller ) && controller:GetOwner() == ply then
+			if IsValid( controller ) && ( controller:GetOwner() == ply || ply:IsAdmin() ) then
 				controller:Remove()
 			else
 				print("You do not own that coaster!")
