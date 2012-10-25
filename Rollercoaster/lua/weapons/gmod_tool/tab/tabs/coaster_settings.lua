@@ -117,29 +117,18 @@ function TAB:BuildPanel( )
 	local panel = vgui.Create("DForm")
 	panel:SetName("Settings")
 
-	local TrackPanel = vgui.Create("DForm", panel )
-	TrackPanel:SetName("Track-Specific Settings")
-
-	local ColorMixer = vgui.Create("CtrlColor", TrackPanel )
+	local ColorMixer = vgui.Create("CtrlColor", panel )
 	ColorMixer:SetLabel("Track Color")
 	ColorMixer:SetHeight( 150 )
 	ColorMixer:SetConVarR("coaster_supertool_tab_track_settings_r")
 	ColorMixer:SetConVarG("coaster_supertool_tab_track_settings_g")
 	ColorMixer:SetConVarB("coaster_supertool_tab_track_settings_b")
 	ColorMixer:SetConVarA( nil )
-	/*
-	ColorMixer.m_ConVarR = "coaster_supertool_tab_track_settings_r"
-	ColorMixer.m_ConVarG = "coaster_supertool_tab_track_settings_g"
-	ColorMixer.m_ConVarB = "coaster_supertool_tab_track_settings_b"
-	*/
-	TrackPanel.ColorMixer = ColorMixer
-	TrackPanel:AddItem( ColorMixer )
 
-	//local TrackTypesLabel = vgui.Create("DLabel", TrackPanel)
-	//TrackTypesLabel:SetText("Generation Types: ")
-	//TrackPanel:AddItem( TrackTypesLabel )
+	panel.ColorMixer = ColorMixer
+	panel:AddItem( ColorMixer )
 
-	local ComboBox = vgui.Create("DComboBox", TrackPanel)
+	local ComboBox = vgui.Create("DComboBox", panel)
 
 	//Create some nice choices
 	if EnumNames.Tracks && #EnumNames.Tracks > 0 then
@@ -162,29 +151,11 @@ function TAB:BuildPanel( )
 	end
 
 	ComboBox:ChooseOptionID( 1 )
-	TrackPanel:AddItem( ComboBox )
+	panel:AddItem( ComboBox )
 
-	TrackPanel:ControlHelp("Generation types change the look of clientside meshes. Select a type, shoot a node, and rebuild your clientside mesh.")
+	panel:ControlHelp("Generation types change the look of clientside meshes. Select a type, shoot a node, and rebuild your clientside mesh.")
 
 
-	panel:AddItem( TrackPanel )
-	local AllSettingsPanel = vgui.Create("DForm", panel )
-	AllSettingsPanel:SetName("Addon-Wide Settings")
-
-	AllSettingsPanel:NumSlider("Max wheels per segment: ", "coaster_maxwheels", 0, 100, 0 )
-
-	local TrackResolutionSlider = AllSettingsPanel:NumSlider("Track Resolution: ", "coaster_resolution", 1, 100, 0 )
-	TrackResolutionSlider.OnValueChanged = function() //See the effects in realtime
-		for _, v in pairs( ents.FindByClass("coaster_node") ) do
-			if IsValid( v ) && !v.IsSpawning && v.IsController && v:IsController() then 
-				v:UpdateClientSpline()
-			end
-		end
-	end
-
-	AllSettingsPanel:CheckBox("Draw track previews", "coaster_previews")
-	AllSettingsPanel:CheckBox("Draw track supports", "coaster_supports")
-	AllSettingsPanel:CheckBox("Draw motion blur", "coaster_motionblur")
 	/*
 	local MaxWheels = vgui.Create("DNumSlider", AllSettingsPanel )
 	MaxWheels:SetText("Max wheels per segment: ")

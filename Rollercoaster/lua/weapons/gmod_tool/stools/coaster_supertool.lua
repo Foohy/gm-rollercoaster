@@ -58,14 +58,6 @@ function TOOL:Think()
 
 		if class && class.Equip then
 			class:Equip( self )
-
-			//Update the header HUD
-			//if CLIENT then
-				//print(class.Name)
-				//language.remove("Tool_coaster_supertool_name")
-				//language.Add( "Tool_coaster_supertool_name", class.Name )
-				//language.Add( "Tool_coaster_supertool_desc", class.Description )
-			//end
 		end
 
 		self.CurrentClass = class
@@ -201,7 +193,10 @@ function Count( tbl )
 end
 
 function TOOL.BuildCPanel(panel)	
-	//panel:AddControl( "Header", { Text = "#Tool_coaster_supertool_name", Description = "#Tool_coaster_supertool_desc" }  )
+	panel.Header:SetSize( 0, 0 )
+	panel.Header:SetAlpha( 0 )
+	panel:SetPadding( 0 )
+	panel.Paint = function() return true end
 
 	local PropertySheet = vgui.Create( "DPropertySheet", panel )
 	PropertySheet:SetPos( 0, 0 )
@@ -211,6 +206,7 @@ function TOOL.BuildCPanel(panel)
 
 	for k, v in pairs(FixedTable) do
 		local panel = v:BuildPanel()
+		panel:SetPadding( 0, 0, 0, 0)
 		RegisterTabPanel( panel, v.UniqueName )
 		
 		local sheet = PropertySheet:AddSheet( v.Name, panel, v.Icon, false, false, v.Description )	
@@ -218,6 +214,13 @@ function TOOL.BuildCPanel(panel)
 	end
 
 	panel:AddItem( PropertySheet )
+	//PropertySheet:Dock(TOP)
+	//PropertySheet:SetPos( 0, -20 )
+	//PropertySheet:Dock(NODOCK)
+	PropertySheet:DockPadding(0, 0, 0, 0)
+	PropertySheet:DockMargin(0, 0, 0, 0)
+	PropertySheet:SetPadding( 0, 0 )
+
 	panel.Tabs = PropertySheet
 
 	//The little property sheet to hold all of the tracks to build
@@ -239,7 +242,6 @@ function TOOL.BuildCPanel(panel)
 	panel.CoasterList = trackList 
 
 	AllTracks:AddItem(trackList)
-
 	AllTracks:SetExpanded( false )
 
 
@@ -265,10 +267,10 @@ function TOOL.BuildCPanel(panel)
 	panel:AddItem( btnBuildMine, btnBuildAll )
 
 	btnBuildMine:Dock( RIGHT )
-	btnBuildMine:SetWidth(140)
+	btnBuildMine:SetWidth(100)
 
 	btnBuildAll:Dock( LEFT )
-	btnBuildAll:SetWidth(140)
+	btnBuildAll:SetWidth(100)
 
 
 	btnBuildAll:GetParent():SetHeight(30)

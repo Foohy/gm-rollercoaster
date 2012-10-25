@@ -5,7 +5,7 @@ include("trackmanager.lua")
 //I should probably make this a package and combine these two global tables into one.
 Rollercoasters = {} //Holds all the rollercoasters
 CoasterManager = {} //Holds all the methods and variables for rollercoasters
-COASTER_VERSION = 20
+COASTER_VERSION = 21
 
 //Some content (Remove these lines if you don't want clients to download)
 resource.AddFile("sound/coaster_ride.wav")
@@ -377,6 +377,27 @@ if CLIENT then
 		local size = math.random( 1, 3 )
 		effects.halo.Add( coaster_track_creator_HoverEnts, coaster_track_creator_HoverColor, size, size, 1, true, false )
 
+	end )
+
+
+	hook.Add( "PopulateToolMenu", "PopulateOptionMenus", function()
+		spawnmenu.AddToolMenuOption("Options", "Rollercoaster", "Performance Settings", "Performance Settings", "", "", function( panel )
+			panel:NumSlider("Max wheels per segment: ", "coaster_maxwheels", 0, 100, 0 )
+
+			local TrackResolutionSlider = panel:NumSlider("Track Resolution: ", "coaster_resolution", 1, 100, 0 )
+			TrackResolutionSlider.OnValueChanged = function() //See the effects in realtime
+				for _, v in pairs( ents.FindByClass("coaster_node") ) do
+					if IsValid( v ) && !v.IsSpawning && v.IsController && v:IsController() then 
+						v:UpdateClientSpline()
+					end
+				end
+			end
+
+			panel:CheckBox("Draw track previews", "coaster_previews")
+			panel:CheckBox("Draw track supports", "coaster_supports")
+			panel:CheckBox("Draw motion blur", "coaster_motionblur")
+
+		end )
 	end )
 
 
