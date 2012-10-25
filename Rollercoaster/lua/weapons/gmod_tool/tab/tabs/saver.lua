@@ -293,7 +293,6 @@ function OpenCoasterSaveMenu()
 	btnSave:SetText("Save")
 	btnSave:SetToolTip( "Save the file on your local computer.")
 	btnSave.DoClick = function() 
-		print(table.Count(coaster_saver_ClipboardTrack) )
 		if IsValid( controller ) then
 			SaveTrack(DName:GetValue(), DDesc:GetValue(), controller, false ); form:Close(); 
 			surface.PlaySound("garrysmod/content_downloaded.wav") 
@@ -311,7 +310,6 @@ function OpenCoasterSaveMenu()
 		btnSaveUp:SetText("Save and Upload")
 		btnSaveUp:SetToolTip( "Save the file on both your local computer and the server.\nIt will be available in the server track list.")
 		btnSaveUp.DoClick = function() 
-			print(table.Count(coaster_saver_ClipboardTrack) )
 			if IsValid( controller ) then
 				SaveTrack(DName:GetValue(), DDesc:GetValue(), controller, true ); form:Close(); 
 				surface.PlaySound("garrysmod/content_downloaded.wav") 
@@ -352,7 +350,6 @@ function OpenCoasterUploadMenu()
 	//local px, py = panel:GetPos()
 	//panel:SetPos( px - (x / 2), py - (y / 2) )
 	panel:SetName(" ")
-	print(panel:GetSize())
 
 	//Create the list view listing clientside files
 	local tracklist = vgui.Create("DListView", panel)
@@ -478,7 +475,7 @@ end
 
 function UpdateTrackList()
 	local panel = GetTabPanel( "saver" )
-	print("PENIS")
+
 	if panel && panel.tracklist != nil then
 		print("Updating local track list...")
 		panel.tracklist:Clear()
@@ -559,10 +556,6 @@ function LoadSelectedTrack()
 			end
 
 			coaster_saver_preview_shoulddraw = true
-
-			print( "selected: " .. tostring(line:GetValue( 1 )))
-
-			print(coaster_saver_selectedfilename)
 
 		else
 			print("Failed to load track - Line was nil")
@@ -653,7 +646,6 @@ function GeneratePreview( positions_tbl )
 	end
 
 	local Verts = Cylinder.EndBeam()
-	print( #Verts )
 
 	coaster_saver_preview_trackmesh = Mesh()
 	coaster_saver_preview_trackmesh:BuildFromTriangles( Verts )

@@ -83,10 +83,7 @@ function TAB:RightClick( trace, tool )
 	local Powered = GetClientNumber( self, "powered", tool )
 	
 	local Ent 		= trace.Entity
-	
-	if CLIENT then
-		print( IsValid( Ent ), Ent:GetClass() )
-	end
+
 	if IsValid( Ent ) && (Ent:GetClass() == "coaster_node" || Ent:GetClass() == "coaster_physmesh") then
 		if SERVER then
 			local controller = Ent:GetController()

@@ -65,7 +65,7 @@ function TAB:RightClick( trace, tool )
 			local controller = Ent:GetController()
 		
 			if IsValid( controller ) && SERVER then 
-				print("Doing nothing for "..tostring(controller:GetCoasterID()))
+				//print("Doing nothing for "..tostring(controller:GetCoasterID()))
 				//controller:ClearTrains()
 			end
 		end

@@ -166,8 +166,7 @@ function TAB:RightClick( trace, tool )
 				timer.Simple( 0.2, function() 
 					Controller:UpdateServerSpline()
 				end )
-				
-				print("Looped rollercoaster!")
+
 			end
 		end
 	end
