@@ -951,7 +951,7 @@ function ENT:PhysicsCollide(data, physobj)
 
 		local effectdata = EffectData()
 			effectdata:SetOrigin( self:GetPos() )
-			effectdata:SetNormal( self:GetAngles() )
+			effectdata:SetNormal( self:GetAngles():Forward() )
 			effectdata:SetMagnitude( 8 )
 			effectdata:SetScale( 1 )
 			effectdata:SetRadius( 16 )
