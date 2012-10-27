@@ -35,7 +35,7 @@ function TAB:LeftClick( trace, tool )
 	local matchZ 	= GetClientNumber( self, "prev_nodeheight", tool ) == 1
 	local plyAng	= ply:GetAngles()
 			
-	local newPos = trace.HitPos + Vector( 0, 0, Elevation )
+	local newPos = trace.HitPos + Vector( 0, 0, math.Clamp( Elevation, 0, 10000000 ) )
 	local newAng = Angle(0, plyAng.y, 0) + Angle( 0, 0, 0 )
 	
 	if SERVER then
@@ -302,7 +302,7 @@ function TAB:UpdateGhostNode( tool )
 	local Elevation = GetClientNumber( self, "elevation", tool )
 	local ID = ply:SteamID() .. "_" .. tostring( GetClientNumber( self, "id", tool ) )
 	local matchZ = GetClientNumber( self, "prev_nodeheight", tool ) == 1
-	local newPos = trace.HitPos + Vector( 0, 0, Elevation )
+	local newPos = trace.HitPos + Vector( 0, 0, math.Clamp( Elevation, 0, 10000000 ) )
 	local newAng = Angle(0, ply:GetAngles().y, 0) + Angle( 0, 0, 0 )
 
 	//Set the height of the last node if it's checked
@@ -350,7 +350,7 @@ function TAB:BuildPanel( )
 	panel:AddItem( Seperator )
 
 	//The elevation slider
-	panel:NumSlider("Node Elevation: ","coaster_supertool_tab_node_creator_elevation", 0, 2000, 3)
+	panel:NumSlider("Node Elevation: ","coaster_supertool_tab_node_creator_elevation", -2000, 2000, 3)
 
 	//And the thing to make it easier
 	local easyelev = vgui.Create("DEasyButtons", self)

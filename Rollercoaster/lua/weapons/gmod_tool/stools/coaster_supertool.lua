@@ -214,9 +214,6 @@ function TOOL.BuildCPanel(panel)
 	end
 
 	panel:AddItem( PropertySheet )
-	//PropertySheet:Dock(TOP)
-	//PropertySheet:SetPos( 0, -20 )
-	//PropertySheet:Dock(NODOCK)
 	PropertySheet:DockPadding(0, 0, 0, 0)
 	PropertySheet:DockMargin(0, 0, 0, 0)
 	PropertySheet:SetPadding( 0, 0 )
