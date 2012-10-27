@@ -1159,7 +1159,7 @@ function ENT:Think()
 
 			//Update the positions of the wheels
 			for num, node in pairs( self.Nodes ) do 
-				if node:GetType() == COASTER_NODE_BRAKES || node:GetType() == COASTER_NODE_SPEEDUP then
+				if node.GetType && node:GetType() == COASTER_NODE_BRAKES || node:GetType() == COASTER_NODE_SPEEDUP then
 					self:UpdateWheelPositions( num )
 				end
 			end
