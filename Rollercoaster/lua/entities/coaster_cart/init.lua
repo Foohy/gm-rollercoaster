@@ -769,8 +769,8 @@ end
 
 //Get the angle at a specific point on a track
 function ENT:AngleAt(i, perc )
-	local Vec1 = self.Controller.CatmullRom:Point( i, perc )
-	local Vec2 = self.Controller.CatmullRom:Point( i, perc + 0.03 )
+	local Vec1 = self.Controller.CatmullRom:Point( i, perc - 0.015)
+	local Vec2 = self.Controller.CatmullRom:Point( i, perc + 0.015 )
 
 	local AngVec = Vector(0,0,0)
 
@@ -782,8 +782,8 @@ end
 //Get the multiplier for the current spline (to make things smooth )
 function ENT:GetMultiplier(i, perc)
 	local Dist = 1
-	local Vec1 = self.Controller.CatmullRom:Point( i, perc ) // + 0
-	local Vec2 = self.Controller.CatmullRom:Point( i, perc + 0.03 ) // + 0.03
+	local Vec1 = self.Controller.CatmullRom:Point( i, perc - 0.015) // + 0
+	local Vec2 = self.Controller.CatmullRom:Point( i, perc + 0.015 ) // + 0.03
 
 
 	Dist = Vec1:Distance( Vec2 )
