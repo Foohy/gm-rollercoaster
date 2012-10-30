@@ -14,7 +14,7 @@ TRACK.Material =  CreateMaterial( "CoasterWoodMaterialRail", "UnlitGeneric", { /
 } )
 
 TRACK.MaterialWood =  CreateMaterial( "CoasterWoodMaterialBeam", "UnlitGeneric", { //VertexLitGeneric
-	["$basetexture"] 		= "phoenix_storms/wood", //models/debug/debugwhite
+	["$basetexture"] 		= "foohy/wood", //models/debug/debugwhite
 	["$vertexcolor"] 		= 1,
 	["$phong"] 				= 1,
 	["$phongexponent"] 		= 20,
@@ -22,15 +22,26 @@ TRACK.MaterialWood =  CreateMaterial( "CoasterWoodMaterialBeam", "UnlitGeneric",
 	["$phongfresnelranges"] = "0.5 0.8 1",
 } )
 
-//local Offset = 20  //Downwards offset of large center beam
+TRACK.MaterialWoodRail =  CreateMaterial( "CoasterWoodRailMaterialBeam", "UnlitGeneric", { //VertexLitGeneric
+	["$basetexture"] 		= "foohy/wood", //models/debug/debugwhite
+	["$vertexcolor"] 		= 1,
+	["$nocull"]				= 1,
+	["$phong"] 				= 1,
+	["$phongexponent"] 		= 20,
+	["$phongboost"] 		= 2,
+	["$phongfresnelranges"] = "0.5 0.8 1",
+} )
+
 local RailOffset = 25 //Distance track beams away from eachother
+TRACK.WoodRailWidth = 25 //Width of the wood rails
 
 TRACK.CylinderRadius = 10 //Radius of the circular track beams
 TRACK.BeamWidth = 8.5 //The width of the wooden supports
 TRACK.CylinderPointCount = 4 //How many points make the cylinder of the track mesh
-TRACK.HorizontalSpacing = 1 //how far apart vertical beams should be spaced
+TRACK.HorizontalSpacing = 0.8 //how far apart vertical beams should be spaced
 TRACK.VerticalSpacing = 80 //how far apart horizontal beams should be spaced
 TRACK.SupportOverride = true  //Override track supports (we're making our own)
+TRACK.InnerStrutsNum = 2 //how densely the inner struts should be placed
 
 TRACK.ModelCount = 1 //Keep track of how many seperate models we've created
 TRACK.FixedSplines = {}
@@ -165,6 +176,7 @@ function TRACK:PassRails(controller)
 
 				Cylinder.AddBeam( FirstLeft, LastAng, posL, NewAng, 4, ThisSegment:GetTrackColor() )
 				Cylinder.AddBeam( FirstRight, LastAng, posR, NewAng, 4, ThisSegment:GetTrackColor() )
+
 			end
 
 			//Side rails
@@ -190,6 +202,143 @@ function TRACK:PassRails(controller)
 	return Vertices
 end
 
+function TRACK:PassWoodRails(controller)
+	local Vertices = {} //Create an array that will hold an array of vertices (This is to split up the model)
+
+	Cylinder.Start( self.CylinderRadius, self.CylinderPointCount ) //We're starting up making a beam of cylinders
+	local LastPoints = {} //Last angle so previous cylinder matches with the next cylinder
+
+	local leftV = 0
+	local rightV = 0
+
+	//For every single spline segment 
+	for i = 1, #controller.CatmullRom.Spline do
+		//Some useful entities to be references
+		local NexterSegment = controller.Nodes[ controller:GetSplineSegment(i) + 2]
+		local NextSegment = controller.Nodes[controller:GetSplineSegment(i) + 1]
+		local ThisSegment = controller.Nodes[ controller:GetSplineSegment(i) ]
+
+		local AngVec2 = Vector( 0, 0, 0 )
+		local AngVec, ang = GetAngleAtSpline( i, controller )
+
+		if #controller.CatmullRom.Spline >= i + 2 then
+			AngVec2 = controller.CatmullRom.Spline[i+1] - controller.CatmullRom.Spline[i+2]
+			AngVec2:Normalize()
+		else
+			AngVec2 = AngVec
+		end
+
+
+		local ang2 = AngVec2:Angle()
+
+		//Calculate the roll
+		if IsValid( ThisSegment ) && IsValid( NextSegment ) then
+			//Get the percent along this node
+			local perc = controller:PercAlongNode( i )
+			
+			//Note all Lerps are negated. This is because the actual roll value from the gun is backwards.
+			local Roll = -Lerp( perc, math.NormalizeAngle( ThisSegment:GetRoll() ),NextSegment:GetRoll())	
+			if ThisSegment:RelativeRoll() then
+				Roll = Roll - ( ang.p - 180 )
+			end
+
+			//Rotated around axis
+			//This takes roll into account in the angle so far
+			ang:RotateAroundAxis( AngVec, Roll ) 
+
+			//Now do it for the segment just ahead of us
+			local perc2 = controller:PercAlongNode( i + 1, true ) //We have to do a quickfix so the function can handle how to end the track
+			local Roll2 = -Lerp( perc2, math.NormalizeAngle( ThisSegment:GetRoll() ), NextSegment:GetRoll() )
+			if ThisSegment:RelativeRoll() then
+				Roll2 = Roll2 - ( ang2.p - 180 )
+			end
+			ang2:RotateAroundAxis( AngVec2, Roll2 )
+		end
+
+		//If the current spline is not the very last one
+		if i+1 <= #controller.CatmullRom.Spline then
+			//Get the positions now so it isn't super mess in the code
+			local posL = controller.CatmullRom.Spline[i] + ang:Right() * -RailOffset
+			local OposL = posL + ang:Right() * -self.WoodRailWidth
+			local nPosL = controller.CatmullRom.Spline[i+1] + ang2:Right() * -RailOffset
+			local OnposL = nPosL + ang:Right() * -self.WoodRailWidth
+
+			local posR = controller.CatmullRom.Spline[i] + ang:Right() * RailOffset
+			local nPosR = controller.CatmullRom.Spline[i+1] + ang2:Right() * RailOffset
+			local OposR = posR + ang:Right() * self.WoodRailWidth
+			local OnposR = nPosR + ang:Right() * self.WoodRailWidth
+
+			//Get the normal 
+			local vec = controller.CatmullRom.Spline[i] - controller.CatmullRom.Spline[i+1]
+			local vec2 = vec
+
+			//if we are the second to last spline, get the normal
+			if #controller.CatmullRom.Spline >= i+2 then
+				vec2 = controller.CatmullRom.Spline[i+1] - controller.CatmullRom.Spline[i+2]
+			end
+
+			NewAng = vec:Angle()
+			NewAng:RotateAroundAxis( vec:Angle():Right(), 90 )
+			NewAng:RotateAroundAxis( vec:Angle():Up(), 270 )
+
+			//only if LastAng is null do we set to it
+			LastPoints.LeftIn = LastPoints.LeftIn or nPosL
+			LastPoints.LeftOut = LastPoints.LeftOut or OnposL
+			LastPoints.RightIn = LastPoints.RightIn or nPosR
+			LastPoints.RightOut = LastPoints.RightOut or OnposR
+
+			if i==1 then
+				local FirstLeft = controller:GetPos() + ang:Right() * -RailOffset
+				local FarLeft = FirstLeft + ang:Right() * -self.WoodRailWidth
+
+				local FirstRight = controller:GetPos() + ang:Right() * RailOffset
+				local FarRight = FirstRight + ang:Right() * self.WoodRailWidth
+
+				if controller:Looped() then
+					FirstLeft = controller.CatmullRom.PointsList[2] + ang:Right() * -RailOffset
+					FarLeft = FirstLeft + ang:Right() * -self.WoodRailWidth
+
+					FirstRight = controller.CatmullRom.PointsList[2] + ang:Right() * RailOffset
+					FarRight = FirstRight + ang:Right() * self.WoodRailWidth
+				end
+				Cylinder.TotalV = leftV
+				leftV = Cylinder.CreateSquare(FirstLeft, FarLeft, OnposL, nPosL, ang:Up(), ThisSegment:GetTrackColor() )
+
+				Cylinder.TotalV = rightV
+				rightV = Cylinder.CreateSquare(FirstRight, FarRight, OnposR, nPosR, ang:Up(), ThisSegment:GetTrackColor() )
+
+			end
+
+
+			//Side rails
+			Cylinder.TotalV = leftV
+			leftV = Cylinder.CreateSquare(LastPoints.LeftIn, LastPoints.LeftOut, OnposL, nPosL, ang:Up(), ThisSegment:GetTrackColor() )
+
+			Cylinder.TotalV = rightV
+			rightV = Cylinder.CreateSquare(LastPoints.RightIn, LastPoints.RightOut, OnposR, nPosR, ang:Up(), ThisSegment:GetTrackColor() )
+
+			if #Cylinder.Vertices > 50000 then// some arbitrary limit to split up the verts into seperate meshes. It's surprisingly easy to hit that limit
+
+				Vertices[self.ModelCount] = Cylinder.Vertices
+				self.ModelCount = self.ModelCount + 1
+				print( self.ModelCount )
+
+				Cylinder.Vertices = {}
+				Cylinder.TriCount = 1
+			end
+			LastPoints.LeftIn = nPosL
+			LastPoints.LeftOut = OnposL
+			LastPoints.RightIn = nPosR
+			LastPoints.RightOut = OnposR
+		end
+	end	
+
+	local verts = Cylinder.EndBeam()
+	Vertices[self.ModelCount] = verts //Dump the remaining vertices into its own model
+
+	return Vertices
+end
+
 function TRACK:PassVerticalSupports( controller )
 	local WoodModels = {}
 	local ModelCount = 1
@@ -199,8 +348,8 @@ function TRACK:PassVerticalSupports( controller )
 	for i = 1, #self.FixedSplines do
 		ang = self.FixedSplines[i].Ang
 
-		local posL = self.FixedSplines[i].Pos + ang:Right() * -RailOffset
-		local posR = self.FixedSplines[i].Pos + ang:Right() * RailOffset
+		local posL = self.FixedSplines[i].Pos + ang:Right() * -(RailOffset + self.WoodRailWidth - (self.BeamWidth/2)) 
+		local posR = self.FixedSplines[i].Pos + ang:Right() * (RailOffset + self.WoodRailWidth - (self.BeamWidth/2))
 		self.FixedSplines[i].PosLeft = posL
 		self.FixedSplines[i].PosRight = posR
 		local traceL = util.TraceLine({start = posL, endpos = posL + Vector( 0, 0, -100000), filter = BuildTraceWhitelist(self.FixedSplines[i].Segment, controller) } )
@@ -232,12 +381,20 @@ function TRACK:PassVerticalSupports( controller )
 		local angBeam = Angle( ang.p, ang.y, ang.r )
 		angBeam:RotateAroundAxis( angBeam:Forward(), -90 )
 
-		Cylinder.AddBeamSquare( posL, ang, OffsetL, Angle( 0, ang.y, 0 ), self.BeamWidth )
-		Cylinder.AddBeamSquare( posR, ang, OffsetR, Angle( 0, ang.y, 0 ), self.BeamWidth )
+		Cylinder.AddBeamSquare( posL - Vector( 0, 0, 2), ang, OffsetL, Angle( 0, ang.y, 0 ), self.BeamWidth )
+		Cylinder.AddBeamSquare( posR - Vector( 0, 0, 2), ang, OffsetR, Angle( 0, ang.y, 0 ), self.BeamWidth )
 
-
-		Cylinder.AddBeamSquare( posL, angBeam, posR, angBeam, 5 )
-
+		for n=1, self.InnerStrutsNum + 1 do 
+			if !self.FixedSplines[i].SubItems[n] then continue end
+			
+			Cylinder.AddBeamSquare( self.FixedSplines[i].SubItems[n].Pos + ang:Right() * -(RailOffset + self.WoodRailWidth - (self.BeamWidth/2)) - Vector( 0, 0, self.CylinderRadius), 
+				angBeam, 
+				self.FixedSplines[i].SubItems[n].Pos + ang:Right() * (RailOffset + self.WoodRailWidth - (self.BeamWidth/2)) - Vector( 0, 0, self.CylinderRadius), 
+				angBeam, 
+				5 
+			)
+		end
+		
 		if #Cylinder.Vertices > 50000 then //some arbitrary limit to split up the verts into seperate meshes. It's surprisingly easy to hit that limit
 
 			WoodModels[ModelCount] = Cylinder.Vertices
@@ -284,8 +441,8 @@ function TRACK:PassHorizontalSupports( controller )
 		level = level + 1
 
 		for i = 1, #self.FixedSplines - 1 do
-			if self.FixedSplines[i].Pos.z > lowestPos && self.FixedSplines[i].PosLeftBottom.z < lowestPos &&
-				self.FixedSplines[i+1].Pos.z > lowestPos && self.FixedSplines[i+1].PosLeftBottom.z < lowestPos then
+			if self.FixedSplines[i].Pos.z - self.BeamWidth > lowestPos && self.FixedSplines[i].PosLeftBottom.z < lowestPos &&
+				self.FixedSplines[i+1].Pos.z - self.BeamWidth > lowestPos && self.FixedSplines[i+1].PosLeftBottom.z < lowestPos then
 					
 				if (self:GetValidHeight(i, lowestPos)) then 
 					ang = self.FixedSplines[i].Ang
@@ -327,6 +484,7 @@ function TRACK:CreateFixedPointTable( controller )
 	local Multiplier = 1
 	local StrutVerts = {} //mmm yeah strut those verts
 	local num = 1
+	local sub = 1
 
 	while CurSegment < #controller.CatmullRom.PointsList - 1 do
 		local CurNode = controller.Nodes[CurSegment]
@@ -348,7 +506,7 @@ function TRACK:CreateFixedPointTable( controller )
 		Multiplier = controller:GetMultiplier(CurSegment, Percent)
 
 		//Move ourselves forward along the track
-		Percent = Percent + ( Multiplier * self.HorizontalSpacing )
+		Percent = Percent + ( Multiplier * self.HorizontalSpacing / self.InnerStrutsNum )
 
 		//Manage moving between nodes
 		if Percent > 1 then
@@ -359,15 +517,31 @@ function TRACK:CreateFixedPointTable( controller )
 			Percent = 0
 		end
 
-		self.FixedSplines[num] = {}
-		self.FixedSplines[num].Pos = Position 
-		self.FixedSplines[num].Ang = ang
-		self.FixedSplines[num].Roll = Roll 
-		self.FixedSplines[num].Segment = CurSegment
+		if !self.FixedSplines[num] then self.FixedSplines[num] = {} end
+		if !self.FixedSplines[num].SubItems then self.FixedSplines[num].SubItems = {} end
 
+		self.FixedSplines[num].SubItems[sub] = {}
+		self.FixedSplines[num].SubItems[sub].Pos = Position 
+		self.FixedSplines[num].SubItems[sub].Ang = ang
+		self.FixedSplines[num].SubItems[sub].Roll = Roll 
+		self.FixedSplines[num].SubItems[sub].Segment = CurSegment
 
-		num = num + 1 //NEWSECTION
+		if sub == 1 then
+			self.FixedSplines[num].Pos = Position 
+			self.FixedSplines[num].Ang = ang
+			self.FixedSplines[num].Roll = Roll 
+			self.FixedSplines[num].Segment = CurSegment
+		end
+
+		if sub > self.InnerStrutsNum then
+			num = num + 1 //NEWSECTION
+			sub = 0
+		end
+
+		sub = sub + 1
 	end
+
+	//PrintTable( self.FixedSplines )
 end
 
 function TRACK:Generate( controller )
@@ -376,12 +550,15 @@ function TRACK:Generate( controller )
 
 	local Models = {}
 	local WoodModels = {}
+	local WoodRailModels = {}
 	local Meshes = {}
 	local WoodMeshes = {}
+	local WoodRailMeshes = {}
 
 	self:CreateFixedPointTable( controller )
 
 	table.Add( Models, self:PassRails( controller ) )
+	table.Add( WoodRailModels, self:PassWoodRails(controller))
 
 	table.Add( WoodModels, self:PassVerticalSupports( controller ) )
 	table.Add( WoodModels, self:PassHorizontalSupports( controller ) )
@@ -403,10 +580,18 @@ function TRACK:Generate( controller )
 		end
 	end
 
+	for i=1, #WoodRailModels do
+		if #WoodRailModels[i] > 2 then
+			WoodRailMeshes[i] = Mesh()
+			WoodRailMeshes[i]:BuildFromTriangles( WoodRailModels[i] )
+		end
+	end
+
 	//Create a new variable that will hold each section of the mesh
 	local Sections = {}
 	Sections[1] = Meshes //The siderails
 	Sections[2] = WoodMeshes //Anything wooden
+	Sections[3] = WoodRailMeshes //the wooden walky bit of the siderails
 
 	return Sections
 end
@@ -425,6 +610,13 @@ function TRACK:Draw( controller, Meshes )
 
 	render.SetMaterial(self.MaterialWood)
 	for k, v in pairs( Meshes[2] ) do
+		if v then 
+			v:Draw() 
+		end
+	end
+
+	render.SetMaterial(self.MaterialWoodRail)
+	for k, v in pairs( Meshes[3] ) do
 		if v then 
 			v:Draw() 
 		end

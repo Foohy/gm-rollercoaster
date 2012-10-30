@@ -24,13 +24,14 @@ function Cylinder.Start(Radius, Num)
 	Cylinder.TotalU = 0
 	Cylinder.TotalV = 0
 
+	Cylinder.LastV = 0
 
 
 end
 
-local function CreateSquare( P1, P2, P3, P4, Normal, TrackColor )	//BACKRIGHT, BACKLEFT, FRONT LEFT, FRONT RIGHT
-	local u = P1:Distance( P2 ) / 200
-	local v = P2:Distance( P3 ) / 200
+function Cylinder.CreateSquare( P1, P2, P3, P4, Normal, TrackColor )	//BACKRIGHT, BACKLEFT, FRONT LEFT, FRONT RIGHT
+	local u =  ( P1:Distance( P2 ) / 200 ) //+ Cylinder.TotalU
+	local v = ( P2:Distance( P3 ) / 200 ) + Cylinder.TotalV
 
 	//Create some variables for proper lightmapped color
 	local colVec = Vector( 0, 0, 0 )
@@ -49,7 +50,7 @@ local function CreateSquare( P1, P2, P3, P4, Normal, TrackColor )	//BACKRIGHT, B
 		pos = P1, 
 		normal = Normal, 
 		u = u,
-		v = 0,
+		v = Cylinder.TotalV,
 		color = Color( colVec.x*SelectedColor.x*255, colVec.y*SelectedColor.y*255, colVec.z*SelectedColor.z*255)
 	}
 	Cylinder.TriCount = Cylinder.TriCount + 1
@@ -61,7 +62,7 @@ local function CreateSquare( P1, P2, P3, P4, Normal, TrackColor )	//BACKRIGHT, B
 		pos = P2, 
 		normal = Normal, 
 		u = 0,
-		v = 0,
+		v = Cylinder.TotalV,
 		color = Color( colVec.x*SelectedColor.x*255, colVec.y*SelectedColor.y*255, colVec.z*SelectedColor.z*255)
 	}
 	Cylinder.TriCount = Cylinder.TriCount + 1
@@ -113,11 +114,17 @@ local function CreateSquare( P1, P2, P3, P4, Normal, TrackColor )	//BACKRIGHT, B
 		pos = P1, 
 		normal = Normal, 
 		u = u,
-		v = 0,
+		v = Cylinder.TotalV,
 		color = Color( colVec.x*SelectedColor.x*255, colVec.y*SelectedColor.y*255, colVec.z*SelectedColor.z*255)
 	}
 	Cylinder.TriCount = Cylinder.TriCount + 1
+
+	return v
 	
+end
+
+function AdvanceTextureCoordinates()
+	Cylinder.TotalV = Cylinder.TotalV + Cylinder.LastV
 end
 
 local function Point( Position, Ang, Offset, Corner )
@@ -156,16 +163,16 @@ function Cylinder.AddBeamSquare( Pos1, Ang1, Pos2, Ang2, Width, TrackColor )
 	normFront:Normalize()
 
 	//Top
-	CreateSquare( TopBackRight, TopBackLeft, TopFrontLeft, TopFrontRight, normtop )
+	Cylinder.CreateSquare( TopBackRight, TopBackLeft, TopFrontLeft, TopFrontRight, normtop )
 
 	//Sides
-	CreateSquare( BottomBackLeft, BottomFrontLeft, TopFrontLeft, TopBackLeft, normLeft )
-	CreateSquare( BottomBackRight, BottomBackLeft, TopBackLeft, TopBackRight, -normFront )
-	CreateSquare( TopFrontRight, TopFrontLeft, BottomFrontLeft, BottomFrontRight, normFront )
-	CreateSquare( BottomFrontRight, BottomBackRight, TopBackRight, TopFrontRight, -normLeft )
+	Cylinder.CreateSquare( BottomBackLeft, BottomFrontLeft, TopFrontLeft, TopBackLeft, normLeft )
+	Cylinder.CreateSquare( BottomBackRight, BottomBackLeft, TopBackLeft, TopBackRight, -normFront )
+	Cylinder.CreateSquare( TopFrontRight, TopFrontLeft, BottomFrontLeft, BottomFrontRight, normFront )
+	Cylinder.CreateSquare( BottomFrontRight, BottomBackRight, TopBackRight, TopFrontRight, -normLeft )
 
 	//Bottom
-	CreateSquare( BottomFrontRight, BottomFrontLeft, BottomBackLeft, BottomBackRight, -normtop ) //BottomBackRight, BottomBackLeft, BottomFrontLeft, BottomFrontRight 
+	Cylinder.CreateSquare( BottomFrontRight, BottomFrontLeft, BottomBackLeft, BottomBackRight, -normtop ) //BottomBackRight, BottomBackLeft, BottomFrontLeft, BottomFrontRight 
 end
 
 function Cylinder.AddBeam( Pos1, Ang1, Pos2, Ang2, Radius, TrackColor )
