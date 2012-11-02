@@ -24,6 +24,7 @@ list.Set( "CartModels", "6 seater train front", "models/xqm/coastertrain1.mdl" )
 list.Set( "CartModels", "2 seater train front", "models/xqm/coastertrain1seat.mdl" )
 list.Set( "CartModels", "fuckyou", "models/props_c17/playground_carousel01.mdl")
 list.Set( "CartModels", "4 seater train front", "models/xqm/coastertrain2seat.mdl" )
+list.Set( "CartModels", "Spooky Halloween Cart", "models/gmod_tower/halloween_traincar.mdl" )
 
 function TAB:LeftClick( trace, tool )
 	local ply   = tool:GetOwner()
@@ -115,6 +116,23 @@ function TAB:Think( tool )
 
 end
 
+//Use the old slider for whole number things
+local function SlidingSlider( panel, strLabel, strConVar, numMin, numMax, numDecimals )
+    local left = vgui.Create( "DNumSlider", panel )
+    left:SetText( strLabel )
+    left:SetMinMax( numMin, numMax )
+    left:SetDark( true )
+    
+    if ( numDecimals != nil ) then left:SetDecimals( numDecimals ) end
+    
+    left:SetConVar( strConVar )
+    left:SizeToContents()
+    
+    panel:AddItem( left, nil )
+    
+    return left
+end
+
 function TAB:BuildPanel()
 	local panel = vgui.Create("DForm")
 	panel:SetName("Cart Options")
@@ -130,7 +148,7 @@ function TAB:BuildPanel()
 
 	panel:AddItem(propSelect)
 	//panel:AddControl( "PropSelect", { Label = "#WheelTool_model", ConVar = "coaster_cart_creator_model", Category = "Carts", Models = list.Get( "CartModels" ) } )
-	panel:NumSlider("Number of carts: ","coaster_supertool_tab_cart_creator_cart_amount", 1, 8, 0)
+	SlidingSlider( panel, "Number of carts: ","coaster_supertool_tab_cart_creator_cart_amount", 1, 8, 0)
 	panel:ControlHelp("How many carts should be spawned and attached as a single train")
 
 	panel:NumSlider("Initial speed: ","coaster_supertool_tab_cart_creator_startSpeed", 0.01, 75, 3)

@@ -180,6 +180,23 @@ function TAB:Think( tool )
 
 end
 
+//Use the old slider for whole number things
+local function SlidingSlider( panel, strLabel, strConVar, numMin, numMax, numDecimals )
+    local left = vgui.Create( "DNumSlider", panel )
+    left:SetText( strLabel )
+    left:SetMinMax( numMin, numMax )
+    left:SetDark( true )
+    
+    if ( numDecimals != nil ) then left:SetDecimals( numDecimals ) end
+    
+    left:SetConVar( strConVar )
+    left:SizeToContents()
+    
+    panel:AddItem( left, nil )
+    
+    return left
+end
+
 function TAB:BuildPanel( )
 	local panel = vgui.Create("DForm")
 	panel:SetName("Save/Load/Upload Completed Tracks")
@@ -205,7 +222,7 @@ function TAB:BuildPanel( )
 		local upload = panel:Button("Upload...")
 		upload.DoClick = function() OpenCoasterUploadMenu() end
 	end
-	panel:NumSlider( "Rollercoaster ID: ", "coaster_supertool_tab_saver_id", 1, 8, 0 )
+	SlidingSlider( panel, "Rollercoaster ID: ", "coaster_supertool_tab_saver_id", 1, 8, 0 )
 
 	panel:CheckBox("Spawn at original position and angles", "coaster_supertool_tab_saver_orig_spawn")
 

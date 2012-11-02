@@ -19,6 +19,7 @@ function ENT:SetupDataTables()
 	self:DTVar("Entity", 1, "Controller")
 	self:DTVar("Int", 0, "Type")
 	self:DTVar("Int", 1, "TrackType")
+	self:DTVar("Int", 2, "Order") //HACKHACK. Saves don't properly save entity DTVars. we'll have to manually store a node's order in the table
 	self:DTVar("Float", 0, "Roll")
 	self:DTVar("Vector", 0, "TrackColor")
 	self:DTVar("Vector", 1, "SupportColor")
@@ -124,4 +125,14 @@ end
 
 function ENT:GetSupportColor() 
 	return self.dt.SupportColor.x, self.dt.SupportColor.y, self.dt.SupportColor.z 
+end
+
+
+
+function ENT:SetOrder( num )
+	self.dt.Order = num
+end
+
+function ENT:GetOrder()
+	return self.dt.Order;
 end

@@ -321,12 +321,28 @@ function TAB:UpdateGhostNode( tool )
 
 end
 
+//Use the old slider for whole number things
+local function SlidingSlider( panel, strLabel, strConVar, numMin, numMax, numDecimals )
+    local left = vgui.Create( "DNumSlider", panel )
+    left:SetText( strLabel )
+    left:SetMinMax( numMin, numMax )
+    left:SetDark( true )
+    
+    if ( numDecimals != nil ) then left:SetDecimals( numDecimals ) end
+    
+    left:SetConVar( strConVar )
+    left:SizeToContents()
+    
+    panel:AddItem( left, nil )
+    
+    return left
+end
 
 function TAB:BuildPanel( )
 	local panel = vgui.Create("DForm")
 	panel:SetName("Node Spawner")
 
-	panel:NumSlider("Rollercoaster ID: ","coaster_supertool_tab_node_creator_id", 1, 8, 0)
+	SlidingSlider( panel, "Rollercoaster ID: ","coaster_supertool_tab_node_creator_id", 1, 8, 0)
 
 
 	local ComboBox = vgui.Create("DComboBox", panel)
@@ -367,7 +383,7 @@ function TAB:BuildPanel( )
 
 	local bankSlider = panel:NumSlider("Node Roll: ","coaster_supertool_tab_node_creator_bank", -180.01, 180, 2)
 
-	bankSlider:SetValue( 0 )
+	//bankSlider:SetValue( 0 )
 	RunConsoleCommand("coaster_supertool_tab_node_creator_bank", 0 ) //Default to 0
 
 	local easyroll = vgui.Create("DEasyButtons", self)
