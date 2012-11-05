@@ -102,6 +102,9 @@ function ENT:Initialize()
 		self:SetNotSolid( true )
 	end
 	
+	//QUICKFIX BECAUSE IT'S BREAKING DUE TO BROKEN SHOULDCOLLIDE
+	self:SetCollisionGroup(COLLISION_GROUP_WORLD)
+
 	self.Occupants = {}
 end
 
@@ -119,13 +122,17 @@ function ENT:OffDaRailz(safemode)
 		if self.IsDummy then
 			if self.CartTable != nil then
 				for z, x in pairs(self.CartTable) do
-					x:OffDaRailz(true)
+					if IsValid( x ) then
+						x:OffDaRailz(true)
+					end
 				end
 			end
 			if self.CartTable != nil then //must be separate from the above loop stuff
 				for z, x in pairs(self.CartTable) do
-					table.remove(self.CartTable,z)
-					RollercoasterUpdateCartTable(self.CartTable)
+					if IsValid( x ) then
+						table.remove(self.CartTable,z)
+						RollercoasterUpdateCartTable(self.CartTable)
+					end
 				end
 			end
 			self:Remove()
@@ -204,6 +211,7 @@ local function CalcAverageCartFriction(ctable,dt)
 	if ctable == nil then return nil end if dt == nil then return nil end
 	local total = 0
 	for k, v in pairs(ctable) do
+		if !IsValid( v ) then continue end
 		//Specific exception if they want to have 1 cart (no need for all this silly business)
 		if #ctable == 1 then
 			return v:CalcFrictionalForce(v.CurSegment,v.Percent,dt)
@@ -221,7 +229,7 @@ local function CalcAverageCartSlopeVelocity(ctable,dt)
 	if ctable == nil then return nil end if dt == nil then return nil end
 	local total = 0
 	for k, v in pairs(ctable) do
-
+		if !IsValid( v ) then continue end
 		//Specific exception if they want to have 1 cart (no need for all this silly business)
 		if #ctable == 1 then
 			return v:CalcChangeInVelocity(v.CurSegment,v.Percent,dt)
