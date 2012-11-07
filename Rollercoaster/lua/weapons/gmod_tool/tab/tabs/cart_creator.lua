@@ -117,20 +117,26 @@ function TAB:Think( tool )
 end
 
 //Use the old slider for whole number things
-local function SlidingSlider( panel, strLabel, strConVar, numMin, numMax, numDecimals )
-    local left = vgui.Create( "DNumSlider", panel )
-    left:SetText( strLabel )
-    left:SetMinMax( numMin, numMax )
-    left:SetDark( true )
-    
-    if ( numDecimals != nil ) then left:SetDecimals( numDecimals ) end
-    
-    left:SetConVar( strConVar )
-    left:SizeToContents()
-    
-    panel:AddItem( left, nil )
-    
-    return left
+local function NumScratch( panel, strLabel, strConVar, numMin, numMax, numDecimals )
+	local left = vgui.Create( "DLabel", panel )
+		left:SetText( strLabel )
+		left:SetDark( true )
+	
+	local right = panel:Add( "Panel" )
+	
+		local entry = right:Add( "DTextEntry" )
+			entry:SetConVar( strConVar )
+			entry:Dock( FILL )
+
+		local num = right:Add( "DNumberScratch" )
+			num:SetMin( tonumber( numMin ) )
+			num:SetMax( tonumber( numMax ) )
+			num:SetConVar( strConVar )
+			num:DockMargin( 4, 0, 0, 0 )
+			num:Dock( RIGHT )
+	
+	panel:AddItem( left, right )
+	return left
 end
 
 function TAB:BuildPanel()
@@ -148,15 +154,15 @@ function TAB:BuildPanel()
 
 	panel:AddItem(propSelect)
 	//panel:AddControl( "PropSelect", { Label = "#WheelTool_model", ConVar = "coaster_cart_creator_model", Category = "Carts", Models = list.Get( "CartModels" ) } )
-	SlidingSlider( panel, "Number of carts: ","coaster_supertool_tab_cart_creator_cart_amount", 1, 8, 0)
+	panel:NumSlider( "Number of carts: ","coaster_supertool_tab_cart_creator_cart_amount", 1, 8, 0)
 	panel:ControlHelp("How many carts should be spawned and attached as a single train")
 
-	panel:NumSlider("Initial speed: ","coaster_supertool_tab_cart_creator_startSpeed", 0.01, 75, 3)
+	NumScratch( panel, "Initial speed: ","coaster_supertool_tab_cart_creator_startSpeed", 0.01, 75, 3)
 
-	panel:NumSlider("Minimum speed: ","coaster_supertool_tab_cart_creator_minSpeed", 0, 75, 3)
+	NumScratch( panel, "Minimum speed: ","coaster_supertool_tab_cart_creator_minSpeed", 0, 75, 3)
 	panel:ControlHelp("Never let the cart slow beyond the specified speed. Use a minimum speed of 0 to disable.")
 
-	panel:NumSlider("Frictional Coefficient: ","coaster_supertool_tab_cart_creator_friction", 0, 1, 3)
+	NumScratch( panel, "Frictional Coefficient: ","coaster_supertool_tab_cart_creator_friction", 0, 1, 3)
 	panel:ControlHelp("The frictional coefficient of each cart. Higher = more friction.")
 
 	//Commented out for now, feature doesn't exist and it's sounding like it's gonna be a pain in the ass

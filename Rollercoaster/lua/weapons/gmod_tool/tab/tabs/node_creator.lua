@@ -322,27 +322,33 @@ function TAB:UpdateGhostNode( tool )
 end
 
 //Use the old slider for whole number things
-local function SlidingSlider( panel, strLabel, strConVar, numMin, numMax, numDecimals )
-    local left = vgui.Create( "DNumSlider", panel )
-    left:SetText( strLabel )
-    left:SetMinMax( numMin, numMax )
-    left:SetDark( true )
-    
-    if ( numDecimals != nil ) then left:SetDecimals( numDecimals ) end
-    
-    left:SetConVar( strConVar )
-    left:SizeToContents()
-    
-    panel:AddItem( left, nil )
-    
-    return left
+local function NumScratch( panel, strLabel, strConVar, numMin, numMax, numDecimals )
+	local left = vgui.Create( "DLabel", panel )
+		left:SetText( strLabel )
+		left:SetDark( true )
+	
+	local right = panel:Add( "Panel" )
+	
+		local entry = right:Add( "DTextEntry" )
+			entry:SetConVar( strConVar )
+			entry:Dock( FILL )
+
+		local num = right:Add( "DNumberScratch" )
+			num:SetMin( tonumber( numMin ) )
+			num:SetMax( tonumber( numMax ) )
+			num:SetConVar( strConVar )
+			num:DockMargin( 4, 0, 0, 0 )
+			num:Dock( RIGHT )
+	
+	panel:AddItem( left, right )
+	return left
 end
 
 function TAB:BuildPanel( )
 	local panel = vgui.Create("DForm")
 	panel:SetName("Node Spawner")
 
-	SlidingSlider( panel, "Rollercoaster ID: ","coaster_supertool_tab_node_creator_id", 1, 8, 0)
+	panel:NumSlider( "Rollercoaster ID: ","coaster_supertool_tab_node_creator_id", 1, 8, 0)
 
 
 	local ComboBox = vgui.Create("DComboBox", panel)
@@ -366,7 +372,7 @@ function TAB:BuildPanel( )
 	panel:AddItem( Seperator )
 
 	//The elevation slider
-	panel:NumSlider("Node Elevation: ","coaster_supertool_tab_node_creator_elevation", -2000, 2000, 3)
+	NumScratch( panel, "Node Elevation: ","coaster_supertool_tab_node_creator_elevation", -2000, 2000, 3)
 
 	//And the thing to make it easier
 	local easyelev = vgui.Create("DEasyButtons", self)
@@ -381,9 +387,7 @@ function TAB:BuildPanel( )
 	Seperator:SetText("______________________________________________")
 	panel:AddItem( Seperator )
 
-	local bankSlider = panel:NumSlider("Node Roll: ","coaster_supertool_tab_node_creator_bank", -180.01, 180, 2)
-
-	//bankSlider:SetValue( 0 )
+	NumScratch( panel, "Node Roll: ","coaster_supertool_tab_node_creator_bank", -180.01, 180, 2)
 	RunConsoleCommand("coaster_supertool_tab_node_creator_bank", 0 ) //Default to 0
 
 	local easyroll = vgui.Create("DEasyButtons", self)
