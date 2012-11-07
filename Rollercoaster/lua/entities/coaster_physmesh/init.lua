@@ -16,7 +16,9 @@ function ENT:Initialize()
 	self:SetMoveType(MOVETYPE_NONE)
 	self:SetSolid(SOLID_VPHYSICS)
 
-	self:DrawShadow( false )
+	self:SetCustomCollisionCheck(true)
+
+	//self:DrawShadow( false )
 
 	self:SetAngles( Angle( 0, 0, 0 ) )
 
@@ -92,7 +94,7 @@ function ENT:BuildMesh()
 	self:GetPhysicsObject():EnableMotion( false )
 	self:EnableCustomCollisions( )
 
-	self:SetCollisionGroup( COLLISION_GROUP_NONE)
+	self:SetCustomCollisionCheck(true)
 
 end
 

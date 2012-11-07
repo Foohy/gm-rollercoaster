@@ -103,7 +103,7 @@ function ENT:Initialize()
 	end
 	
 	//QUICKFIX BECAUSE IT'S BREAKING DUE TO BROKEN SHOULDCOLLIDE
-	self:SetCollisionGroup(COLLISION_GROUP_WORLD)
+	self:SetCustomCollisionCheck(true)
 
 	self.Occupants = {}
 end
