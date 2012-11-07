@@ -4,6 +4,12 @@ local TRACK = {}
 
 TRACK.Name = "Simple Track"
 TRACK.Description = "The bare basics of a track. Good for customization."
+TRACK.PhysWidth = 30 //How wide the physics mesh should be
+
+trackmanager.Register( EnumNames.Tracks[COASTER_TRACK_SIMPLE], TRACK )
+
+if !CLIENT then return end
+
 TRACK.Material =  CreateMaterial( "CoasterTrackMaterial", "UnlitGeneric", { //VertexLitGeneric
 	["$basetexture"] 		= "phoenix_storms/dome", //models/debug/debugwhite
     ["$bumpmap"]			= "phoenix_storms/dome_bump",
@@ -178,4 +184,3 @@ function TRACK:Draw( controller, Meshes )
 
 end
 
-trackmanager.Register( EnumNames.Tracks[COASTER_TRACK_SIMPLE], TRACK )

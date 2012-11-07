@@ -51,6 +51,12 @@ function ENT:BuildMesh()
 	//Make sure our segment has actual information
 	if self.Segment < 2 or self.Segment >= #Controller.Nodes - 1 then return end
 
+	//change width according to the track type
+	local track = trackmanager.Get(EnumNames.Tracks[Controller:GetTrackType()])
+	if track then
+		self.Tri_Width = track.PhysWidth or 30
+	else self.Tri_Width = 30 end
+
 	//We're starting up making a beam of cylinders
 	physmesh_builder.Start( self.Tri_Width, self.Tri_Height ) 
 

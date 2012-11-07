@@ -3,8 +3,14 @@ include( "autorun/mesh_beams.lua")
 
 local TRACK = {}
 
+
 TRACK.Name = "Metal Track"
 TRACK.Description = "A nice metal coaster"
+TRACK.PhysWidth = 30 //How wide the physics mesh should be
+
+trackmanager.Register( EnumNames.Tracks[COASTER_TRACK_METAL], TRACK )
+if !CLIENT then return end
+
 //TRACK.Material = Material("models/wireframe")
 //phoenix_storms/dome
 TRACK.Material =  CreateMaterial( "CoasterTrackMaterial", "UnlitGeneric", { //VertexLitGeneric
@@ -516,5 +522,3 @@ function TRACK:Draw( controller, Meshes )
 		end
 	end
 end
-
-trackmanager.Register( EnumNames.Tracks[COASTER_TRACK_METAL], TRACK )

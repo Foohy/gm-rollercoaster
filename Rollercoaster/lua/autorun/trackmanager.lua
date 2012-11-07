@@ -25,6 +25,7 @@ function LoadClasses()
 		
 		if SERVER then
 			AddCSLuaFile( loadName )
+			include( loadName )
 		else
 			include( loadName )
 		end

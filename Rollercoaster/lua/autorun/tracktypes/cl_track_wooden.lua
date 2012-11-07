@@ -4,6 +4,12 @@ local TRACK = {}
 
 TRACK.Name = "Wooden Track"
 TRACK.Description = "A wooden track"
+TRACK.PhysWidth = 50 //How wide the physics mesh should be
+
+trackmanager.Register( EnumNames.Tracks[COASTER_TRACK_WOOD], TRACK )
+
+if !CLIENT then return end
+
 TRACK.Material =  CreateMaterial( "CoasterWoodMaterialRail", "UnlitGeneric", { //VertexLitGeneric
 	["$basetexture"] 		= "phoenix_storms/metalset_1-2", //models/debug/debugwhite
 	["$vertexcolor"] 		= 1,
@@ -31,6 +37,7 @@ TRACK.MaterialWoodRail =  CreateMaterial( "CoasterWoodRailMaterialBeam", "UnlitG
 	["$phongboost"] 		= 2,
 	["$phongfresnelranges"] = "0.5 0.8 1",
 } )
+
 
 local RailOffset = 25 //Distance track beams away from eachother
 TRACK.WoodRailWidth = 25 //Width of the wood rails
@@ -626,4 +633,3 @@ function TRACK:Draw( controller, Meshes )
 
 end
 
-trackmanager.Register( EnumNames.Tracks[COASTER_TRACK_WOOD], TRACK )
