@@ -18,6 +18,10 @@ function ENT:SetupDataTables()
 	self:DTVar("Int", 1, "Controller")
 end
 
+function ENT:Initialize()
+	self:SetMaterial( "metal" )
+end
+
 function ENT:SetSegment(segment)
 	self.dt.Segment = segment
 end

@@ -96,7 +96,7 @@ function ENT:BuildMesh()
 	end
 
 	self:SetAngles( Angle( 0, 0, 0 ) )
-	self:PhysicsFromMesh( Remaining ) //THIS MOTHERFUCKER
+	self:PhysicsFromMesh( Remaining, true ) //THIS MOTHERFUCKER
 	self:GetPhysicsObject():EnableMotion( false )
 	self:EnableCustomCollisions( )
 

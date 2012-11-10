@@ -64,7 +64,7 @@ function ENT:BuildMesh()
 		Remaining[i].pos = Remaining[i].pos - self:GetPos()
 	end
 
-	self:PhysicsFromMesh( Remaining ) //THIS MOTHERFUCKER
+	self:PhysicsFromMesh( Remaining, true ) //THIS MOTHERFUCKER
 	self:EnableCustomCollisions( )
 	self:GetPhysicsObject():EnableMotion( false )
 	self:GetPhysicsObject():SetMass(500)
