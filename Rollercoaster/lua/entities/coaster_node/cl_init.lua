@@ -115,6 +115,16 @@ usermessage.Hook("Coaster_RefreshTrack", function( um )
 
 end )
 
+usermessage.Hook("Coaster_invalidateall", function( um )
+	local self = um:ReadEntity()
+	if !IsValid( self ) || !self.IsController then return end
+
+	for k, v in pairs( self.Nodes ) do
+		v.Invalidated = true
+		self:InvalidatePhysmesh(k)
+	end
+end )
+
 usermessage.Hook("Coaster_CartFailed", function( um )
 	local needed = um:ReadChar() or 0
 	GAMEMODE:AddNotify("Need " .. needed .. " more nodes to create track!", NOTIFY_ERROR, 3 )

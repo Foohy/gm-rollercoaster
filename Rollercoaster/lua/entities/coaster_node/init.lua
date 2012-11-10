@@ -320,13 +320,20 @@ function ENT:Invalidate(minimal)
 	umsg.End()
 end
 
+//Invalidate everything
+function ENT:InvalidateTrack()
+	umsg.Start("Coaster_invalidateall")
+		umsg.Entity( self )
+	umsg.End()
+end
+
 function ENT:UpdateTrackLength()
 	//update length()
 	//update length for other appropriate nodes too
 	//print("invalidating")
 	local controller = Rollercoasters[self:GetCoasterID()]
-	if !IsValid( controller ) or !IsValid( self ) then /*print("returning1")*/ return end
-	if #controller.Nodes < 1 then /*print("returning2")*/ return end
+	if !IsValid( controller ) or !IsValid( self ) then return end
+	if #controller.Nodes < 1 then return end
 	
 	controller.TotalTrackLength = 0
 	for k, v in pairs(controller.Nodes) do

@@ -150,7 +150,7 @@ if SERVER then
 		timer.Simple( 5, function() //is there a hook when the player is able to receive umsgs?
 			for k, v in pairs( ents.FindByClass("coaster_node") ) do
 				if IsValid( v ) && v:IsController() then
-					umsg.Start("Coaster_RefreshTrack", ply)
+					umsg.Start("Coaster_invalidateall", ply)
 						umsg.Entity(v)
 					umsg.End()
 				end

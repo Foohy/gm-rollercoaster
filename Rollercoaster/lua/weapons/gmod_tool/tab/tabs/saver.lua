@@ -698,8 +698,8 @@ if SERVER then
 			controllernode:UpdateServerSpline()
 			controllernode.IsSpawning = false
 			timer.Simple( 0.2 , function() //Final delay in case any nodes were missed
-				umsg.Start("Coaster_AddNode")
-					umsg.Short( controllernode:EntIndex() )
+				umsg.Start("Coaster_invalidateall")
+					umsg.Entity( controllernode )
 				umsg.End()
 				ply.SpawningCoaster = false
 			end )
