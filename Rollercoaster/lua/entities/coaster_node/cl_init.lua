@@ -24,10 +24,7 @@ local MatCable  = Material("phoenix_storms/stripes") //cable/cable2
 local mat_beam 	= Material("phoenix_storms/metalfloor_2-3")
 local mat_debug	= Material("phoenix_storms/stripes") //models/wireframe // phoenix_storms/stripes
 local mat_chain = Material("sunabouzu/old_chain") //sunabouzu/old_chain
-
-local mat_debug = CreateMaterial( "CoasterInvalidateMaterial", "UnlitGeneric", { //VertexLitGeneric
-	["$basetexture"] 		= "phoenix_storms/stripes", //models/debug/debugwhite
-} )
+local mat_debug = Material("foohy/warning")
 
 function ENT:Initialize()
 
@@ -354,7 +351,7 @@ end
 
 //Update the client spline, less perfomance heavy than above function
 //Use only when nodes have moved position.
-function ENT:UpdateClientSpline()
+function ENT:UpdateClientSpline( point ) //The point is the node that is moving
 	if #self.CatmullRom.PointsList < 4 then return end
 	
 	//Loop through the points in the catmull controller object, updating the position of each one per entity
@@ -369,8 +366,11 @@ function ENT:UpdateClientSpline()
 		end
 	end
 	
-	self.CatmullRom:CalcEntireSpline()
-	//self:UpdateClientsidePhysics()
+	//self.CatmullRom:CalcEntireSpline()
+	if point then
+		self.CatmullRom:CalcSection( math.Clamp( point - 2, 2, #self.Nodes - 2), math.Clamp( point + 2, 2, #self.Nodes - 2))
+		//self.CatmullRom:CalcSection( 2, #self.CatmullRom.PointsList)
+	else self.CatmullRom:CalcEntireSpline() end
 
 end
 
@@ -896,7 +896,7 @@ function ENT:DrawSideRail( segment, offset )
 
 	//Set up some variables (these are declared outside this function)
 	node = (segment - 2) * self.CatmullRom.STEPS
-	Dist = CurTime() * 200
+	Dist = CurTime() * 20
 	Roll = 0
 
 	//Very first beam position
@@ -1216,7 +1216,7 @@ function ENT:Think()
 			end
 
 			//So we can see the beams move while me move a node
-			self:UpdateClientSpline() 
+			self:UpdateClientSpline( k ) 
 
 			//Update the positions of the wheels
 			for num, node in pairs( self.Nodes ) do 

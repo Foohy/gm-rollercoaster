@@ -1,0 +1,14 @@
+"UnlitGeneric"
+{
+	"$basetexture" "phoenix_storms/stripes"
+	"$surfaceprop" "metal"
+	"Proxies"
+	{
+		"TextureScroll"
+		{
+			"texturescrollvar"		"$baseTextureTransform"
+			"texturescrollrate"		0.1
+			"texturescrollangle"	0
+		}
+	}
+}

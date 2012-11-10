@@ -51,39 +51,41 @@ function AddBeam( Pos1, Ang1, Pos2, Ang2 )
 	local Verts = {}
 
 	//Top Quad
-	Verts[3] = {
-		pos = B_Left,
-		u = 0,
-		v = 0,
-		normal = NormTop
-	}
-	Verts[2] = {
-		pos = B_Right,
-		u = 0.5,
-		v = 1,
-		normal = NormTop
-	}
+
 	Verts[1] = {
 		pos = F_Right,
 		u = 1,
 		v = 0,
 		normal = NormTop
 	}
-
-	Verts[6] = {
-		pos = F_Right,
+	Verts[2] = {
+		pos = B_Right,
 		u = 0,
 		v = 0,
 		normal = NormTop
 	}
-	Verts[5] = {
-		pos = F_Left,
-		u = 0.5,
+	Verts[3] = {
+		pos = B_Left,
+		u = 0,
 		v = 1,
 		normal = NormTop
 	}
+
+
 	Verts[4] = {
 		pos = B_Left,
+		u = 0,
+		v = 1,
+		normal = NormTop
+	}
+	Verts[5] = {
+		pos = F_Left,
+		u = 1,
+		v = 1,
+		normal = NormTop
+	}
+	Verts[6] = {
+		pos = F_Right,
 		u = 1,
 		v = 0,
 		normal = NormTop
@@ -92,32 +94,32 @@ function AddBeam( Pos1, Ang1, Pos2, Ang2 )
 	//Left Quad
 	Verts[9] = {
 		pos = F_Bottom,
-		u = 0,
+		u = 1,
 		v = 0,
 		normal = NormLeft
 	}
 	Verts[8] = {
 		pos = B_Bottom,
-		u = 0.5,
-		v = 1,
+		u = 0,
+		v = 0,
 		normal = NormLeft
 	}
 	Verts[7] = {
 		pos = B_Left,
-		u = 1,
-		v = 0,
+		u = 0,
+		v = 1,
 		normal = NormLeft
 	}
 
 	Verts[12] = {
 		pos = B_Left,
 		u = 0,
-		v = 0,
+		v = 1,
 		normal = NormLeft
 	}
 	Verts[11] = {
 		pos = F_Left,
-		u = 0.5,
+		u = 1,
 		v = 1,
 		normal = NormLeft
 	}
@@ -131,32 +133,32 @@ function AddBeam( Pos1, Ang1, Pos2, Ang2 )
 	//Right Quad
 	Verts[15] = {
 		pos = F_Bottom,
-		u = 0,
+		u = 1,
 		v = 0,
 		normal = NormRight
 	}
 	Verts[14] = {
 		pos = F_Right,
-		u = 0.5,
-		v = 1,
+		u = 0,
+		v = 0,
 		normal = NormRight
 	}
 	Verts[13] = {
 		pos = B_Right,
-		u = 1,
-		v = 0,
+		u = 0,
+		v = 1,
 		normal = NormRight
 	}
 
 	Verts[18] = {
 		pos = B_Right,
 		u = 0,
-		v = 0,
+		v = 1,
 		normal = NormRight
 	}
 	Verts[17] = {
 		pos = B_Bottom,
-		u = 0.5,
+		u = 1,
 		v = 1,
 		normal = NormRight
 	}

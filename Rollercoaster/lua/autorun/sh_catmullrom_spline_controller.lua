@@ -272,4 +272,25 @@ function Controller:CalcEntireSpline()
 	end
 end
 
+function Controller:CalcSection( from, to )
+	local nodecount = #self.PointsList
+	if CLIENT && !self.DisableDynamicStep then
+		self.STEPS = math.Clamp( GetConVar("coaster_resolution"):GetInt(), 1, 100 )
+	end
+
+	if nodecount < 4 then
+		return ErrorNoHalt("Not enough nodes given, I need four and was given ", nodecount, ".\n")
+	end
+	
+	local pointcount = (from -2) * self.STEPS
+	
+	for index = from, (to) do
+		for j = 1, self.STEPS do
+			pointcount = pointcount + 1
+			
+			self.Spline[pointcount] = self:Point(index, j / self.STEPS)
+		end
+	end
+end
+
 CoasterManager.Controller = Controller
