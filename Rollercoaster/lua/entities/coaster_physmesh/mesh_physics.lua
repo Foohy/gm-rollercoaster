@@ -39,97 +39,138 @@ function AddBeam( Pos1, Ang1, Pos2, Ang2 )
 	local B_Bottom = Pos2 + Ang2:Up() * -Height
 	local B_Left = Pos2 + Ang2:Right() * -Width
 
+	local NormLeft = F_Bottom - F_Left
+	NormLeft:Normalize()
+	local NormRight = F_Bottom - F_Right
+	NormRight:Normalize()
+
+
+	local NormTop = Ang1:Up()
+
 	//Triangulate that shit
 	local Verts = {}
-	
-	//Front triangle
-	Verts[1] = {
-		pos = F_Right,
-	}
-	Verts[2] = {
-		pos = F_Bottom,
-	}
-	Verts[3] = {
-		pos = F_Left,
-	}
-
-	//Back triangle
-	Verts[4] = {
-		pos = B_Left,
-	}
-	Verts[5] = {
-		pos = B_Bottom,
-	}
-	Verts[6] = {
-		pos = B_Right,
-	}
 
 	//Top Quad
-	Verts[7] = {
+	Verts[3] = {
 		pos = B_Left,
+		u = 0,
+		v = 0,
+		normal = NormTop
 	}
-	Verts[8] = {
+	Verts[2] = {
 		pos = B_Right,
+		u = 0.5,
+		v = 1,
+		normal = NormTop
 	}
-	Verts[9] = {
+	Verts[1] = {
 		pos = F_Right,
+		u = 1,
+		v = 0,
+		normal = NormTop
 	}
 
-	Verts[10] = {
+	Verts[6] = {
 		pos = F_Right,
+		u = 0,
+		v = 0,
+		normal = NormTop
 	}
-	Verts[11] = {
+	Verts[5] = {
 		pos = F_Left,
+		u = 0.5,
+		v = 1,
+		normal = NormTop
 	}
-	Verts[12] = {
+	Verts[4] = {
 		pos = B_Left,
+		u = 1,
+		v = 0,
+		normal = NormTop
 	}
 
 	//Left Quad
-	Verts[13] = {
+	Verts[9] = {
 		pos = F_Bottom,
+		u = 0,
+		v = 0,
+		normal = NormLeft
 	}
-	Verts[14] = {
+	Verts[8] = {
 		pos = B_Bottom,
+		u = 0.5,
+		v = 1,
+		normal = NormLeft
 	}
-	Verts[15] = {
+	Verts[7] = {
 		pos = B_Left,
+		u = 1,
+		v = 0,
+		normal = NormLeft
 	}
 
-	Verts[16] = {
+	Verts[12] = {
 		pos = B_Left,
+		u = 0,
+		v = 0,
+		normal = NormLeft
 	}
-	Verts[17] = {
+	Verts[11] = {
 		pos = F_Left,
+		u = 0.5,
+		v = 1,
+		normal = NormLeft
 	}
-	Verts[18] = {
+	Verts[10] = {
 		pos = F_Bottom,
+		u = 1,
+		v = 0,
+		normal = NormLeft
 	}
 
 	//Right Quad
-	Verts[19] = {
+	Verts[15] = {
 		pos = F_Bottom,
+		u = 0,
+		v = 0,
+		normal = NormRight
 	}
-	Verts[20] = {
+	Verts[14] = {
 		pos = F_Right,
+		u = 0.5,
+		v = 1,
+		normal = NormRight
 	}
-	Verts[21] = {
+	Verts[13] = {
 		pos = B_Right,
+		u = 1,
+		v = 0,
+		normal = NormRight
 	}
 
-	Verts[22] = {
+	Verts[18] = {
 		pos = B_Right,
+		u = 0,
+		v = 0,
+		normal = NormRight
 	}
-	Verts[23] = {
+	Verts[17] = {
 		pos = B_Bottom,
+		u = 0.5,
+		v = 1,
+		normal = NormRight
 	}
-	Verts[24] = {
+	Verts[16] = {
 		pos = F_Bottom,
+		u = 1,
+		v = 0,
+		normal = NormRight
 	}
 	
 	table.Add(Vertices, Verts) //Add these new verts to the table
 
 end
+
 
 function EndBeam()
 	return Vertices

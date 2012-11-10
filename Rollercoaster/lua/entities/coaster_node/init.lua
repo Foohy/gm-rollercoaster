@@ -311,6 +311,8 @@ end
 
 //Invalidate the node on the client
 function ENT:Invalidate(minimal)
+	self:BuildSegmentMesh()
+
 	umsg.Start("Coaster_nodeinvalidate")
 		umsg.Entity( self:GetController() )
 		umsg.Entity( self )

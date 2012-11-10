@@ -20,10 +20,14 @@ ENT.Nodes = {}
 ENT.CatmullRom = {}
 
 local MatLaser  = Material("cable/hydra")
-local MatCable  = Material("cable/cable2")
+local MatCable  = Material("phoenix_storms/stripes") //cable/cable2
 local mat_beam 	= Material("phoenix_storms/metalfloor_2-3")
-local mat_debug	= Material("phoenix_storms/dome") //models/wireframe // phoenix_storms/stripes
+local mat_debug	= Material("phoenix_storms/stripes") //models/wireframe // phoenix_storms/stripes
 local mat_chain = Material("sunabouzu/old_chain") //sunabouzu/old_chain
+
+local mat_debug = CreateMaterial( "CoasterInvalidateMaterial", "UnlitGeneric", { //VertexLitGeneric
+	["$basetexture"] 		= "phoenix_storms/stripes", //models/debug/debugwhite
+} )
 
 function ENT:Initialize()
 
@@ -50,6 +54,11 @@ function ENT:Initialize()
 		[MAT_SAND] 		= 2,
 		[MAT_GLASS] 	= 1,
 	}
+	local controller = self:GetController()
+	if IsValid( controller ) then
+		controller:InvalidatePhysmesh(#controller.Nodes-1)
+		if #controller.Nodes == 2 then controller:InvalidatePhysmesh(#controller.Nodes) end
+	end
 
 	if !self:IsController() then return end //Don't continue executing -- the rest of this stuff is for only the controller
 	CoasterUpdateTrackTime = 0 //Tell the thingy that it's time to update its cache of coasters
@@ -86,6 +95,9 @@ function ENT:Initialize()
 	//self.CatmullRom.STEPS = 20
 	self.CatmullRom:Reset()
 
+
+	//Create a list of invalid physmeshes
+	self.InvalidNodes = {}
 end
 
 usermessage.Hook("Coaster_RefreshTrack", function( um )
@@ -126,15 +138,19 @@ usermessage.Hook("Coaster_AddNode", function( um )
 
 			if IsValid( self.Nodes[ last ] ) then
 				self.Nodes[ last ].Invalidated = true
+				self:InvalidatePhysmesh(last)
 			end
 			if IsValid( self.Nodes[ last - 1 ] ) then
 				self.Nodes[ last - 1 ].Invalidated = true
+				self:InvalidatePhysmesh(last-1)
 			end
 			if IsValid( self.Nodes[ last - 2 ] ) then
 				self.Nodes[ last - 2 ].Invalidated = true
+				self:InvalidatePhysmesh(last-2)
 			end
 			if IsValid( self.Nodes[ last - 3 ] ) then
 				self.Nodes[ last - 3 ].Invalidated = true
+				self:InvalidatePhysmesh(last-3)
 			end
 		end
 
@@ -157,6 +173,7 @@ usermessage.Hook("Coaster_nodeinvalidate", function( um )
 
 	if IsValid( node ) then
 		node:Invalidate( controller, inval_minimal )
+		controller:UpdateClientsidePhysics()
 	end
 
 end )
@@ -169,6 +186,22 @@ function ENT:UpdateClientsidePhysics( )
 	end
 end
 
+function ENT:FindPhysmeshBySegment( segment )
+	for k, v in pairs( ents.FindByClass("coaster_physmesh") ) do
+		if v.GetController && v:GetController() == self && v:GetSegment() == segment then
+			return v
+		end
+	end
+end
+
+function ENT:InvalidatePhysmesh( segment )
+	local node = self:FindPhysmeshBySegment( segment )
+	if !IsValid( node ) then return end 
+	if table.HasValue( self.InvalidNodes, node ) then return end 
+
+	table.insert( self.InvalidNodes, node )
+end
+
 //Invalid ourselves and nearby affected node
 function ENT:Invalidate( controller, minimal_invalidation )
 	if !IsValid( controller ) then return end
@@ -178,9 +211,12 @@ function ENT:Invalidate( controller, minimal_invalidation )
 		if v == self then
 			if minimal_invalidation then
 				v.Invalidated = true
+				controller:InvalidatePhysmesh(k)
 
 				if IsValid( controller.Nodes[ k - 1 ] ) then
 					controller.Nodes[ k - 1 ].Invalidated = true
+					controller:InvalidatePhysmesh(k-1)
+					//table.insert(controller.InvalidNodes, controller:FindPhysmeshBySegment(k - 1))
 				end
 			else
 				//Close your eyes, move down your scroll wheel 15 times and open them again
@@ -192,28 +228,45 @@ function ENT:Invalidate( controller, minimal_invalidation )
 				local secondnode = controller.Nodes[3]
 
 				v.Invalidated = true
+				controller:InvalidatePhysmesh(k)
 
 				if IsValid( controller.Nodes[ k - 1 ] ) && k != 2 then
 					controller.Nodes[ k - 1 ].Invalidated = true
+					//table.insert(controller.InvalidNodes, controller:FindPhysmeshBySegment(k - 1))
+					controller:InvalidatePhysmesh(k-1)
 				elseif controller:Looped() then
 					fourthlastnode.Invalidated = true
+					//table.insert(controller.InvalidNodes, controller:FindPhysmeshBySegment(#controller.Nodes-3))
+					controller:InvalidatePhysmesh(#controller.Nodes-3)
 				end
 
 				if IsValid( controller.Nodes[ k - 2 ] ) && k != 3 then
 					controller.Nodes[ k - 2 ].Invalidated = true
+					//table.insert(controller.InvalidNodes, controller:FindPhysmeshBySegment(k - 2))
+					controller:InvalidatePhysmesh(k-2)
 				elseif controller:Looped() then
 					thirdlastnode.Invalidated = true
+					//table.insert(controller.InvalidNodes, controller:FindPhysmeshBySegment(#controller.Nodes-2))
+					controller:InvalidatePhysmesh(#controller.Nodes-2)
 				end
 
 				if IsValid( controller.Nodes[ k + 1 ] ) && k != #controller.Nodes-2 then
 					controller.Nodes[ k + 1 ].Invalidated = true
+					//table.insert(controller.InvalidNodes, controller:FindPhysmeshBySegment(k + 1))
+					controller:InvalidatePhysmesh(k+1)
 				elseif controller:Looped() then
 					firstnode.Invalidated = true
+					//table.insert(controller.InvalidNodes, controller:FindPhysmeshBySegment(2))
+					controller:InvalidatePhysmesh(2)
 				end
 
 				if controller:Looped() && k == #controller.Nodes - 1 then
 					firstnode.Invalidated = true
 					secondnode.Invalidated = true
+					//table.insert(controller.InvalidNodes, controller:FindPhysmeshBySegment(2))
+					//table.insert(controller.InvalidNodes, controller:FindPhysmeshBySegment(3))
+					controller:InvalidatePhysmesh(2)
+					controller:InvalidatePhysmesh(3)
 				end
 
 			end
@@ -419,6 +472,8 @@ function ENT:ValidateNodes()
 			if v.Invalidated then v.Invalidated = false end 
 		end
 	end
+
+	table.Empty( self.InvalidNodes )
 end
 
 //Get the multiplier for the current spline (to make things smooth along the track)
@@ -484,22 +539,26 @@ function ENT:DrawTrackTranslucents()
 		end 
 	end
 
-	render.SetMaterial( MatLaser )
+	render.SetMaterial( mat_debug )
 	self:DrawInvalidNodes()		
 end
 
 //Draw invalid nodes, otherwise known as track preview
 function ENT:DrawInvalidNodes()
-	if self.Nodes == nil then return end
+	if self.InvalidNodes == nil then return end
 	if LocalPlayer():GetInfoNum("coaster_previews", 0) == 0 then return end
 
+	for k, v in pairs( self.InvalidNodes ) do
+		if IsValid( v ) && v.TrackMesh then v.TrackMesh:Draw() end
+	end
+	
 	for k, v in pairs( self.Nodes ) do
-		if v.Invalidated && k + 1 < #self.Nodes then //Don't draw the last node
+		if v.Invalidated && k + 1 < #self.Nodes && v.WasBeingHeld then //Don't draw the last node
 			self:DrawSideRail( k, -15 )
 			self:DrawSideRail( k, 15 )
 		end
 	end
-
+	
 end
 
 //Draw a single segment's curve
@@ -1151,6 +1210,8 @@ function ENT:Think()
 		if IsValid( v ) && v:GetVelocity():Length() > 0 && v != self then
 			if !self.WasBeingHeld then
 				self.WasBeingHeld = true
+				v.WasBeingHeld = true
+				if IsValid( self.Nodes[k-1] ) then self.Nodes[k-1].WasBeingHeld = true end
 				self:SupportFullUpdate() //Update all of the nodes when we let go of the node
 			end
 
@@ -1185,6 +1246,7 @@ function ENT:Think()
 		else
 			if self.WasBeingHeld then
 				self.WasBeingHeld = false
+				for _, node in pairs( self.Nodes ) do node.WasBeingHeld = false end
 				self:SupportFullUpdate() //Update all of the nodes when we let go of the node
 			end
 		end

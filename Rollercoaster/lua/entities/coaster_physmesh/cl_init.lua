@@ -2,6 +2,7 @@ include("shared.lua")
 include("mesh_physics.lua")
 
 ENT.Segment = -1
+ENT.TrackMesh = nil
 
 ENT.RenderGroup 	= RENDERGROUP_TRANSLUCENT
 
@@ -13,6 +14,7 @@ end
 //This function is NOT controller only, call it on the segment you want to update the mesh on
 function ENT:BuildMesh()
 	local Controller = self:GetController()
+
 	//If we have no controller, we really should not exist
 	if !IsValid( Controller ) then return end
 
@@ -48,9 +50,10 @@ function ENT:BuildMesh()
 		if IsValid( CurNode ) && IsValid( NextNode ) && CurNode.GetRoll && NextNode.GetRoll then
 			local Roll = -Lerp( i/self.Resolution, math.NormalizeAngle( CurNode:GetRoll() ), NextNode:GetRoll() )	
 			ThisAngle.r = Roll
+
 		end
 
-		if i==1 then LastAngle = ThisAngle end
+		if i==0 then LastAngle = ThisAngle end
 
 		physmesh_builder.AddBeam(ThisPos, LastAngle, NextPos, ThisAngle, Radius )
 
@@ -58,6 +61,12 @@ function ENT:BuildMesh()
 	end
 
 	local Remaining = physmesh_builder.EndBeam()
+
+
+	if self.TrackMesh then self.TrackMesh:Destroy() end
+
+	self.TrackMesh = Mesh()
+	self.TrackMesh:BuildFromTriangles( Remaining )
 
 	//move all the positions so they are relative to ourselves
 	for i=1, #Remaining do

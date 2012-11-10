@@ -1,6 +1,6 @@
 ENT.Type 			= "anim"
 ENT.Base 			= "base_anim"
-ENT.PrintName		= "Rollercoaster cart"
+ENT.PrintName		= "Rollercoaster physics mesh"
 ENT.Author			= "Foohy"
 
 ENT.Spawnable		= false
