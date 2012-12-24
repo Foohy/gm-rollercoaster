@@ -297,7 +297,7 @@ if CLIENT then
 
 		for k, v in pairs( ents.FindByClass("coaster_node") ) do
 			exists = false
-			coasterid = v:GetCoasterID()
+			if IsValid( v ) && v.GetCoasterID then coasterid = v:GetCoasterID() end
 
 			for m, t in pairs( found ) do
 				if coasterid == m then 
@@ -312,6 +312,8 @@ if CLIENT then
 		end
 
 		for k, v in pairs( found ) do
+			if !IsValid( v ) || !v.GetController then continue end
+
 			btn = vgui.Create("DButton", panel )
 			btn:SetText( "Build" )
 			btn:CenterHorizontal()

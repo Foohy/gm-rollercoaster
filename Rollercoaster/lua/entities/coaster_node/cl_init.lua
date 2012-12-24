@@ -122,7 +122,11 @@ usermessage.Hook("Coaster_invalidateall", function( um )
 	for k, v in pairs( self.Nodes ) do
 		v.Invalidated = true
 		self:InvalidatePhysmesh(k)
+
 	end
+	self:RefreshClientSpline()
+	self:SupportFullUpdate()
+	self:UpdateClientsidePhysics()
 end )
 
 usermessage.Hook("Coaster_CartFailed", function( um )
@@ -163,6 +167,7 @@ usermessage.Hook("Coaster_AddNode", function( um )
 
 		//Update the positions of the wheels
 		for num, node in pairs( self.Nodes ) do 
+			if !IsValid( node ) || !node.GetType then continue end
 			if node:GetType() == COASTER_NODE_BRAKES || node:GetType() == COASTER_NODE_SPEEDUP then
 				self:UpdateWheelPositions( num )
 			end
@@ -346,7 +351,7 @@ function ENT:RefreshClientSpline()
 		else
 			End = true
 		end
-	until (!IsValid(node) || node:IsController() || node == firstNode || End)
+	until (!IsValid(node) || !node.IsController || node:IsController() || node == firstNode || End)
 
 	//If there are enough nodes (4 for catmull-rom), calculate the curve
 	if #self.CatmullRom.PointsList > 3 then
@@ -555,6 +560,7 @@ end
 
 //Draw invalid nodes, otherwise known as track preview
 function ENT:DrawInvalidNodes()
+
 	if self.InvalidNodes == nil then return end
 	if LocalPlayer():GetInfoNum("coaster_previews", 0) == 0 then return end
 
