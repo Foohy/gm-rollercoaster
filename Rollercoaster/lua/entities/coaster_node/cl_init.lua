@@ -52,7 +52,7 @@ function ENT:Initialize()
 		[MAT_GLASS] 	= 1,
 	}
 	local controller = self:GetController()
-	if IsValid( controller ) then
+	if IsValid( controller ) && controller.Nodes then
 		controller:InvalidatePhysmesh(#controller.Nodes-1)
 		if #controller.Nodes == 2 then controller:InvalidatePhysmesh(#controller.Nodes) end
 	end
@@ -1108,9 +1108,9 @@ end
 function ENT:DrawSupport()
 	local controller = self:GetController()
 	if !IsValid( controller ) then return end
-	if LocalPlayer():GetInfoNum("coaster_supports", 0) == 0 then return end //Don't draw if they don't want us to draw.
+	if LocalPlayer().GetInfoNum && LocalPlayer():GetInfoNum("coaster_supports", 0) == 0 then return end //Don't draw if they don't want us to draw.
 	if controller.TrackClass && controller.TrackClass.SupportOverride then return end //Dont' draw supports if the current track makes its own
-	if self:IsController() || controller.Nodes[ #controller.Nodes ] == self then return false end //Don't draw the controller or the very last (unconnected) node
+	if self.IsController && self:IsController() || controller.Nodes[ #controller.Nodes ] == self then return false end //Don't draw the controller or the very last (unconnected) node
 	if math.abs( math.NormalizeAngle( self:GetRoll() ) ) > 90 then return false end //If a track is upside down, don't draw the supports
 	if controller:Looped() && controller.Nodes[ 2 ] == self then return false end //Don't draw the supports for the second node ONLY if the track is looped
 
@@ -1230,7 +1230,7 @@ function ENT:Think()
 
 			//Update the positions of the wheels
 			for num, node in pairs( self.Nodes ) do 
-				if node.GetType && node:GetType() == COASTER_NODE_BRAKES || node:GetType() == COASTER_NODE_SPEEDUP then
+				if IsValid( node ) && node.GetType && node:GetType() == COASTER_NODE_BRAKES || node:GetType() == COASTER_NODE_SPEEDUP then
 					self:UpdateWheelPositions( num )
 				end
 			end

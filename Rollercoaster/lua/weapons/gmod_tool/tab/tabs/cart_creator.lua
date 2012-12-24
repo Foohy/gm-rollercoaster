@@ -24,7 +24,7 @@ list.Set( "CartModels", "6 seater train front", "models/xqm/coastertrain1.mdl" )
 list.Set( "CartModels", "2 seater train front", "models/xqm/coastertrain1seat.mdl" )
 list.Set( "CartModels", "fuckyou", "models/props_c17/playground_carousel01.mdl")
 list.Set( "CartModels", "4 seater train front", "models/xqm/coastertrain2seat.mdl" )
-list.Set( "CartModels", "Spooky Halloween Cart", "models/gmod_tower/halloween_traincar.mdl" )
+list.Set( "CartModels", "Spooky Halloween Cart", "models/macdguy/traincar.mdl" )
 
 function TAB:LeftClick( trace, tool )
 	local ply   = tool:GetOwner()
