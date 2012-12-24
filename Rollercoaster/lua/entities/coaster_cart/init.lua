@@ -610,9 +610,21 @@ end
 
 //Make sure we're above our minimum set speed
 function ENT:MinSpeedThink()
-	if self.MinSpeed > 0 && self.Velocity < self.MinSpeed then
+	if self.MinSpeed > 0 && self.Velocity < self.MinSpeed && !self:TrainOnType(COASTER_NODE_HOME) then
 		self.Velocity = self.MinSpeed
 	end
+end
+
+//Get if any carts are on a specific node type
+function ENT:TrainOnType( ENUM_TYPE )
+	for k, v in pairs(self.CartTable) do
+		local node = v:GetCurrentNode()
+		if IsValid( node ) then 
+			if node:GetType() == ENUM_TYPE then return true end
+		end
+	end
+
+	return false
 end
 
 function ENT:SpeedupThink(dt)

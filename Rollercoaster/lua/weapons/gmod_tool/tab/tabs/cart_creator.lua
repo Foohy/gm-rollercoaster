@@ -38,6 +38,7 @@ function TAB:LeftClick( trace, tool )
 	local spin_override = tool:GetOwner():GetInfoNum("coaster_cart_spin_override", 0)
 
 	//if ( !util.IsValidModel( model ) ) then return false end
+	minSpeed = math.Clamp( minSpeed, 0, 75 )
 	
 	local Ent = trace.Entity
 	
