@@ -5,7 +5,7 @@ include("trackmanager.lua")
 //I should probably make this a package and combine these two global tables into one.
 Rollercoasters = {} //Holds all the rollercoasters
 CoasterManager = {} //Holds all the methods and variables for rollercoasters
-COASTER_VERSION = 9
+COASTER_VERSION = 10
 
 //Some content (Remove these lines if you don't want clients to download)
 resource.AddFile("sound/coaster_ride.wav")
@@ -257,28 +257,6 @@ function ents.FindAllButExclusions(exclusions, classes)
 	end
 	return returntable
 end
-
-//handle saving
-saverestore.AddSaveHook("CoasterSaveTrack", function( save )
-	print("sayve")
-	saverestore.WriteVar( table.Count(Rollercoasters) )
-	for k, v in pairs(Rollercoasters) do
-		saverestore.WriteTable({v, v:GetCoasterID()}, save)
-	end
-end )
-
-saverestore.AddRestoreHook("CoasterRestoreTrack", function( restore )
-	local num = saverestore.ReadVar( restore )
-	local nodes = {}
-	print( "restore")
-	for i=1, num do
-		nodes[i] = {}
-		nodes[i] = saverestore.ReadTable( restore )
-	end
-
-	PrintTable( nodes )
-end )
-
 
 
 if CLIENT then
