@@ -23,6 +23,132 @@ ENT.StopTime = 5 //Time to stop and wait for people to leave/board
 ENT.BreakForce = 1400 //Force of which to deccelerate the car
 ENT.BreakSpeed = 3 //The minimum speed of the car when in break zone
 
+
+
+
+
+
+////////////////////////////////////////////////////////
+//Recreate the shared functions on the client, since MANY times they'll be called before shared.lua is included
+//This is incredibly annoying
+////////////////////////////////////////////////////////
+
+//Function to get if we are being driven with garry's new drive system
+function ENT:IsBeingDriven()
+	for _, v in pairs( player.GetAll() ) do
+		if v:GetViewEntity() == self then return true end
+	end
+
+	return false
+end
+
+function ENT:SetIsController(bController)
+	self.dt.IsController = bController
+end
+
+function ENT:IsController()
+	return self.dt.IsController or false
+end
+
+function ENT:SetController( cont )
+	self.dt.Controller = cont
+end
+
+function ENT:GetController()
+	return self.dt.Controller
+end
+
+function ENT:SetRelativeRoll(bRelRoll)
+	self.dt.RelativeRoll = bRelRoll
+end
+
+function ENT:RelativeRoll()
+	return self.dt.RelativeRoll or false
+end
+
+function ENT:SetLooped(looped)
+	self.dt.Looped = looped
+end
+
+function ENT:Looped()
+	return self.dt.Looped or false
+end
+
+function ENT:SetNextNode(node)
+	self.dt.NextNode = node
+end
+
+function ENT:GetNextNode()
+	return self.dt.NextNode
+end
+
+function ENT:SetType(type)
+	self.dt.Type = type
+end
+
+function ENT:GetType()
+	return self.dt.Type or COASTER_NODE_NORMAL
+end
+
+function ENT:SetTrackType(type)
+	self.dt.TrackType = type
+end
+
+function ENT:GetTrackType()
+	return self.dt.TrackType or COASTER_TRACK_METAL
+end
+
+function ENT:SetCoasterID( id )
+	self.dt.CoasterID = id
+	//self:SetNetworkedString("CoasterID", id )
+end
+
+function ENT:GetCoasterID()
+	return self.dt.CoasterID;
+	//return self:GetNetworkedString("CoasterID")
+end
+
+function ENT:SetRoll(roll) //Not to be confused with CLuaParticle.SetRoll()
+	self.dt.Roll = roll
+end
+
+function ENT:GetRoll() //Not to be confused with CLuaParticle.GetRoll()
+	return self.dt.Roll or 0
+end
+
+function ENT:SetTrackColor(r,g,b) 
+	self.dt.TrackColor = Vector( r, g, b )
+end
+
+function ENT:GetTrackColor() 
+	return Color( self.dt.TrackColor.x, self.dt.TrackColor.y, self.dt.TrackColor.z )
+end
+
+function ENT:SetSupportColor(r,g,b) 
+	self.dt.SupportColor = Vector( r, g, b )
+end
+
+function ENT:GetSupportColor() 
+	return self.dt.SupportColor.x, self.dt.SupportColor.y, self.dt.SupportColor.z 
+end
+
+function ENT:SetOrder( num )
+	self.dt.Order = num
+end
+
+function ENT:GetOrder()
+	return self.dt.Order;
+end
+////////////////////////////////////////////////////////
+//END OF 'SHARED' FUNCTIONS
+////////////////////////////////////////////////////////
+
+
+
+
+
+
+
 function ENT:Initialize()
 	self.Nodes = {} //List of nodes (assuming we are the controller)
 	self.PhysMeshes = {}
@@ -533,7 +659,23 @@ function ENT:OnRemove()
 	local cont = Rollercoasters[self:GetCoasterID()]
 
 	//if it is the controller, or there are less than 4 nodes, or this is the second node
-	if self:IsController() || (IsValid( cont ) && #cont.Nodes <= 4 )|| (IsValid( cont ) && self == cont.Nodes[2]) then // || (IsValid( cont ) && cont.Nodes[2] == self ) 
+	if self:IsController() then
+		for _, v in pairs( self.Nodes ) do
+			if IsValid( v ) then 
+				v.SafeDeleted = true 
+				v:Remove() 
+			end
+		end
+		
+		self:ClearTrains() 
+
+
+		timer.Simple(0.25, function() 
+			umsg.Start("Coaster_RefreshTrack")
+				umsg.Entity( self )
+			umsg.End()
+		end )
+	elseif (IsValid( cont ) && #cont.Nodes <= 4 )|| (IsValid( cont ) && self == cont.Nodes[2]) then // || (IsValid( cont ) && cont.Nodes[2] == self ) 
 		for _, v in pairs( cont.Nodes ) do
 			if IsValid( v ) then 
 				v.SafeDeleted = true 
@@ -604,7 +746,7 @@ function ENT:OnRemove()
 		end
 	end
 
-	if !self.SafeDeleted then
+	if !self.SafeDeleted && IsValid( cont ) then
 		//Update the track
 		cont:CheckForInvalidNodes()
 		cont:UpdateServerSpline() 

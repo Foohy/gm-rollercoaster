@@ -26,6 +26,129 @@ local mat_debug	= Material("phoenix_storms/stripes") //models/wireframe // phoen
 local mat_chain = Material("sunabouzu/old_chain") //sunabouzu/old_chain
 local mat_debug = Material("foohy/warning")
 
+
+
+
+////////////////////////////////////////////////////////
+//Recreate the shared functions on the client, since MANY times they'll be called before shared.lua is included
+//This is incredibly annoying
+////////////////////////////////////////////////////////
+
+//Function to get if we are being driven with garry's new drive system
+function ENT:IsBeingDriven()
+	for _, v in pairs( player.GetAll() ) do
+		if v:GetViewEntity() == self then return true end
+	end
+
+	return false
+end
+
+function ENT:SetIsController(bController)
+	self.dt.IsController = bController
+end
+
+function ENT:IsController()
+	return self.dt.IsController or false
+end
+
+function ENT:SetController( cont )
+	self.dt.Controller = cont
+end
+
+function ENT:GetController()
+	return self.dt.Controller
+end
+
+function ENT:SetRelativeRoll(bRelRoll)
+	self.dt.RelativeRoll = bRelRoll
+end
+
+function ENT:RelativeRoll()
+	return self.dt.RelativeRoll or false
+end
+
+function ENT:SetLooped(looped)
+	self.dt.Looped = looped
+end
+
+function ENT:Looped()
+	return self.dt.Looped or false
+end
+
+function ENT:SetNextNode(node)
+	self.dt.NextNode = node
+end
+
+function ENT:GetNextNode()
+	return self.dt.NextNode
+end
+
+function ENT:SetType(type)
+	self.dt.Type = type
+end
+
+function ENT:GetType()
+	return self.dt.Type or COASTER_NODE_NORMAL
+end
+
+function ENT:SetTrackType(type)
+	self.dt.TrackType = type
+end
+
+function ENT:GetTrackType()
+	return self.dt.TrackType or COASTER_TRACK_METAL
+end
+
+function ENT:SetCoasterID( id )
+	self.dt.CoasterID = id
+	//self:SetNetworkedString("CoasterID", id )
+end
+
+function ENT:GetCoasterID()
+	return self.dt.CoasterID;
+	//return self:GetNetworkedString("CoasterID")
+end
+
+function ENT:SetRoll(roll) //Not to be confused with CLuaParticle.SetRoll()
+	self.dt.Roll = roll
+end
+
+function ENT:GetRoll() //Not to be confused with CLuaParticle.GetRoll()
+	return self.dt.Roll or 0
+end
+
+function ENT:SetTrackColor(r,g,b) 
+	self.dt.TrackColor = Vector( r, g, b )
+end
+
+function ENT:GetTrackColor() 
+	return Color( self.dt.TrackColor.x, self.dt.TrackColor.y, self.dt.TrackColor.z )
+end
+
+function ENT:SetSupportColor(r,g,b) 
+	self.dt.SupportColor = Vector( r, g, b )
+end
+
+function ENT:GetSupportColor() 
+	return self.dt.SupportColor.x, self.dt.SupportColor.y, self.dt.SupportColor.z 
+end
+
+function ENT:SetOrder( num )
+	self.dt.Order = num
+end
+
+function ENT:GetOrder()
+	return self.dt.Order;
+end
+////////////////////////////////////////////////////////
+//END OF 'SHARED' FUNCTIONS
+////////////////////////////////////////////////////////
+
+
+
+
+
+
 function ENT:Initialize()
 
 	//Default to being invalidated
@@ -183,7 +306,7 @@ usermessage.Hook("Coaster_nodeinvalidate", function( um )
 	local node	 = um:ReadEntity()
 	local inval_minimal = um:ReadBool() //Should we only invalidate the node before this one?
 
-	if IsValid( node ) then
+	if IsValid( node ) && node.Invalidate then
 		node:Invalidate( controller, inval_minimal )
 		controller:UpdateClientsidePhysics()
 	end
@@ -1236,7 +1359,7 @@ function ENT:Think()
 
 			//Update the positions of the wheels
 			for num, node in pairs( self.Nodes ) do 
-				if IsValid( node ) && node.GetType && node:GetType() == COASTER_NODE_BRAKES || node:GetType() == COASTER_NODE_SPEEDUP then
+				if IsValid( node ) && node.GetType && (node:GetType() == COASTER_NODE_BRAKES || node:GetType() == COASTER_NODE_SPEEDUP) then
 					self:UpdateWheelPositions( num )
 				end
 			end
