@@ -243,8 +243,11 @@ function TAB:Think( tool )
 				toolText = toolText .. " (Controller)" 
 				toolText = toolText .. "\nLooped: " .. tostring( Node:Looped() )
 			end
-			toolText = toolText .. "\nType: " .. ( EnumNames.Nodes[ Node:GetType() ] or "Unknown(?)" )
-			toolText = toolText .. "\nRoll: " .. tostring( Node:GetRoll() )
+			if Node.GetType && Node.GetRoll then
+				toolText = toolText .. "\nType: " .. ( EnumNames.Nodes[ Node:GetType() ] or "Unknown(?)" )
+				toolText = toolText .. "\nRoll: " .. tostring( Node:GetRoll() )
+			end
+
 			//toolText = toolText .. "\nNext Node: " .. tostring( trace.Entity:GetNextNode() )
 			AddWorldTip( Node:EntIndex(), ( toolText ), 0.5, Node:GetPos(), Node )
 		else 
@@ -277,7 +280,7 @@ end
 //TODO: include in rollercoaster table
 function GetControllerFromID( id )
 	for _, v in pairs( ents.FindByClass("coaster_node")) do
-		if v:IsController() && v:GetCoasterID() == id then return v end
+		if v.IsController && v:IsController() && v:GetCoasterID() == id then return v end
 	end
 
 end
