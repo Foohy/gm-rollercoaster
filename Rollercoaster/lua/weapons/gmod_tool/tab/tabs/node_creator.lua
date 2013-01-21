@@ -145,9 +145,8 @@ function TAB:RightClick( trace, tool )
 			
 			if IsValid( Controller ) && IsValid( Controller:GetFirstNode() ) && !Controller:Looped() then
 				local newNode = CoasterManager.CreateNode( Cur_ID, FirstNode:GetPos(), FirstNode:GetAngles(), COASTER_NODE_NORMAL, ply )
-				if !IsValid( newNode ) then return end
-
 				local lastNode = Controller.Nodes[ #Controller.Nodes ]
+				if !IsValid( newNode ) || !IsValid( lastNode ) then return end
 				
 				lastNode:SetPos( SecondNode:GetPos() )
 				lastNode:SetAngles( SecondNode:GetAngles() )
