@@ -367,7 +367,7 @@ function TRACK:PassVerticalSupports( controller )
 		local OffsetL = Vector( 0, 0, 10 )
 		local OffsetR = Vector( 0, 0, 10 )
 
-		if traceL.Entity:GetClass() == "coaster_physmesh" || traceR.Entity:GetClass() == "coaster_physmesh" then
+		if IsValid( traceL.Entity ) && IsValid(traceR.Entity) && traceL.Entity:GetClass() == "coaster_physmesh" || traceR.Entity:GetClass() == "coaster_physmesh" then
 			if traceL.HitPos.z > traceR.HitPos.z then
 				OffsetL = Vector( traceL.HitPos.x, traceL.HitPos.y, math.Clamp(traceL.HitPos.z + 150, -1000000, self.FixedSplines[i].Pos.z ) )
 				OffsetR = Vector( traceR.HitPos.x, traceR.HitPos.y, math.Clamp(traceR.HitPos.z + 150, -10000000, self.FixedSplines[i].Pos.z ) )
@@ -606,7 +606,7 @@ end
 function TRACK:Draw( controller, Meshes )
 	if !IsValid( controller ) || !controller:IsController() then return end
 
-	if !Meshes || #Meshes < 1 then return end
+	if !Meshes || #Meshes < 3 then return end
 
 	render.SetMaterial(self.Material)
 	for k, v in pairs( Meshes[1] ) do
