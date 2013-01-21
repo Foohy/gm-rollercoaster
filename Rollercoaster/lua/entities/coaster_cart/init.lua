@@ -82,6 +82,8 @@ function ENT:Initialize()
 	if IsValid( self:GetPhysicsObject() ) then
 		self:GetPhysicsObject():SetMass( self.InitialMass )
 		self:GetPhysicsObject():Wake()
+	else
+		self:Remove() //no stop frick off
 	end
 
 	self.SparkEffect = EffectData()
@@ -159,7 +161,8 @@ local function UCT(ctable,x)
 	//this supplements the working of RollercoasterUpdateCartTable()
 	//print("checking for lead")
 	for k, v in pairs(ctable) do
-		//print("check b")
+		if !IsValid( v ) the continue end
+
 		if x != v then
 			if v.Velocity >= 0 then
 				if v.CurSegment < x.CurSegment then
@@ -298,6 +301,7 @@ function ENT:PhysicsSimulate(phys, deltatime)
 			local slopelev = CalcAverageCartSlopeVelocity(self.CartTable,deltatime)
 
 			for k, v in pairs(self.CartTable) do
+				if !IsValid( v ) the continue end
 				v.Velocity = v.Velocity - friction
 				v.Velocity = v.Velocity - slopelev
 			end
@@ -308,6 +312,7 @@ function ENT:PhysicsSimulate(phys, deltatime)
 			self:BreakThink(deltatime)
 		else
 			for k, v in pairs(self.CartTable) do
+				if !IsValid( v ) the continue end
 				v.Velocity = 0
 			end
 		end
@@ -720,7 +725,7 @@ function ENT:ChainThink()
 		for k, v in pairs(self.CartTable) do
 
 			local node = v:GetCurrentNode()
-			if IsValid( node ) && node:GetType() == COASTER_NODE_CHAINS then
+			if IsValid( node ) && node.GetType && node:GetType() == COASTER_NODE_CHAINS then
 				OnChain = true
 				ChainSpeed = node.ChainSpeed
 				break
