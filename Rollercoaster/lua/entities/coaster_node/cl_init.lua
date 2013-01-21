@@ -260,7 +260,7 @@ end )
 usermessage.Hook("Coaster_AddNode", function( um )
 	local self = Entity(um:ReadShort())
 
-	if !self.IsController then return end //Shared functions don't exist yet.
+	if !IsValid( self ) || !self.IsController then return end //Shared functions don't exist yet.
 
 	if (self:IsController()) then
 		
@@ -306,7 +306,7 @@ usermessage.Hook("Coaster_nodeinvalidate", function( um )
 	local node	 = um:ReadEntity()
 	local inval_minimal = um:ReadBool() //Should we only invalidate the node before this one?
 
-	if IsValid( node ) && node.Invalidate then
+	if IsValid( node ) && node.Invalidate && IsValid( controller ) then
 		node:Invalidate( controller, inval_minimal )
 		controller:UpdateClientsidePhysics()
 	end
