@@ -141,12 +141,12 @@ function TAB:RightClick( trace, tool )
 			local Controller = Rollercoasters[ Cur_ID ]
 			local FirstNode  = Controller:GetFirstNode()
 			local SecondToLast = Controller.Nodes[ #Controller.Nodes - 1 ]
-			local SecondNode = FirstNode:GetNextNode()
 			
-			if IsValid( Controller ) && IsValid( Controller:GetFirstNode() ) && !Controller:Looped() then
+			if IsValid( Controller ) && IsValid( FirstNode ) && !Controller:Looped() then
 				local newNode = CoasterManager.CreateNode( Cur_ID, FirstNode:GetPos(), FirstNode:GetAngles(), COASTER_NODE_NORMAL, ply )
 				local lastNode = Controller.Nodes[ #Controller.Nodes ]
-				if !IsValid( newNode ) || !IsValid( lastNode ) then return end
+				local SecondNode = FirstNode:GetNextNode()
+				if !IsValid( newNode ) || !IsValid( lastNode ) || !IsValid(SecondNode) || !IsValid(SecondToLast) then return end
 				
 				lastNode:SetPos( SecondNode:GetPos() )
 				lastNode:SetAngles( SecondNode:GetAngles() )
