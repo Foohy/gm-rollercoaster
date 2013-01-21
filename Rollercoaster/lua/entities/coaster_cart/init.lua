@@ -161,7 +161,7 @@ local function UCT(ctable,x)
 	//this supplements the working of RollercoasterUpdateCartTable()
 	//print("checking for lead")
 	for k, v in pairs(ctable) do
-		if !IsValid( v ) the continue end
+		if !IsValid( v ) then continue end
 
 		if x != v then
 			if v.Velocity >= 0 then
@@ -301,7 +301,7 @@ function ENT:PhysicsSimulate(phys, deltatime)
 			local slopelev = CalcAverageCartSlopeVelocity(self.CartTable,deltatime)
 
 			for k, v in pairs(self.CartTable) do
-				if !IsValid( v ) the continue end
+				if !IsValid( v ) then continue end
 				v.Velocity = v.Velocity - friction
 				v.Velocity = v.Velocity - slopelev
 			end
@@ -312,7 +312,7 @@ function ENT:PhysicsSimulate(phys, deltatime)
 			self:BreakThink(deltatime)
 		else
 			for k, v in pairs(self.CartTable) do
-				if !IsValid( v ) the continue end
+				if !IsValid( v ) then continue end
 				v.Velocity = 0
 			end
 		end
