@@ -83,7 +83,12 @@ local function BuildTraceWhitelist(segment, controller)
 	//get our current physmesh
 	local whitelist = {}
 	for k, v in pairs( ents.FindByClass("coaster_physmesh")) do
-		if v.Segment < segment - 1 || v.Segment > segment + 1 then table.insert(whitelist, v) end
+		if !v.GetController  || !IsValid( v:GetController() ) || v:GetController():GetCoasterID() != controller:GetCoasterID() || v.Segment != segment then
+			if v.Segment < segment - 1 || v.Segment > segment + 1 then 
+				table.insert(whitelist, v) 
+			end
+		end
+		
 	end
 
 	local blacklist = {}
