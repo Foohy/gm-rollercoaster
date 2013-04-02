@@ -7,7 +7,7 @@ local UNIQUENAME = "node_creator"
 TAB.Name 			= "Track"
 TAB.UniqueName 		= UNIQUENAME
 TAB.Description 	= "Create specific track nodes"
-TAB.Instructions 	= "Left click on the world to create a node. Click on an existing node to update it's settings. Right click on any node to loop the track. Reload to retrieve a node's settings."
+TAB.Instructions 	= "Left click on the world to create a node. Click on an existing node to update it's settings. Right click on any node to loop the track."
 TAB.Icon 			= "coaster/track"
 TAB.Position 		= 1
 
