@@ -19,7 +19,8 @@ function ENT:SetupDataTables()
 	self:DTVar("Entity", 1, "Controller")
 	self:DTVar("Int", 0, "Type")
 	self:DTVar("Int", 1, "TrackType")
-	self:DTVar("Int", 2, "Order") //HACKHACK. Saves don't properly save entity DTVars. we'll have to manually store a node's order in the table
+	self:DTVar("Int", 2, "Order") //Hack. Store the index of this node in the list so it can later be reconstructed
+	self:DTVar("Int", 3, "NumCoasterNodes") //Hack. Store the total number of nodes
 	self:DTVar("Float", 0, "Roll")
 	self:DTVar("Vector", 0, "TrackColor")
 	self:DTVar("Vector", 1, "SupportColor")

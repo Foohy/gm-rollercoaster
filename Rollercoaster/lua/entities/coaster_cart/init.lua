@@ -42,7 +42,7 @@ ENT.BreakSpeed = 4 //The minimum speed of the car when in break zone
 
 //Credits to LPine for code on how to use a shadow controller 
 ENT.PhysShadowControl = {}
-ENT.PhysShadowControl.secondstoarrive  = 0.00000001 //SMALL NUMBERS
+ENT.PhysShadowControl.secondstoarrive  = 0.0000001 //SMALL NUMBERS
 ENT.PhysShadowControl.pos              = Vector(0, 0, 0)
 ENT.PhysShadowControl.angle            = Angle(0, 0, 0)
 ENT.PhysShadowControl.maxspeed         = 1000000000000
@@ -56,14 +56,15 @@ ENT.PhysShadowControl.deltatime        = deltatime
 ENT.Timer = math.huge
 
 function ENT:Initialize()
-	//Check if it's some ungodly large prop
-	if self:Size() >= self.MaxOBBSize then
-		self:SetModel("models/XQM/coastertrain2seat.mdl")
-		self.Model = "models/XQM/coastertrain2seat.mdl"
-
-		print("Someone tried to spawn a massive model!")
-	else
-		self:SetModel( self.Model )	
+	-- If our model isn't already set, set it accordingly
+	if (string.lower(self:GetModel()) == "models/error.mdl") then
+		-- Make sure it's a valid model and isn't MASSIVE
+		if !util.IsValidModel(self.Model) || self:Size() >= self.MaxOBBSize then
+			self:SetModel("models/XQM/coastertrain2seat.mdl")
+			self.Model = "models/XQM/coastertrain2seat.mdl"
+		else
+			self:SetModel( self.Model )	
+		end
 	end
 
 	self:PhysicsInit(SOLID_VPHYSICS)
@@ -284,11 +285,13 @@ end
 //Calculate our movement along the curve
 function ENT:PhysicsSimulate(phys, deltatime)
 	if self.IsOffDaRailz or self.CartTable == nil then return SIM_NOTHING end
+	if !IsValid( self.Controller ) then return SIM_NOTHING end
+	if self.Spawning then return end
 
 	local CurPos  = self:GetPos()
 	local CurNode = self.Controller.Nodes[self.CurSegment]
 	local NextNode = self.Controller.Nodes[ self.CurSegment + 1]
-	if !IsValid( CurNode ) || !IsValid( NextNode ) then self.CurSegment = #Rollercoasters[self.CoasterID].Nodes end
+	if !IsValid( CurNode ) || !IsValid( NextNode ) then return SIM_NOTHING end
 	self:SetCurrentNode( CurNode )
 
 	//Set the previous velocity
@@ -643,7 +646,7 @@ function ENT:SpeedupThink(dt)
 		for k, v in pairs(self.CartTable) do
 			if k > 1 || #self.CartTable == 1 then
 				local node = v:GetCurrentNode()
-				if IsValid( node ) && node:GetType() == COASTER_NODE_SPEEDUP then
+				if IsValid( node ) && node.GetType && node:GetType() == COASTER_NODE_SPEEDUP then
 					OnSpeedup = true
 					SpeedupForce = node.SpeedupForce
 					MaxSpeed = node.MaxSpeed
@@ -677,7 +680,7 @@ function ENT:BreakThink(dt)
 		for k, v in pairs(self.CartTable) do
 			if k > 1 || #self.CartTable == 1 then
 				local node = v:GetCurrentNode()
-				if IsValid( node ) && node:GetType() == COASTER_NODE_BRAKES then
+				if IsValid( node ) && node.GetType && node:GetType() == COASTER_NODE_BRAKES then
 					OnBreaks = true
 					BreakForce = node.BreakForce
 					MinSpeed = node.BreakSpeed
@@ -749,7 +752,7 @@ function ENT:HomeStationThink(dt)
 		for k, v in pairs(self.CartTable) do
 
 			local node = v:GetCurrentNode()
-			if IsValid( node ) && node:GetType() == COASTER_NODE_HOME then
+			if IsValid( node ) && node.GetType && node:GetType() == COASTER_NODE_HOME then
 				OnHome = true
 				HomeWaitTime = node.StopTime
 				break
@@ -882,6 +885,8 @@ end
 //Remove the velocity if the player grabs it with the physgun
 //TODO: be able to move/fling cart with the physgun
 function ENT:PhysicsUpdate(physobj)
+	if self.Spawning then return end
+
 	if self:IsPlayerHolding() or !self:GetPhysicsObject():IsMotionEnabled() then
 		self.Velocity = 0
 		if self.CartTable != nil then
@@ -1039,6 +1044,8 @@ function ENT:Think()
 	local Grav = GetConVar( "sv_gravity" ):GetInt()
 	self.GRAVITY = (Grav / 61.2244) or 9.81
 
+	self:UpdateCartModifiers()
+
 	self:NextThink( CurTime() + 1 ) //This doesn't need to happen constantly
 	return true
 end
@@ -1072,7 +1079,38 @@ function ENT:OnRemove()
 	end
 end
 
-concommand.Add("coaster_fuckyou", function( ply, cmd, args ) 
+local function GetIndexOfValue( tbl, val )
+	for k, v in pairs( tbl ) do
+		if val == v then return k end
+	end
+
+	return 0
+end
+
+local function GetKeyFromValue( tbl, val )
+	if !tbl then return nil end
+	for k, v in pairs( tbl ) do
+		if v == val then return k end 
+	end
+end
+
+//Update the settings applied to the cart so they can be stored in the save system
+function ENT:UpdateCartModifiers()
+	if self.Spawning then return end
+
+	data = {}
+	data.Percent = self.Percent
+	data.Node = self.CurSegment 
+	data.CoasterID = self.CoasterID
+	data.Index = GetKeyFromValue( self.CartTable, self ) or 1
+	data.IsDummy = self.IsDummy
+	data.TrainID = tostring( self.CartTable ) //good enough
+	data.Velocity = self.Velocity
+
+	duplicator.StoreEntityModifier( self, "cart_coaster_data", data )
+end
+
+concommand.Add("coaster_ruin_everything", function( ply, cmd, args ) 
 	if !IsValid( ply ) || !ply:IsSuperAdmin() then return end
 
 	Coaster_do_bad_things = args[1]=="1"

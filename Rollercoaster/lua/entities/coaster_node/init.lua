@@ -139,6 +139,16 @@ end
 function ENT:GetOrder()
 	return self.dt.Order;
 end
+
+function ENT:SetNumCoasterNodes( num )
+	self.dt.NumCoasterNodes = num 
+end
+
+function ENT:GetNumCoasterNodes()
+	return self.dt.NumCoasterNodes
+end
+
+
 ////////////////////////////////////////////////////////
 //END OF 'SHARED' FUNCTIONS
 ////////////////////////////////////////////////////////
@@ -175,8 +185,6 @@ function ENT:Initialize()
 	
 	self.CatmullRom = CoasterManager.Controller:New( self )
 	self.CatmullRom:Reset()
-
-	self:SetLooped( false ) //Default to false
 
 	//Set the default color value for the track color
 	self:SetTrackColor( 255, 255, 255 )
@@ -433,6 +441,14 @@ function ENT:UpdateMagicPositions()
 
 	end
 
+end
+
+//Hack. Update all of the child nodes to store their index in the node array
+//This is so we can later reconstruct the track when loading from a save
+function ENT:UpdateNodeOrders()
+	for k, v in pairs( self.Nodes ) do
+		v:SetOrder( k )
+	end
 end
 
 //Invalidate the node on the client

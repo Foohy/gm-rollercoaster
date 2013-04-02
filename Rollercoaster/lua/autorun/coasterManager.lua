@@ -3,9 +3,9 @@ AddCSLuaFile("trackmanager.lua")
 include("trackmanager.lua")
 
 //I should probably make this a package and combine these two global tables into one.
-Rollercoasters = {} //Holds all the rollercoasters
-CoasterManager = {} //Holds all the methods and variables for rollercoasters
-COASTER_VERSION = 10
+Rollercoasters = Rollercoasters or {} //Holds all the rollercoasters
+CoasterManager = CoasterManager or {} //Holds all the methods and variables for rollercoasters
+COASTER_VERSION = 11
 
 //Some content (Remove these lines if you don't want clients to download)
 resource.AddFile("sound/coaster_ride.wav")
@@ -57,14 +57,14 @@ if SERVER then
 			Rollercoasters[id]:SetModel( "models/props_junk/PopCan01a.mdl" )
 
 			//Call the hook telling a new coaster was created
-			hook.Call("Coaster_NewCoaster", node )
+			hook.Call("Coaster_NewCoaster", GAMEMODE, node )
 		else
 			//Nocollide the node with the main node so that the remover gun removes all nodes
 			constraint.NoCollide( node, Rollercoasters[id], 0, 0 )
 		end
 
 		//Call the hook telling a new node was created
-		hook.Call("Coaster_NewNode", node )
+		hook.Call("Coaster_NewNode", GAMEMODE, node )
 
 		Rollercoasters[id]:AddNodeSimple( node )
 		return node
@@ -101,7 +101,7 @@ if SERVER then
 			cleanup.Add( ply, "Rollercoaster", node )
 
 			//Call the hook telling a new coaster was created
-			hook.Call("Coaster_NewCoaster", node )
+			hook.Call("Coaster_NewCoaster", GAMEMODE, node )
 		else //The ID IS an actual rollercoaster, so let's append to it
 			//Nocollide the node with the main node so that the remover gun removes all nodes
 			constraint.NoCollide( node, Rollercoasters[id], 0, 0 )
@@ -111,20 +111,40 @@ if SERVER then
 		end
 
 		//Call the hook telling a new node was created
-		hook.Call("Coaster_NewNode", node )
+		hook.Call("Coaster_NewNode", GAMEMODE, node )
 		
 		return node
 
 	end
 
+	hook.Add("Coaster_NewNode", "UpdateControllerSettings", function( node )
+		//Update the controller with how many nodes it has
+		local controller = node:GetController()
+		if IsValid( controller ) then
+			controller:SetNumCoasterNodes( #controller.Nodes )
+			controller:UpdateNodeOrders()
+		end
+
+	end )
+
+	hook.Add("Coaster_NodeRemoved", "UpdateControllerSettings", function( node )
+		//Update the controller with how many nodes it has
+		local controller = node:GetController()
+		if IsValid( controller ) then
+			controller:SetNumCoasterNodes( #controller.Nodes )
+			controller:UpdateNodeOrders()
+		end
+
+	end )
+
 	hook.Add("EntityRemoved", "CoasterEntityRemoved", function(ent) 
 		if IsValid( ent ) && ent:GetClass() == "coaster_node" then  
 			//Call the hook telling a node was removed
-			hook.Call("Coaster_NodeRemoved", ent )
+			hook.Call("Coaster_NodeRemoved", GAMEMODE, ent )
 
 			if ent:IsController() then
 				//Call the hook telling a new node was created
-				hook.Call("Coaster_CoasterRemoved", node )
+				hook.Call("Coaster_CoasterRemoved", GAMEMODE, node )
 			end
 		end
 	end )
@@ -164,7 +184,7 @@ if SERVER then
 			CoasterManager.NextThink = CurTime() + 2
 
 			for k, v in pairs( ents.FindByClass("coaster_cart") ) do
-				if IsValid( v ) && v.IsDummy then
+				if IsValid( v ) && v.IsDummy && !v.Spawning then
 					local remove = true
 
 					if v.CartTable then
@@ -180,6 +200,7 @@ if SERVER then
 
 					if remove then
 						v:Remove()
+						print("removign: " .. tostring(v))
 					end
 				end
 			end

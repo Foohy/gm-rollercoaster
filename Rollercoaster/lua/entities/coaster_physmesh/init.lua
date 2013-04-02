@@ -43,7 +43,7 @@ function ENT:BuildMesh()
 
 	local Controller = self:GetController()
 	//If we have no controller, we really should not exist
-	if !IsValid( Controller ) then self:Remove() return end
+	if !IsValid( Controller ) || !istable(Controller.Nodes) then self:Remove() return end
 
 	//Make sure the client knows it's shit
 	self:SetSegment( self.Segment )

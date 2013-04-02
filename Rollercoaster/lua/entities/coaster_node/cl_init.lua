@@ -140,6 +140,15 @@ end
 function ENT:GetOrder()
 	return self.dt.Order;
 end
+
+function ENT:GetNumNodes()
+	return self.dt.NumCoasterNodes
+end
+
+function ENT:SetNumNodes( num )
+	self.dt.NumCoasterNodes = num 
+end
+
 ////////////////////////////////////////////////////////
 //END OF 'SHARED' FUNCTIONS
 ////////////////////////////////////////////////////////
