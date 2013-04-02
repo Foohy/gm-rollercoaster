@@ -888,7 +888,7 @@ end
 function ENT:PhysicsUpdate(physobj)
 	if self.Spawning then return end
 
-	if self:IsPlayerHolding() or !self:GetPhysicsObject():IsMotionEnabled() then
+	if self:IsPlayerHolding() or !IsValid( self:GetPhysicsObject() ) || !self:GetPhysicsObject():IsMotionEnabled() then
 		self.Velocity = 0
 		if self.CartTable != nil then
 			for k, v in pairs(self.CartTable) do
