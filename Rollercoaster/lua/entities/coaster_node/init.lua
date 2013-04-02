@@ -524,7 +524,9 @@ function ENT:GetSegmentLength()
 	self.SegLength = Dist
 end
 
-function ENT:SetTrain(ply, model, cartnum)
+function ENT:AddTrain(ply, model, cartnum, segment)
+	segment = segment or 2
+	
 	if #self.Nodes < 4 then
 		umsg.Start("Coaster_CartFailed", ply)
 			umsg.Char( 4 - #self.Nodes )
@@ -540,7 +542,7 @@ function ENT:SetTrain(ply, model, cartnum)
 	local cartgroup = _G["CartTable_" .. RCCartGroups]
 	RCCartGroups = RCCartGroups + 1
 
-	local Segment = 2
+	local Segment = segment
 	local Multiplier = 1
 	local Position = Vector( 0, 0, 0 )
 	local Percent = 0

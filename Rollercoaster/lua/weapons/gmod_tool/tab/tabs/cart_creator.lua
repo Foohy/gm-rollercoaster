@@ -7,7 +7,7 @@ local UNIQUENAME = "cart_creator"
 TAB.Name = "Carts"
 TAB.UniqueName = UNIQUENAME
 TAB.Description = "Create trains that travel along a track."
-TAB.Instructions = "Click on an active rollercoaster to set/reset train. Right click to remove all trains from a coaster"
+TAB.Instructions = "Click on an active rollercoaster to add a train. Right click to add a train at a specific segment. Reload to remove all."
 TAB.Icon = "coaster/cart"
 TAB.Position = 2
 
@@ -22,9 +22,10 @@ TAB.ClientConVar["model"] = "models/XQM/coastertrain2seat.mdl"
 list.Set( "CartModels", "2 seater train", "models/xqm/CoasterTrack/train_2.mdl" )
 list.Set( "CartModels", "6 seater train front", "models/xqm/coastertrain1.mdl" )
 list.Set( "CartModels", "2 seater train front", "models/xqm/coastertrain1seat.mdl" )
-list.Set( "CartModels", "fuckyou", "models/props_c17/playground_carousel01.mdl")
+list.Set( "CartModels", "carousel", "models/props_c17/playground_carousel01.mdl")
 list.Set( "CartModels", "4 seater train front", "models/xqm/coastertrain2seat.mdl" )
-list.Set( "CartModels", "Spooky Halloween Cart", "models/macdguy/traincar.mdl" )
+//list.Set( "CartModels", "Spooky Halloween Cart", "models/macdguy/traincar.mdl" )
+
 
 function TAB:LeftClick( trace, tool )
 	local ply   = tool:GetOwner()
@@ -37,7 +38,6 @@ function TAB:LeftClick( trace, tool )
 	local model 		= GetClientInfo( self, "model", tool)
 	local spin_override = tool:GetOwner():GetInfoNum("coaster_cart_spin_override", 0)
 
-	//if ( !util.IsValidModel( model ) ) then return false end
 	minSpeed = math.Clamp( minSpeed, 0, 75 )
 	
 	local Ent = trace.Entity
@@ -48,14 +48,14 @@ function TAB:LeftClick( trace, tool )
 
 			if IsValid( controller ) then
 
-				local trains = controller:SetTrain( ply, model, CartNum )
-				if trains then 
+				local trains = controller:AddTrain( ply, model, CartNum )
+				if carts then 
 					undo.Create("Coaster Cart")
 					undo.SetPlayer( ply )
 					undo.SetCustomUndoText("Undone Train")
 
 
-					for k, train in pairs( trains ) do 
+					for k, train in pairs( carts ) do 
 						undo.AddEntity( train )
 
 						train.WheelFriction = Friction
@@ -81,6 +81,56 @@ end
 function TAB:RightClick( trace, tool )
 	local ply   = tool:GetOwner()
 
+	local CartNum 		= GetClientNumber( self, "cart_amount", tool)
+	local Friction 		= GetClientNumber( self, "friction", tool)
+	local minSpeed 		= GetClientNumber( self, "minSpeed", tool)
+	local startSpeed 	= GetClientNumber( self, "startSpeed", tool)
+	local allowWeapons	= GetClientNumber( self, "allow_weapons", tool)
+	local model 		= GetClientInfo( self, "model", tool)
+	local spin_override = tool:GetOwner():GetInfoNum("coaster_cart_spin_override", 0)
+
+	minSpeed = math.Clamp( minSpeed, 0, 75 )
+	
+	local Ent = trace.Entity
+	
+	if IsValid( Ent ) && ( Ent:GetClass() == "coaster_node" || Ent:GetClass() == "coaster_physmesh" ) then
+		if SERVER then 
+			local controller = Ent:GetController()
+
+			if IsValid( controller ) then
+
+				local trains = controller:AddTrain( ply, model, CartNum, Ent.Segment )
+				if carts then 
+					undo.Create("Coaster Cart")
+					undo.SetPlayer( ply )
+					undo.SetCustomUndoText("Undone Train")
+
+
+					for k, train in pairs( carts ) do 
+						undo.AddEntity( train )
+
+						train.WheelFriction = Friction
+						train.AllowWeapons = allowWeapons==1
+						train.MinSpeed = minSpeed
+						train.Velocity = startSpeed
+
+						//Only set it if it's true.
+						if spin_override==1 then
+							train.Carousel = true
+						end
+					end
+					undo.Finish()
+				end
+			end
+		end
+	
+		return true
+	end
+end
+
+function TAB:Reload( trace, tool )
+	local ply   = tool:GetOwner()
+
 	local CartNum = GetClientNumber( self, "cart_amount", tool )
 	local Powered = GetClientNumber( self, "powered", tool )
 	
@@ -97,10 +147,6 @@ function TAB:RightClick( trace, tool )
 
 		return true
 	end
-end
-
-function TAB:Reload( trace, tool )
-
 end
 
 //Called when our tab is closing or the tool was holstered
