@@ -304,7 +304,7 @@ if CLIENT then
 	cvars.AddChangeCallback( "coaster_supports", function()
 		//Go through all of the nodes and tell them to update their shit
 		for k, v in pairs( ents.FindByClass("coaster_node") ) do
-			if v:IsController() then
+			if IsValid( v ) && v:IsController() then
 				v:SupportFullUpdate()
 			end
 		end
@@ -312,7 +312,7 @@ if CLIENT then
 
 	//Motion blur
 	local function GetMotionBlurValues( x, y, fwd, spin )
-		if LocalPlayer():GetInfoNum("coaster_motionblur", 0) == 0 then return end
+		if !LocalPlayer().GetInfoNum || LocalPlayer():GetInfoNum("coaster_motionblur", 0) == 0 then return end
 
 		if IsValid(LocalPlayer():GetVehicle()) && IsValid(LocalPlayer():GetVehicle():GetParent()) then
 			return x, y, LocalPlayer():GetVehicle():GetParent():GetVelocity():Length() * CoasterBlur, spin //HOLY SHIT

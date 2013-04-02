@@ -765,6 +765,8 @@ function ENT:UpdateWheelPositions( segment )
 	local numwheels = 0
 
 	if !IsValid( ThisSegment ) || !IsValid( NextSegment ) then return end 
+	if !ThisSegment.GetRoll || !NextSegment.GetRoll then return end
+	
 	self.WheelPositions[segment] = {}
 
 	Multiplier = self:GetMultiplier(segment, WheelPercent)

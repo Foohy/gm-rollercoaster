@@ -48,7 +48,7 @@ function TAB:LeftClick( trace, tool )
 
 			local controller = Node:GetController()
 
-			if controller:Looped() then
+			if controller.Looped && controller:Looped() then
 				local prevnode = nil
 				if Node == controller.Nodes[2] then
 					prevnode = controller.Nodes[#controller.Nodes - 1]

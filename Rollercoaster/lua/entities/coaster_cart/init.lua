@@ -267,9 +267,7 @@ function ENT:DATPATUpdate()
 	//call on by segment number that have track.
 	
 	local disttrav = 0
-	//print("0="..self.CurSegment)
-	//print("1="..Rollercoasters[self.CoasterID])
-	//print("2="..Rollercoasters[self.CoasterID].Nodes[self.CurSegment])
+
 	local curseglength = Rollercoasters[self.CoasterID].Nodes[self.CurSegment].SegLength
 	if !curseglength then return end
 
@@ -285,7 +283,7 @@ end
 //Calculate our movement along the curve
 function ENT:PhysicsSimulate(phys, deltatime)
 	if self.IsOffDaRailz or self.CartTable == nil then return SIM_NOTHING end
-	if !IsValid( self.Controller ) then return SIM_NOTHING end
+	if !IsValid( self.Controller ) || !istable(self.Controller.Nodes) then return SIM_NOTHING end
 	if self.Spawning then return end
 
 	local CurPos  = self:GetPos()
