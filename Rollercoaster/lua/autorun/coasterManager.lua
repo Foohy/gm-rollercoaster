@@ -5,7 +5,7 @@ include("trackmanager.lua")
 //I should probably make this a package and combine these two global tables into one.
 Rollercoasters = Rollercoasters or {} //Holds all the rollercoasters
 CoasterManager = CoasterManager or {} //Holds all the methods and variables for rollercoasters
-COASTER_VERSION = 11
+COASTER_VERSION = 12
 
 //Some content (Remove these lines if you don't want clients to download)
 resource.AddFile("sound/coaster_ride.wav")
@@ -343,15 +343,6 @@ if CLIENT then
 		for k, v in pairs( CoasterTracks ) do
 			if IsValid( v ) then
 				v:DrawTrack()
-			end
-		end
-	end )
-
-	//Track rendering. Renders previews/beams/transluecent
-	hook.Add( "PostDrawTranslucentRenderables", "CoasterDrawTrackTranslucents", function()
-		for k, v in pairs( CoasterTracks ) do
-			if IsValid( v ) then
-				v:DrawTrackTranslucents()
 			end
 		end
 	end )

@@ -643,6 +643,9 @@ function ENT:GetSplineSegment(spline) //Get the segment of the given spline
 	return math.floor( spline / STEPS ) + 2
 end
 
+local nodeType = nil
+local CTime = 0
+
 //Main function for all track rendering
 //track preview beams, track mesh
 function ENT:DrawTrack()
@@ -653,41 +656,33 @@ function ENT:DrawTrack()
 		render.SetMaterial( mat_debug )
 		self:DrawRailMesh()
 
-	end
+		CTime = CurTime()
 
-end
-
-local nodeType = nil
-local CTime = 0
-//Draws track supports, track preview beams, track mesh
-function ENT:DrawTrackTranslucents()
-	if self.CatmullRom == nil then return end //Shit
-
-	if #self.CatmullRom.PointsList < 4 then return end
-
-	CTime = CurTime()
-	
-	for i = 2, (#self.CatmullRom.PointsList - 2) do
-		if IsValid( self.Nodes[i] ) then
-			nodeType = self.Nodes[i]:GetType()
-			
-			if nodeType == COASTER_NODE_CHAINS then
-				render.SetMaterial( mat_chain ) //mat_chain
-				self:DrawSegment( i, CTime )
-			elseif nodeType == COASTER_NODE_SPEEDUP then
-				self:DrawSpeedupModels(i)
-
-			elseif nodeType == COASTER_NODE_BRAKES then
-				self:DrawBreakModels( i )
+		render.SetMaterial( mat_chain ) //mat_chain
+		for i = 2, (#self.CatmullRom.PointsList - 2) do
+			if IsValid( self.Nodes[i] ) then
+				nodeType = self.Nodes[i]:GetType()
 				
-			end
-			
+				if nodeType == COASTER_NODE_CHAINS then
+					
+					self:DrawSegment( i, CTime )
+				elseif nodeType == COASTER_NODE_SPEEDUP then
+					self:DrawSpeedupModels(i)
 
-		end 
+				elseif nodeType == COASTER_NODE_BRAKES then
+					self:DrawBreakModels( i )
+					
+				end
+				
+
+			end 
+		end
+
+		render.SetMaterial( mat_debug )
+		self:DrawInvalidNodes()
+
 	end
 
-	render.SetMaterial( mat_debug )
-	self:DrawInvalidNodes()		
 end
 
 //Draw invalid nodes, otherwise known as track preview
