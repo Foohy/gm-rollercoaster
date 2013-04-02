@@ -2,7 +2,7 @@ AddCSLuaFile( "cl_init.lua" )
 AddCSLuaFile( "shared.lua" )
 include( "shared.lua" )
 
-//General Cart Stuff
+-- General Cart Stuff
 ENT.CoasterID 	= -1 //Unique ID of the coaster this cart is attached to
 ENT.NumCarts 	= 1 //Length of the train of carts
 ENT.Powered 	= false //If powered, never slow beyond a certain speed. Basically silent always-on chains
@@ -10,12 +10,12 @@ ENT.MinSpeed 	= 0 //minimum speed to travel at. 0 means dont touch shit.
 ENT.Controller 	= nil //Controller
 ENT.IsOffDaRailz  = false 
 ENT.Occupants = {} //List of people sitting in this seat
-ENT.MaxOBBSize = 400 //Maximum size a model can be for the cart, in any dimension
+ENT.MaxOBBSize = 400 //Maximum size a model can be for the cart, for all dimensions
 
-//Barfing/Screaming
+-- Barfing/Screaming
 ENT.BarfThinkTime = 0
 
-//Physics stuff
+-- Physics stuff
 ENT.GRAVITY = 9.81
 ENT.InitialMass = 100
 ENT.WheelFriction = 0.04 //Coeffecient for mechanical friction (NOT drag) (no idea what the actual mew is for a rollercoaster, ~wild guesses~)
@@ -27,20 +27,20 @@ ENT.IsOffDaRailz = false
 ENT.Rotation = 0
 ENT.RotationSpeed = 0
 
-//Speedup node options/variables
+-- Speedup node options/variables
 ENT.SpeedupForce = 1400 //Force of which to accelerate the car
 ENT.MaxSpeed = 3600 //The maximum speed to which accelerate the car
 ENT.LastSpark = 0
 
-//Home station options/variables
+-- Home station options/variables
 ENT.HomeStage = 0
 ENT.StopTime = 5 //Time to stop and wait for people to leave/board
 
-//Break node options/variables
+-- Break node options/variables
 ENT.BreakForce = 1400 //Force of which to deccelerate the car
 ENT.BreakSpeed = 4 //The minimum speed of the car when in break zone
 
-//Credits to LPine for code on how to use a shadow controller 
+-- Credits to LPine for code on how to use a shadow controller 
 ENT.PhysShadowControl = {}
 ENT.PhysShadowControl.secondstoarrive  = 0.0000001 //SMALL NUMBERS
 ENT.PhysShadowControl.pos              = Vector(0, 0, 0)
@@ -54,6 +54,9 @@ ENT.PhysShadowControl.teleportdistance = 0
 ENT.PhysShadowControl.deltatime        = deltatime
 
 ENT.Timer = math.huge
+
+-- Create the networkstring for passengers vomiting and screaming their eyes out
+util.AddNetworkString("coaster_vomitscream_trigger")
 
 function ENT:Initialize()
 	-- If our model isn't already set, set it accordingly
@@ -1120,26 +1123,20 @@ concommand.Add("coaster_ruin_everything", function( ply, cmd, args )
 	print("Unknown command \"coaster_fuckyou\"")
 end )
 
-concommand.Add("coaster_cart_click", function( ply, cmd, args )
-	if !IsValid( ply ) || !ply:InVehicle() then return end
-	local pod = ply:GetVehicle()
-	if !IsValid( pod ) || !IsValid( pod:GetParent() ) || pod:GetParent():GetClass() != "coaster_cart" then return end
-
-	//Mouse1 = scream
-	if tonumber(args[1]) == 1 then
-		if !ply.ScreamCooldown || ply.ScreamCooldown < CurTime() || !GetConVar("coaster_cart_cooldown"):GetBool() then 
-			ply.ScreamCooldown = CurTime() + 5
-			ply:Scream()
+net.Receive("coaster_vomitscream_trigger", function(length, client)
+	local ShouldVomit = net.ReadInt(2) == 1
+	if !IsValid( client ) || !client:InVehicle() then return end
+	local pod = client:GetVehicle()
+	if !IsValid( pod:GetParent() ) || pod:GetParent():GetClass() != "coaster_cart" then return end
+	if ShouldVomit then
+		if !client.BarfCooldown || client.BarfCooldown < CurTime() || !GetConVar("coaster_cart_cooldown"):GetBool() then 
+			client.BarfCooldown = CurTime() + 25 
+			client:Puke()
 		end
-
-	//Mouse2 = barf
-	else 
-		if !ply.BarfCooldown || ply.BarfCooldown < CurTime() || !GetConVar("coaster_cart_cooldown"):GetBool() then 
-			ply.BarfCooldown = CurTime() + 30 
-			ply:Puke()
+	else
+		if !client.ScreamCooldown || client.ScreamCooldown < CurTime() || !GetConVar("coaster_cart_cooldown"):GetBool() then 
+			client.ScreamCooldown = CurTime() + 5
+			client:Scream()
 		end
 	end
-
 end )
-
-

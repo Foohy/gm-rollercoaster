@@ -160,10 +160,14 @@ hook.Add("PlayerBindPress", "Coaster_cart_events", function( ply, bind, pressed 
 	local pod = ply:GetVehicle()
 	if !IsValid( pod ) || !IsValid( pod:GetParent() ) || pod:GetParent():GetClass() != "coaster_cart" then return end
 
-	if string.find(bind, "+attack2") then
-		RunConsoleCommand("coaster_cart_click", "2")
-	elseif string.find(bind, "+attack") then
-		RunConsoleCommand("coaster_cart_click", "1")
+	local ShouldVomit = string.find(bind, "+attack2")
+	local ShouldScream = string.find(bind, "+attack")
+
+	if ShouldVomit || ShouldScream then
+		net.Start("coaster_vomitscream_trigger")
+			net.WriteInt( ShouldVomit and 1 or 0, 2  )
+		net.SendToServer()
 	end
+
 end )
 

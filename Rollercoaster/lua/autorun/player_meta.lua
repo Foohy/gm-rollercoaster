@@ -75,8 +75,6 @@ function meta:Scream()
 		"vo/npc/female01/yeah02.wav"
 	}
 
-
 	self:ViewPunch( Angle( -5, 0, 0 ) )
-	
-	self:EmitSound( table.Random( Screams ) )
+	self:EmitSound( table.Random( Screams ), 100, 100 )
 end
