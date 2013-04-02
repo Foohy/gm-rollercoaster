@@ -7,7 +7,7 @@ local UNIQUENAME = "node_creator"
 TAB.Name 			= "Track"
 TAB.UniqueName 		= UNIQUENAME
 TAB.Description 	= "Create specific track nodes"
-TAB.Instructions 	= "Left click on the world to create a node. Click on an existing node to update it's settings. Right click on any node to loop the track."
+TAB.Instructions 	= "Left click to create a node. Click on an existing node to update it's settings. Right click on a node to loop the track. Reload to copy a node's settings"
 TAB.Icon 			= "coaster/track"
 TAB.Position 		= 1
 
@@ -182,15 +182,21 @@ end
 //TODO: Make this get the facing node's settings
 function TAB:Reload( trace, tool )
 	local ply   = tool:GetOwner()
-
-	if IsValid( trace.Entity ) && trace.Entity:GetClass() == "coaster_node" then //Update an existing node's settings
-
+	local Node = GetActualNodeEntity( trace.Entity )
+	if IsValid( Node ) && Node:GetClass() == "coaster_node" then //Update an existing node's settings
+		local expldID = string.Explode("_", Node:GetCoasterID() )
 		//Info gathering time
-		local type = trace.Entity:GetType()
-		local ID = trace.Entity:GetCoasterID()
-		local Bank = trace.Entity:GetRoll()
-		//local RelRoll = trace.Entity:GetRelativeRoll()
+		local type = Node:GetType()
+		local ID = expldID[#expldID]
+		local Bank = Node:GetRoll()
 
+		RunConsoleCommand("coaster_supertool_tab_node_creator_tracktype", type )
+		RunConsoleCommand("coaster_supertool_tab_node_creator_id", ID )
+		RunConsoleCommand("coaster_supertool_tab_node_creator_bank", Bank )
+
+		ply:SendLua("GAMEMODE:AddNotify( 'Retreived settings from node!', NOTIFY_GENERIC, 4 ); surface.PlaySound( 'ambient/water/drip'..math.random(1, 4)..'.wav' )")
+
+		return true
 	end
 end
 
@@ -373,6 +379,16 @@ function TAB:BuildPanel( )
 	ComboBox.OnSelect = function(index, value, data)
 		RunConsoleCommand("coaster_supertool_tab_node_creator_tracktype" , tostring( value ) )
 	end
+
+	//Add a callback to choose the option when entering it into the console
+	cvars.AddChangeCallback( "coaster_supertool_tab_node_creator_tracktype", function(name, old, new)
+		//Go through all of the nodes and tell them to update their shit
+		local num = tonumber( new )
+		if num > 0 then
+			ComboBox:ChooseOptionID( num )
+		end
+	end )
+
 	panel:AddItem( ComboBox )
 
 	local Seperator = vgui.Create("DLabel", panel)
