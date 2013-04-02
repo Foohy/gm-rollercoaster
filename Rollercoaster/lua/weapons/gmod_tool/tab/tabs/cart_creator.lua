@@ -49,13 +49,13 @@ function TAB:LeftClick( trace, tool )
 			if IsValid( controller ) then
 
 				local trains = controller:AddTrain( ply, model, CartNum )
-				if carts then 
+				if trains then 
 					undo.Create("Coaster Cart")
 					undo.SetPlayer( ply )
 					undo.SetCustomUndoText("Undone Train")
 
 
-					for k, train in pairs( carts ) do 
+					for k, train in pairs( trains ) do 
 						undo.AddEntity( train )
 
 						train.WheelFriction = Friction
@@ -100,13 +100,13 @@ function TAB:RightClick( trace, tool )
 			if IsValid( controller ) then
 
 				local trains = controller:AddTrain( ply, model, CartNum, Ent.Segment )
-				if carts then 
+				if trains then 
 					undo.Create("Coaster Cart")
 					undo.SetPlayer( ply )
 					undo.SetCustomUndoText("Undone Train")
 
 
-					for k, train in pairs( carts ) do 
+					for k, train in pairs( trains ) do 
 						undo.AddEntity( train )
 
 						train.WheelFriction = Friction
