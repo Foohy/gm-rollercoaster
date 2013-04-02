@@ -43,6 +43,12 @@ function TAB:LeftClick( trace, tool )
 			if IsValid( node ) then
 				node:SetTrackColor( r,g,b )
 				controller:SetTrackColor(r,g,b)
+
+				-- If we're changing to a new generation type, invalidate the entire track as it needs to be rebuilt
+				if controller:GetTrackType() != tracktype then
+					controller:InvalidateTrack()
+				end
+
 				controller:SetTrackType(tracktype)
 				node:Invalidate( false )
 			end
@@ -54,25 +60,7 @@ function TAB:LeftClick( trace, tool )
 end
 
 function TAB:RightClick( trace, tool )
-	local ply   = tool:GetOwner()
 
-	local CartNum = GetClientNumber( self, "cart_amount", tool)
-	local Powered = GetClientNumber( self, "powered", tool)
-	
-	local Ent 		= trace.Entity
-	
-	if IsValid( Ent ) && Ent:GetClass() == "coaster_node" then
-		if SERVER then
-			local controller = Ent:GetController()
-		
-			if IsValid( controller ) && SERVER then 
-				//print("Doing nothing for "..tostring(controller:GetCoasterID()))
-				//controller:ClearTrains()
-			end
-		end
-		
-		return true
-	end
 end
 
 function TAB:Reload( trace )
