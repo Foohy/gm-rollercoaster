@@ -1099,7 +1099,7 @@ end
 function ENT:UpdateCartModifiers()
 	if self.Spawning then return end
 
-	data = {}
+	local data = {}
 	data.Percent = self.Percent
 	data.Node = self.CurSegment 
 	data.CoasterID = self.CoasterID

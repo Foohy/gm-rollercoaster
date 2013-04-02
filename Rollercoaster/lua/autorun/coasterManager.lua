@@ -78,6 +78,12 @@ if SERVER then
 			return nil 
 		end
 
+		//Make sure the track isn't persisted
+		if IsValid( Rollercoasters[id] ) &&  Rollercoasters[id]:GetPersistent() then
+			ply:LimitHit("persist")
+			return nil
+		end
+
 		local node = ents.Create("coaster_node")		
 		node:SetCoasterID( id )
 		node:SetType( type )
@@ -284,6 +290,7 @@ if CLIENT then
 	//Language for admin limits
 	language.Add("SBoxLimit_maxcarts", "You've hit the Carts limit!")
 	language.Add("SBoxLimit_maxnodes", "You've hit the Nodes limit!")
+	language.Add("SBoxLimit_persist", "Cannot modify persisted track!")
 	language.Add("Cleanup_Rollercoaster", "Rollercoasters")
 	language.Add("Cleaned_Rollercoaster", "Cleaned up all rollercoasters")
 
@@ -329,7 +336,7 @@ if CLIENT then
 			CoasterTracks = {}
 
 			for k, v in pairs( ents.FindByClass( "coaster_node" ) ) do
-				if IsValid( v ) && v:IsController() then
+				if IsValid( v ) && v.IsController && v:IsController() then
 					table.insert( CoasterTracks, v )
 				end
 			end

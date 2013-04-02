@@ -87,9 +87,58 @@ local function ReconstructCoaster(coasterID, owner, Controller )
 	UnconstructedCoasters[coasterID] = nil
 end
 
-duplicator.RegisterEntityClass("coaster_node", function( ply, data )
-	//PrintTable( ents.FindByClass("coaster_node"))
+local function DoGeneric( ent, data )
+	print("GENERIC FUNCTION START")
+	print( data.Pos )
+    if ( !data ) then return end
+    if ( data.Model ) then ent:SetModel( data.Model ) end
+    if ( data.Angle ) then ent:SetAngles( data.Angle ) end
+    print( data.Pos )
+    if ( data.Pos ) then ent:SetPos( data.Pos ) end
+    print( data.Pos )
+    if ( data.Skin ) then ent:SetSkin( data.Skin ) end
+    if ( data.Flex ) then DoFlex( ent, data.Flex, data.FlexScale ) end
+    if ( data.BoneManip ) then DoBoneManipulator( ent, data.BoneManip ) end
+    if ( data.ModelScale ) then ent:SetModelScale( data.ModelScale, 0 ) end
+    if ( data.ColGroup ) then ent:SetCollisionGroup( data.ColGroup ) end
+    print( data.Pos )
+    --
+    -- Restore NetworkVars/DataTable variables (the SetupDataTables values)
+    --
+    if ( ent.RestoreNetworkVars ) then
+        ent:RestoreNetworkVars( data.DT )
+    end
+    print( data.Pos )
+    print("GENERIC FUNCTION END")
+end
 
+local function GenericDebug( Player, data )
+    if ( !duplicator.IsAllowed( data.Class ) ) then
+        -- MsgN( "duplicator: ", data.Class, " isn't allowed to be duplicated!" )
+        return
+    end
+
+    local ent = ents.Create( data.Class )
+    if ( !IsValid( ent ) ) then return end
+
+    //DO stuff
+    print("again")
+    print( data.Pos )
+    DoGeneric( ent, data )
+
+    ent:Spawn()
+    ent:Activate()
+
+    print("last time i swear")
+    print( ent:GetPos(), data.Pos )
+    //Do physics stuff
+
+    //Add it to some nerd table
+    print("Spawned coaster node")
+    return ent
+end
+
+duplicator.RegisterEntityClass("coaster_node", function( ply, data )
 	local node = duplicator.GenericDuplicatorFunction( ply, data )
 	local ID = node:GetCoasterID()
 
@@ -105,6 +154,7 @@ duplicator.RegisterEntityClass("coaster_node", function( ply, data )
 	if IsValid( Controller ) && NumUnconstructedNodes( ID ) == Controller:GetNumCoasterNodes() then
 		print("Beginning coaster rebuilding")
 		ReconstructCoaster( ID, ply, Controller  )
+		UnconstructedCoasters[ID] = nil
 	end
 end, "Data" )
 
@@ -141,14 +191,21 @@ local function FindNodeByUnsortedTable( traintbl )
 end
 
 local function ConstructCartTable( traintbl )
-	local CartTable = {}
+	if RCCartGroups == nil then RCCartGroups = 1 end
+
+	if !_G["CartTable_" .. RCCartGroups] then
+		_G["CartTable_" .. RCCartGroups] = {}
+	end
+	local cartgroup = _G["CartTable_" .. RCCartGroups]
+	RCCartGroups = RCCartGroups + 1
+
 	local count = table.Count( traintbl )
 	for i=1, count do
 		if !traintbl[i] || !traintbl[i].TrainDataLoad then continue end 
-		CartTable[traintbl[i].TrainDataLoad.Index] = traintbl[i]
+		cartgroup[traintbl[i].TrainDataLoad.Index] = traintbl[i]
 	end
 
-	return CartTable
+	return cartgroup
 end
 
 local function ReconstructTrain( traintbl )
@@ -167,6 +224,8 @@ local function ReconstructTrain( traintbl )
 		v:GetPhysicsObject():EnableMotion( true )
 		v:GetPhysicsObject():Wake()
 	end
+
+	RollercoasterUpdateCartTable(CartTable)
 end
 
 local function DelayedSpawn()
@@ -179,6 +238,8 @@ end
 
 //Register some modifiers so we can save the carts to the track
 duplicator.RegisterEntityModifier("cart_coaster_data", function(ply, ent, data)
+
+	//print( data.CoasterID, data.Percent, data.Node, data.Index, data.TrainID )
 
 	if data.CoasterID && data.Percent && data.Node && data.Index && data.TrainID then
 		ent.Spawning = true 
@@ -196,11 +257,25 @@ duplicator.RegisterEntityModifier("cart_coaster_data", function(ply, ent, data)
 
 		table.insert(UnconstructedTrains[ data.TrainID ], ent )
 
-		duplicator.StoreEntityModifier( ent, "cart_coaster_id", data )
+		duplicator.StoreEntityModifier( ent, "cart_coaster_data", data )
 
-		timer.Create("AssignCartsAfterSave", 1, 1, function()
+		timer.Create("AssignCartsAfterLoad", 1, 1, function()
 			DelayedSpawn()
 		end )
 	end
 end)
 
+//Override SetPersistent so that all of the other nodes are also set to be persistent
+local meta = FindMetaTable("Entity")
+local oldSetPersistent = meta.SetPersistent 
+function meta:SetPersistent( bool )
+	oldSetPersistent( self, bool )
+
+	if (self:GetClass() == "coaster_node" ) || self:GetClass() == "coaster_physmesh" then
+		for k, v in pairs( ents.FindByClass("coaster_node")) do
+			if IsValid( v ) && v.GetCoasterID && v:GetCoasterID() == self:GetCoasterID() then
+				oldSetPersistent( v, bool )
+			end
+		end
+	end
+end
