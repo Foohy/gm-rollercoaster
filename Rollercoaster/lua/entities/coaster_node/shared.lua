@@ -1,6 +1,6 @@
 ENT.Type 			= "anim"
 ENT.Base 			= "base_anim"
-ENT.PrintName		= "Roller coaster Node"
+ENT.PrintName		= "Rollercoaster Node"
 ENT.Author			= "Foohy"
 ENT.Information		= "A node for a rollercoaster"
 ENT.Category		= "Foohy"
