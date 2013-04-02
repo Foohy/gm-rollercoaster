@@ -41,10 +41,14 @@ function TAB:LeftClick( trace, tool )
 	if SERVER then
 		local Node = GetActualNodeEntity( trace.Entity )
 		if IsValid( Node ) && Node:GetClass() == "coaster_node" then //Update an existing node's settings
+			local ShouldInvalidate = Node:GetRoll() != Bank
 			Node:SetType( Type )
 			Node:SetRelativeRoll( RelRoll )
 			Node:SetRoll( Bank )
-			Node:Invalidate( true )
+
+			if ShouldInvalidate then
+				Node:Invalidate( true )
+			end
 
 			local controller = Node:GetController()
 
@@ -60,7 +64,9 @@ function TAB:LeftClick( trace, tool )
 					prevnode:SetType( Type )
 					prevnode:SetRelativeRoll( RelRoll )
 					prevnode:SetRoll( Bank )
-					prevnode:Invalidate( true )
+					if ShouldInvalidate then
+						prevnode:Invalidate( true )
+					end
 				end
 			end
 			
