@@ -23,7 +23,7 @@ ENT.StopTime = 5 //Time to stop and wait for people to leave/board
 ENT.BreakForce = 1400 //Force of which to deccelerate the car
 ENT.BreakSpeed = 3 //The minimum speed of the car when in break zone
 
-
+ENT.NodeModel			= Model( "models/hunter/misc/sphere075x075.mdl" )
 
 
 
@@ -163,7 +163,7 @@ function ENT:Initialize()
 	self.Nodes = {} //List of nodes (assuming we are the controller)
 	self.PhysMeshes = {}
 
-	self:SetModel( self.Model )	
+	self:SetModel( self.NodeModel )	
 	self:SetMaterial( self.Material )
 
 	self:PhysicsInit(SOLID_VPHYSICS)
@@ -227,10 +227,10 @@ function ENT:AddTrackNode( ent, ply )
 		local prevNode = self.Nodes[index-1]
 		if IsValid(prevNode) then
 			prevNode:SetNextNode(ent)	
-			
+
 			//Set the new node to the old 'unconnected' node's position
 			if !prevNode:IsController() && prevNode != FirstNode then
-				prevNode:SetModel( self.Model )
+				prevNode:SetModel( self.NodeModel )
 				prevNode:SetPos( ent:GetPos() )
 				ent:SetModel( "models/props_junk/PopCan01a.mdl" )
 			end

@@ -8,7 +8,6 @@ ENT.Category		= "Foohy"
 ENT.Spawnable		= false
 ENT.AdminSpawnable	= false
 
-ENT.Model			= Model( "models/hunter/misc/sphere075x075.mdl" )
 ENT.Material 		= "hunter/myplastic"
 
 function ENT:SetupDataTables()
