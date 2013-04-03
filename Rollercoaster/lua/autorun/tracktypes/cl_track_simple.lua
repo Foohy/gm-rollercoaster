@@ -10,142 +10,129 @@ trackmanager.Register( EnumNames.Tracks[COASTER_TRACK_SIMPLE], TRACK )
 
 if !CLIENT then return end
 
-TRACK.Material =  CreateMaterial( "CoasterTrackMaterial", "UnlitGeneric", { //VertexLitGeneric
-	["$basetexture"] 		= "phoenix_storms/dome", //models/debug/debugwhite
-    ["$bumpmap"]			= "phoenix_storms/dome_bump",
-    ["$vertexcolor"] 		= 1,
-    ["$phong"] 				= 1,
-    ["$phongexponent"] 		= 20,
-    ["$phongboost"] 		= 2,
-    ["$phongfresnelranges"] = "0.5 0.8 1",
-	//["$nocull"] = 1,
-	//["$translucent"] = 1,
-	//["$vertexalpha"] = 1,
+TRACK.Material =  CreateMaterial( "CoasterTrackMaterial", "UnlitGeneric", {
+	["$basetexture"]		= "phoenix_storms/dome",
+	["$vertexcolor"]		= 1,
 } )
 
-//local Offset = 20  //Downwards offset of large center beam
-local RailOffset = 25 //Distance track beams away from eachother
+-- Distance track beams away from eachother
+local RailOffset = 25
 
-TRACK.CylinderRadius = 10 //Radius of the circular track beams
-TRACK.CylinderPointCount = 7 //How many points make the cylinder of the track mesh
+TRACK.CylinderRadius = 4 -- Radius of the circular track beams
+TRACK.CylinderPointCount = 7 -- How many points make the cylinder of the track mesh
 
-function TRACK:Generate( controller )
-	if !IsValid( controller ) || !controller:IsController() then return end
+local function GetAngleOfSubsegment( Controller, subsegment )
+	local SubAngle = Angle( 0, 0, 0 )
+	local NearSub = Controller.CatmullRom.Spline[subsegment+1] -- Get a subsegment that's just next to us
+	local Reverse = Controller.CatmullRom.Spline[subsegment+1] == nil 
+	if Reverse then NearSub = Controller.CatmullRom.Spline[subsegment-1] end -- If there isn't a next node, get a previous one
+
+	local NextNode = Controller.Nodes[Controller:GetSplineSegment(subsegment) + 1]
+	local CurrentNode = Controller.Nodes[ Controller:GetSplineSegment(subsegment) ]
+
+	local Normal = NearSub - Controller.CatmullRom.Spline[subsegment]
+	if Reverse then Normal = -Normal end 
+
+	Normal:Normalize()
+	SubAngle = Normal:Angle()
+
+	//Get the percent along this segment, to calculate how much we'll roll
+	local perc = Controller:PercAlongNode( subsegment )
+	
+	//Note all Lerps are negated. This is because the actual roll value from the gun is backwards.
+	local Roll = Lerp( perc, math.NormalizeAngle( CurrentNode:GetRoll() ), NextNode:GetRoll())	
+
+	-- Take into account roll
+	SubAngle:RotateAroundAxis( Normal, Roll ) 
+
+	return SubAngle, Normal
+end 
+
+function TRACK:CreateSideBeams( Position, Angle, Position2, Angle2, Node, CurrentCylinderAngle )
+
+	//Side rails
+	Cylinder.AddBeam( Position + Angle:Right() * -RailOffset, -- Position of beginning of cylinder
+		self.LastCylinderAngle, -- The angle of the first radius of the cylinder
+		Position2 + Angle2:Right() * -RailOffset, -- Position of end of cylinder
+		CurrentCylinderAngle, 
+		self.CylinderRadius, -- Radius of cylinder
+		Node:GetTrackColor() ) -- Color
+
+	Cylinder.AddBeam( Position + Angle:Right() * RailOffset, 
+		self.LastCylinderAngle, 
+		Position2 + Angle2:Right() * RailOffset, 
+		CurrentCylinderAngle, 
+		self.CylinderRadius, 
+		Node:GetTrackColor() ) 
+end
+
+function TRACK:Generate( Controller )
+	if !IsValid( Controller ) || !Controller:IsController() then return end
 
 	local Vertices = {} //Create an array that will hold an array of vertices (This is to split up the model)
-	Meshes = {} 
+	Meshes = {} //If we hit the maximum for the number of vertices of a model, split it up into several
 	local modelCount = 1 //how many models the mesh has been split into
 
 	Cylinder.Start( self.CylinderRadius, self.CylinderPointCount ) //We're starting up making a beam of cylinders
-	local LastAng = nil //Last angle so previous cylinder matches with the next cylinder
+	self.BeginningSegmentAngle = nil
+	self.BeginningSegmentCylinderAngle = nil 
+
+	self.LastAngle = nil //Last angle so previous cylinder matches with the next cylinder
+	self.LastNormal = nil
+	self.LastCylinderAngle = nil
 
 	//For every single spline segment 
-	for i = 1, #controller.CatmullRom.Spline do
-		//Some useful entities to be references
-		local NexterSegment = controller.Nodes[ controller:GetSplineSegment(i) + 2]
-		local NextSegment = controller.Nodes[controller:GetSplineSegment(i) + 1]
-		local ThisSegment = controller.Nodes[ controller:GetSplineSegment(i) ]
+	for i = 1, #Controller.CatmullRom.Spline do
+		local CurrentNode = Controller.Nodes[ Controller:GetSplineSegment(i) ]
+		local SubsegmentAngle, SubsegmentNormal = GetAngleOfSubsegment( Controller, i )
 
-		local AngVec = Vector( 0, 0, 0 )
-		local AngVec2 = Vector( 0, 0, 0 )
+		if i == 1 then
 
-		//Get the angles from the current spline to next spline
-		if #controller.CatmullRom.Spline >= i + 1 then		
-			AngVec = controller.CatmullRom.Spline[i] - controller.CatmullRom.Spline[i + 1]
-			AngVec:Normalize()
-		else
-			AngVec = controller.CatmullRom.Spline[i] - controller.CatmullRom.PointsList[ #controller.CatmullRom.PointsList ]
-			AngVec:Normalize()
-		end
+			local CylinderAngle = SubsegmentNormal:Angle()
+			CylinderAngle:RotateAroundAxis( SubsegmentNormal:Angle():Right(), -90 )
+			CylinderAngle:RotateAroundAxis( SubsegmentNormal:Angle():Up(), -270 )
 
-		if #controller.CatmullRom.Spline >= i + 2 then
-			AngVec2 = controller.CatmullRom.Spline[i+1] - controller.CatmullRom.Spline[i+2]
-			AngVec2:Normalize()
-		else
-			AngVec2 = AngVec
+			self.LastCylinderAngle = CylinderAngle -- Since there was no 'last', this is the closest we have
+			self.BeginningSegmentAngle = SubsegmentAngle -- Store the angle for the very last subsegment to match to
+			self.BeginningSegmentCylinderAngle = CylinderAngle -- Ditto
+
+			-- Here we have a special case. The first subsegment is after the first node, so we'll have to slap that in now
+			self:CreateSideBeams( CurrentNode:GetPos(), SubsegmentAngle, Controller.CatmullRom.Spline[i], SubsegmentAngle, CurrentNode, CylinderAngle )
 
 		end
 
-		local ang = AngVec:Angle()
-		local ang2 = AngVec2:Angle()
+		if self.LastAngle && self.LastNormal then
 
-		//Calculate the roll
-		if IsValid( ThisSegment ) && IsValid( NextSegment ) then
-			//Get the percent along this node
-			local perc = controller:PercAlongNode( i )
-			
-			//Note all Lerps are negated. This is because the actual roll value from the gun is backwards.
-			local Roll = -Lerp( perc, math.NormalizeAngle( ThisSegment:GetRoll() ),NextSegment:GetRoll())	
-			if ThisSegment:RelativeRoll() then
-				Roll = Roll - ( ang.p - 180 )
+			-- Calculate the angle of the circle for the end of the cylinder
+			local CylinderAngle = self.LastNormal:Angle()
+			CylinderAngle:RotateAroundAxis( self.LastNormal:Angle():Right(), -90 )
+			CylinderAngle:RotateAroundAxis( self.LastNormal:Angle():Up(), -270 )
+
+			-- If this is the last segment, adjust the angles so it will seamlessly fit with the beginning of the track (if it's looped)
+			if i == #Controller.CatmullRom.Spline && Controller:Looped() then
+				SubsegmentAngle = self.BeginningSegmentAngle
+				CylinderAngle = self.BeginningSegmentCylinderAngle
 			end
 
-			//Rotated around axis
-			//This takes roll into account in the angle so far
-			ang:RotateAroundAxis( AngVec, Roll ) 
+			-- Create the beams
+			self:CreateSideBeams( Controller.CatmullRom.Spline[i-1], self.LastAngle, Controller.CatmullRom.Spline[i], SubsegmentAngle, CurrentNode, CylinderAngle )
 
-			//Now do it for the segment just ahead of us
-			local perc2 = controller:PercAlongNode( i + 1, true ) //We have to do a quickfix so the function can handle how to end the track
-			local Roll2 = -Lerp( perc2, math.NormalizeAngle( ThisSegment:GetRoll() ), NextSegment:GetRoll() )
-			if ThisSegment:RelativeRoll() then
-				Roll2 = Roll2 - ( ang2.p - 180 )
-			end
-			ang2:RotateAroundAxis( AngVec2, Roll2 )
+			self.LastCylinderAngle = CylinderAngle
 		end
 
-		//If the current spline is not the very last one
-		if i+1 <= #controller.CatmullRom.Spline then
-			//Get the positions now so it isn't super mess in the code
-			local posL = controller.CatmullRom.Spline[i] + ang:Right() * -RailOffset
-			local posR = controller.CatmullRom.Spline[i] + ang:Right() * RailOffset
-			local nPosL = controller.CatmullRom.Spline[i+1] + ang2:Right() * -RailOffset
-			local nPosR = controller.CatmullRom.Spline[i+1] + ang2:Right() * RailOffset
 
-			//Get the normal 
-			local vec = controller.CatmullRom.Spline[i] - controller.CatmullRom.Spline[i+1]
-			local vec2 = vec
+		-- Split the model into multiple meshes if it gets large
+		if #Cylinder.Vertices > 50000 then
 
-			//if we are the second to last spline, get the normal
-			if #controller.CatmullRom.Spline >= i+2 then
-				vec2 = controller.CatmullRom.Spline[i+1] - controller.CatmullRom.Spline[i+2]
-			end
+			Vertices[modelCount] = Cylinder.Vertices
+			modelCount = modelCount + 1
 
-			NewAng = vec:Angle()
-			NewAng:RotateAroundAxis( vec:Angle():Right(), 90 )
-			NewAng:RotateAroundAxis( vec:Angle():Up(), 270 )
-
-			//only if LastAng is null do we set to it
-			LastAng = LastAng or NewAng
-
-			//Main center beam
-			//Cylinder.AddBeam(controller.CatmullRom.Spline[i] + (ang:Up() * -Offset), LastAng, controller.CatmullRom.Spline[i+1] + (ang2:Up() * -Offset), NewAng, Radius )
-			if i==1 then
-				local FirstLeft = controller:GetPos() + ang:Right() * -RailOffset
-				local FirstRight = controller:GetPos() + ang:Right() * RailOffset
-
-				if controller:Looped() then
-					FirstLeft = controller.CatmullRom.PointsList[2] + ang:Right() * -RailOffset
-					FirstRight = controller.CatmullRom.PointsList[2] + ang:Right() * RailOffset
-				end
-
-				Cylinder.AddBeam( FirstLeft, LastAng, posL, NewAng, 4, ThisSegment:GetTrackColor() )
-				Cylinder.AddBeam( FirstRight, LastAng, posR, NewAng, 4, ThisSegment:GetTrackColor() )
-			end
-			//Side rails
-			Cylinder.AddBeam( posL, LastAng, nPosL, NewAng, 4, ThisSegment:GetTrackColor() )
-			Cylinder.AddBeam( posR, LastAng, nPosR, NewAng, 4, ThisSegment:GetTrackColor() )
-
-			if #Cylinder.Vertices > 50000 then// some arbitrary limit to split up the verts into seperate meshes. It's surprisingly easy to hit that limit
-
-				Vertices[modelCount] = Cylinder.Vertices
-				modelCount = modelCount + 1
-				print( modelCount )
-
-				Cylinder.Vertices = {}
-				Cylinder.TriCount = 1
-			end
-			LastAng = NewAng
+			Cylinder.Vertices = {}
+			Cylinder.TriCount = 1
 		end
+		
+		self.LastAngle = SubsegmentAngle
+		self.LastNormal = SubsegmentNormal
 	end	
 
 	local verts = Cylinder.EndBeam()
@@ -155,7 +142,7 @@ function TRACK:Generate( controller )
 	if #Vertices > 0 then
 		Vertices[#Vertices + 1] = StrutVerts
 	end
-	//controller.Verts = verts //Only stored for debugging
+	//Controller.Verts = verts //Only stored for debugging
 
 	for i=1, #Vertices do
 		if #Vertices[i] > 2 then
@@ -170,15 +157,15 @@ function TRACK:Generate( controller )
 	return Sections
 end
 
-function TRACK:Draw( controller, Meshes )
-	if !IsValid( controller ) || !controller:IsController() then return end
+function TRACK:Draw( Controller, Meshes )
+	if !IsValid( Controller ) || !Controller:IsController() then return end
 
 	if !Meshes || #Meshes < 1 then return end
 
 	for k, v in pairs( Meshes[1] ) do
 		render.SetMaterial(self.Material)
 		if v then 
-			v:Draw() //TODO: I think IMesh resets color modulation upon drawing. Figure out a way around this?
+			v:Draw() 
 		end
 	end
 

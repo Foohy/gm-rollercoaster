@@ -206,7 +206,6 @@ if SERVER then
 
 					if remove then
 						v:Remove()
-						print("removign: " .. tostring(v))
 					end
 				end
 			end
