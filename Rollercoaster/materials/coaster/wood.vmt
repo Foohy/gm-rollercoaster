@@ -1,0 +1,13 @@
+"VertexLitGeneric"
+{
+	"$basetexture" "foohy/wood"
+	"$surfaceprop" "wood"
+	"$envmap" "env_cubemap"
+	"$normalmapalphaenvmapmask" 1
+	//"$basealphaenvmapmask" 1
+	"$envmapcontrast" 1
+	"$envmapsaturation" 1
+	"$envmaptint" "[ .3 .3 .3 ]"
+	"$model" 1
+	"$halflambert" 1
+}

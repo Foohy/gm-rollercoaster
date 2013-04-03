@@ -10,11 +10,13 @@ trackmanager.Register( EnumNames.Tracks[COASTER_TRACK_SIMPLE], TRACK )
 
 if !CLIENT then return end
 
+TRACK.Material = Material( "coaster/track_metal_clean")
+/*
 TRACK.Material =  CreateMaterial( "CoasterTrackMaterial", "UnlitGeneric", {
 	["$basetexture"]		= "phoenix_storms/dome",
 	["$vertexcolor"]		= 1,
 } )
-
+*/
 -- Distance track beams away from eachother
 local RailOffset = 25
 

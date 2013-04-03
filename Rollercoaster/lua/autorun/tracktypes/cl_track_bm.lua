@@ -11,8 +11,10 @@ trackmanager.Register( EnumNames.Tracks[COASTER_TRACK_BM], TRACK )
 
 if !CLIENT then return end
 
+TRACK.Material = Material( "coaster/track_metal_clean")
+/*
 TRACK.Material =  CreateMaterial( "CoasterTrackBM", "UnlitGeneric", {
-	["$basetexture"]		= "phoenix_storms/dome",
+	["$basetexture"]		= "models/debug/debugwhite",
 	["$vertexcolor"]		= 1,
 } )
 
@@ -20,6 +22,7 @@ TRACK.StrutMaterial =  CreateMaterial( "CoasterTrackBMStrut", "UnlitGeneric", {
 	["$basetexture"]		= "models/debug/debugwhite",
 	["$vertexcolor"]		= 1,
 } )
+*/
 
 -- Distance track beams away from eachother
 local RailOffset = 20
@@ -559,7 +562,7 @@ function TRACK:Draw( Controller, Sections )
 	end
 
 	-- Draw the center struts
-	render.SetMaterial(self.StrutMaterial)
+	//render.SetMaterial(self.StrutMaterial)
 	for k, v in pairs( Sections[2] ) do
 		if v then 
 			v:Draw() 

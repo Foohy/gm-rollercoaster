@@ -13,6 +13,8 @@ if !CLIENT then return end
 
 //TRACK.Material = Material("models/wireframe")
 //phoenix_storms/dome
+TRACK.Material = Material( "coaster/track_metal")
+/*
 TRACK.Material =  CreateMaterial( "CoasterTrackMaterial", "UnlitGeneric", { //VertexLitGeneric
 	["$basetexture"] 		= "phoenix_storms/dome", //models/debug/debugwhite
     ["$bumpmap"]			= "phoenix_storms/dome_bump",
@@ -25,7 +27,7 @@ TRACK.Material =  CreateMaterial( "CoasterTrackMaterial", "UnlitGeneric", { //Ve
 	//["$translucent"] = 1,
 	//["$vertexalpha"] = 1,
 } )
-
+*/
 
 local StrutOffset = 1 //Space between coaster struts
 local Offset = 20  //Downwards offset of large center beam

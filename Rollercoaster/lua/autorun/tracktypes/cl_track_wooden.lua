@@ -11,34 +11,12 @@ trackmanager.Register( EnumNames.Tracks[COASTER_TRACK_WOOD], TRACK )
 
 if !CLIENT then return end
 
-TRACK.Material =  CreateMaterial( "CoasterWoodMaterialRail", "UnlitGeneric", { //VertexLitGeneric
-	["$basetexture"] 		= "phoenix_storms/metalset_1-2", //models/debug/debugwhite
+TRACK.MaterialMetal = Material("coaster/track_wooden_metalrails")
+TRACK.MaterialWood = Material("coaster/track_wooden_woodbeams")
+TRACK.MaterialWoodNocull = CreateMaterial( "CoasterWoodRailMaterialBeam", "UnlitGeneric", { //VertexLitGeneric
+	["$basetexture"] 		= "coaster/wood", //models/debug/debugwhite
 	["$vertexcolor"] 		= 1,
-	["$phong"] 				= 1,
-	["$phongexponent"] 		= 20,
-	["$phongboost"] 		= 2,
-	["$phongfresnelranges"] = "0.5 0.8 1",
-} )
-
-TRACK.MaterialWood =  CreateMaterial( "CoasterWoodMaterialBeam", "UnlitGeneric", { //VertexLitGeneric
-	["$basetexture"] 		= "foohy/wood", //models/debug/debugwhite
-	["$vertexcolor"] 		= 1,
-	["$phong"] 				= 1,
-	["$phongexponent"] 		= 20,
-	["$phongboost"] 		= 2,
-	["$phongfresnelranges"] = "0.5 0.8 1",
-} )
-
-TRACK.MaterialWoodRail =  CreateMaterial( "CoasterWoodRailMaterialBeam", "UnlitGeneric", { //VertexLitGeneric
-	["$basetexture"] 		= "foohy/wood", //models/debug/debugwhite
-	["$vertexcolor"] 		= 1,
-	["$nocull"]				= 1,
-	["$phong"] 				= 1,
-	["$phongexponent"] 		= 20,
-	["$phongboost"] 		= 2,
-	["$phongfresnelranges"] = "0.5 0.8 1",
-} )
-
+	["$nocull"]				= 1, } )
 
 local RailOffset = 25 //Distance track beams away from eachother
 TRACK.WoodRailWidth = 25 //Width of the wood rails
@@ -460,10 +438,10 @@ function TRACK:PassHorizontalSupports( controller )
 					ang = self.FixedSplines[i].Ang
 					ang2 = self.FixedSplines[i+1].Ang
 
-					local angBeam = Angle( ang.p, ang.y, 0)
+					local angBeam = Angle( 0, ang.y, 0)
 					angBeam:RotateAroundAxis( angBeam:Right(), -90 )
 
-					local angBeam2 = Angle( ang2.p, ang2.y, 0 )
+					local angBeam2 = Angle( 0, ang2.y, 0 )
 					angBeam2:RotateAroundAxis( angBeam:Right(), -90 )
 
 					Cylinder.AddBeamSquare( Vector(self.FixedSplines[i].PosLeft.x, self.FixedSplines[i].PosLeft.y, lowestPos), angBeam, Vector(self.FixedSplines[i+1].PosLeft.x, self.FixedSplines[i+1].PosLeft.y, lowestPos), angBeam2, self.BeamWidth )
@@ -613,13 +591,15 @@ function TRACK:Draw( controller, Meshes )
 
 	if !Meshes || #Meshes < 3 then return end
 
-	render.SetMaterial(self.Material)
+	-- Metal siderails
+	render.SetMaterial(self.MaterialMetal)
 	for k, v in pairs( Meshes[1] ) do
 		if v then 
 			v:Draw() 
 		end
 	end
 
+	-- Wood beams/supports
 	render.SetMaterial(self.MaterialWood)
 	for k, v in pairs( Meshes[2] ) do
 		if v then 
@@ -627,7 +607,7 @@ function TRACK:Draw( controller, Meshes )
 		end
 	end
 
-	render.SetMaterial(self.MaterialWoodRail)
+	render.SetMaterial( self.MaterialWoodNocull )
 	for k, v in pairs( Meshes[3] ) do
 		if v then 
 			v:Draw() 
