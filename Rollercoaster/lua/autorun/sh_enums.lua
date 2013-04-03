@@ -32,4 +32,4 @@ EnumNames.Tracks = {}
 EnumNames.Tracks[COASTER_TRACK_METAL]	= "Metal Track"
 EnumNames.Tracks[COASTER_TRACK_WOOD]	= "Wooden Track"
 EnumNames.Tracks[COASTER_TRACK_SIMPLE]	= "Simple Track"
-EnumNames.Tracks[COASTER_TRACK_BM]		= "B&M Track"
+EnumNames.Tracks[COASTER_TRACK_BM]		= "B and M Track"
