@@ -5,6 +5,7 @@ local TRACK = {}
 TRACK.Name = "Wooden Track"
 TRACK.Description = "A wooden track"
 TRACK.PhysWidth = 50 //How wide the physics mesh should be
+TRACK.SupportOverride = true  //Override track supports (we're making our own)
 
 trackmanager.Register( EnumNames.Tracks[COASTER_TRACK_WOOD], TRACK )
 
@@ -47,7 +48,6 @@ TRACK.BeamWidth = 8.5 //The width of the wooden supports
 TRACK.CylinderPointCount = 4 //How many points make the cylinder of the track mesh
 TRACK.HorizontalSpacing = 0.8 //how far apart vertical beams should be spaced
 TRACK.VerticalSpacing = 80 //how far apart horizontal beams should be spaced
-TRACK.SupportOverride = true  //Override track supports (we're making our own)
 TRACK.InnerStrutsNum = 2 //how densely the inner struts should be placed
 
 TRACK.ModelCount = 1 //Keep track of how many seperate models we've created

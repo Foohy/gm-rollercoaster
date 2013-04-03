@@ -1252,6 +1252,7 @@ function ENT:DrawSupport()
 	self.SupportModelStart:SetNoDraw( false )
 	self.SupportModel:SetNoDraw( false )
 	self.SupportModelBase:SetNoDraw( false )
+	local SupportScale = controller.TrackClass && controller.TrackClass.SupportScale or 1
 
 	local dist = 100000
 	trace = {}
@@ -1280,13 +1281,13 @@ function ENT:DrawSupport()
 	//Draw the first pole
 	self.SupportModelStart:SetPos( trace.HitPos + Vector( 0, 0, self.BaseHeight ) ) //Add 64 units so it's right on top of the base
 	local height = math.Clamp( Distance, 1, self.PoleHeight - self.BaseHeight )
-	SetModelScale( self.SupportModelStart, Vector( 1, 1, height / (self.PoleHeight  ) ) )
+	SetModelScale( self.SupportModelStart, Vector( SupportScale, SupportScale, height / (self.PoleHeight  ) ) )
 	self.SupportModelStart:SetAngles( Angle( 0, self:GetAngles().y, 0 ) )
 
 	//Draw the second pole (if applicable)
 	if Distance > self.PoleHeight - self.BaseHeight then
 		self.SupportModel:SetPos(trace.HitPos + Vector(0, 0, self.PoleHeight ))
-		SetModelScale( self.SupportModel,Vector( 1, 1, ( (Distance - self.PoleHeight + self.BaseHeight) / self.PoleHeight)   ) )
+		SetModelScale( self.SupportModel,Vector( SupportScale, SupportScale, ( (Distance - self.PoleHeight + self.BaseHeight) / self.PoleHeight)   ) )
 		self.SupportModel:SetAngles( Angle( 0, self:GetAngles().y, 0 ) )				
 	else
 		self.SupportModel:SetNoDraw( true )
@@ -1300,7 +1301,7 @@ function ENT:DrawSupport()
 	else
 		self.SupportModelBase:SetNoDraw( true )
 		self.SupportModelStart:SetPos( trace.HitPos )
-		SetModelScale( self.SupportModelStart, Vector( 1, 1, self:GetPos():Distance( trace.HitPos ) / (self.PoleHeight) ) )
+		SetModelScale( self.SupportModelStart, Vector( SupportScale, SupportScale, self:GetPos():Distance( trace.HitPos ) / (self.PoleHeight) ) )
 	end
 
 	return true

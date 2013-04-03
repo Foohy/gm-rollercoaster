@@ -133,9 +133,15 @@ local function Point( Position, Ang, Offset, Corner )
 	return Position + (ang:Right() * Offset)
 end
 
+local function Point2( Position, Ang, Offset, Corner )
+	local ang = Angle(Ang.p,Ang.y,Ang.r)
+	ang:RotateAroundAxis(ang:Forward(), (-90 * (Corner-1)) + 45 )
+	return Position + (ang:Right() * Offset)
+end 
+
 function Cylinder.AddBeamSquare( Pos1, Ang1, Pos2, Ang2, Width, TrackColor )
 	if Pos1 == nil || Ang1 == nil || Pos2 == nil || Ang2 == nil then 
-		print("FAILED TO CREATE CYLINDER, NIL VALUE")
+		print("FAILED TO CREATE SQUARE BEAM, NIL VALUE")
 		return
 	end
 
@@ -173,6 +179,39 @@ function Cylinder.AddBeamSquare( Pos1, Ang1, Pos2, Ang2, Width, TrackColor )
 
 	//Bottom
 	Cylinder.CreateSquare( BottomFrontRight, BottomFrontLeft, BottomBackLeft, BottomBackRight, -normtop ) //BottomBackRight, BottomBackLeft, BottomFrontLeft, BottomFrontRight 
+end
+
+function Cylinder.AddBeamSquareSimple( Pos1, Ang1, Pos2, Ang2, Width, TrackColor )
+	if Pos1 == nil || Ang1 == nil || Pos2 == nil || Ang2 == nil then 
+		print("FAILED TO CREATE SQUARE BEAM, NIL VALUE")
+		return
+	end
+
+	Cylinder.Radius = Width or Cylinder.Radius
+
+	//local offset = math.sqrt( 2 * math.pow(Width/2, 2) )
+
+	//Calculate the positions
+	local TopFrontLeft = Point2(Pos1, Ang1, Width, 1 ) //Pos1 + Point( Vector( -offset, offset, 0), Ang1 ) // Vector( -offset, offset, 0)
+	local TopFrontRight = Point2(Pos1, Ang1, Width, 4 )//Pos1 + Point( Vector( offset, offset, 0), Ang1 ) //Vector( offset, offset, 0)
+	local TopBackLeft = Point2(Pos1, Ang1, Width, 2 )//Pos1 + Point( Vector( -offset, -offset, 0), Ang1 ) //Vector( -offset, -offset, 0)
+	local TopBackRight = Point2(Pos1, Ang1, Width, 3 )//Pos1 + Point( Vector( offset, -offset, 0), Ang1 ) //Vector( offset, -offset, 0)
+ 
+	local BottomFrontLeft = Point2(Pos2, Ang2, Width, 1 )//Pos2 + Vector( -offset, offset, 0)
+	local BottomFrontRight = Point2(Pos2, Ang2, Width, 4 )// Pos2 + Vector( offset, offset, 0)
+	local BottomBackLeft = Point2(Pos2, Ang2, Width, 2 )//Pos2 + Vector( -offset, -offset, 0)
+	local BottomBackRight = Point2(Pos2, Ang2, Width, 3 )//Pos2 + Vector( offset, -offset, 0)
+
+	local normLeft = TopFrontLeft - TopFrontRight
+	normLeft:Normalize()
+	local normFront = TopFrontLeft - TopBackLeft
+	normFront:Normalize()
+
+	//Sides
+	Cylinder.CreateSquare( BottomBackLeft, BottomFrontLeft, TopFrontLeft, TopBackLeft, normLeft, TrackColor )
+	Cylinder.CreateSquare( BottomBackRight, BottomBackLeft, TopBackLeft, TopBackRight, -normFront, TrackColor )
+	Cylinder.CreateSquare( TopFrontRight, TopFrontLeft, BottomFrontLeft, BottomFrontRight, normFront, TrackColor )
+	Cylinder.CreateSquare( BottomFrontRight, BottomBackRight, TopBackRight, TopFrontRight, -normLeft, TrackColor )
 end
 
 function Cylinder.AddBeam( Pos1, Ang1, Pos2, Ang2, Radius, TrackColor )
