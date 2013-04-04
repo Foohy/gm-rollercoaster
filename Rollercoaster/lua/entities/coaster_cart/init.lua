@@ -229,7 +229,7 @@ local function CalcAverageCartFriction(ctable,dt)
 		end
 	end
 
-	return (total/(table.Count(ctable)-1))
+	return (total/(#ctable-1))
 end
 
 local function CalcAverageCartSlopeVelocity(ctable,dt)
@@ -245,7 +245,8 @@ local function CalcAverageCartSlopeVelocity(ctable,dt)
 			total = total + v:CalcChangeInVelocity(v.CurSegment,v.Percent,dt)
 		end
 	end
-	return (total/(table.Count(ctable)-1))
+
+	return (total/(#ctable-1))
 end
 
 local function NoCartHoldOrFreeze(ctable)
@@ -287,7 +288,7 @@ end
 function ENT:PhysicsSimulate(phys, deltatime)
 	if self.IsOffDaRailz or self.CartTable == nil then return SIM_NOTHING end
 	if !IsValid( self.Controller ) || !istable(self.Controller.Nodes) then return SIM_NOTHING end
-	if self.Spawning then return end
+	if self.Spawning then return SIM_NOTHING end
 
 	local CurPos  = self:GetPos()
 	local CurNode = self.Controller.Nodes[self.CurSegment]
@@ -335,7 +336,7 @@ function ENT:PhysicsSimulate(phys, deltatime)
 	//average this into the cart trains as well
 	if CurTime() >= self.Timer && self.Enabled then
 		for k, v in pairs(self.CartTable) do
-			v.Velocity = v.Velocity + (2/table.Count(self.CartTable))
+			v.Velocity = v.Velocity + (2/#self.CartTable)
 		end
 		
 		if self.LastSpark && self.LastSpark < CurTime() then
@@ -436,12 +437,12 @@ function ENT:PhysicsSimulate(phys, deltatime)
 	CurNode = self.Controller.Nodes[self.CurSegment]
 	NextNode = self.Controller.Nodes[ self.CurSegment + 1]
 
-	
+
 	phys:Wake()
 
-	//self.PhysShadowControl.angle = self:GetVelocity():Angle()
-	local ang = self:AngleAt(self.CurSegment, self.Percent)
-	
+	local CurrentAngle = self:AngleAt(self.CurSegment, self.Percent)
+	--local ang = self:AngleAt(self.CurSegment, self.Percent)
+
 	//Change the roll depending on the track
 	local Roll = 0
 	if IsValid( CurNode ) && IsValid( NextNode ) then
@@ -449,7 +450,9 @@ function ENT:PhysicsSimulate(phys, deltatime)
 	end
 	
 	//Set the roll for the current track peice
-	ang:RotateAroundAxis( self:AngleAt(self.CurSegment, self.Percent):Forward(), Roll ) //BAM
+	local ang = Angle( CurrentAngle.p, CurrentAngle.y, CurrentAngle.r )
+
+	ang:RotateAroundAxis( CurrentAngle:Forward(), Roll ) //BAM
 	ang.r = -ang.r
 	
 	//Offsets
@@ -463,18 +466,17 @@ function ENT:PhysicsSimulate(phys, deltatime)
 	//If we are a carousel, SPIN
 	if self.Carousel && !self.IsDummy then
 		local FixedAngle = Angle( ang.p, ang.y, ang.r )
-		local ang1 = self:AngleAt( self.CurSegment, self.Percent )
 		local ang2 = self:AngleAt( self.CurSegment, self.Percent + 0.1 )
-		local angDif = math.AngleDifference( ang1.y, ang2.y )
-		local FakeFriction = 1.0003
+		local angDif = math.AngleDifference( CurrentAngle.y, ang2.y )
+		self.FakeFriction = 1.0003
 
 		if self:GetCurrentNode():GetType() == COASTER_NODE_BRAKES || self:GetCurrentNode():GetType() == COASTER_NODE_HOME then
-			FakeFriction = 1.04
+			self.FakeFriction = 1.04
 		end
 		//Make it so it doesnt rotate with the track
 		FixedAngle:RotateAroundAxis( FixedAngle:Up(), -ang.y )
 
-		self.RotationSpeed = ( self.RotationSpeed + ( angDif * self.Velocity * deltatime  ) ) / FakeFriction //Do-it-yourself friction
+		self.RotationSpeed = ( self.RotationSpeed + ( angDif * self.Velocity * deltatime  ) ) / self.FakeFriction //Do-it-yourself friction
 		self.RotationSpeed = math.Clamp( self.RotationSpeed, -1000, 1000 )
 
 		//calculate how much we should rotate
@@ -483,7 +485,7 @@ function ENT:PhysicsSimulate(phys, deltatime)
 		self.Rotation = math.NormalizeAngle( self.Rotation )
 
 		if ( Coaster_do_bad_things ) then
-			FixedAngle:RotateAroundAxis( ang1:Up(), self.Rotation )
+			FixedAngle:RotateAroundAxis( CurrentAngle:Up(), self.Rotation )
 		else
 			//Apply the rotation
 			FixedAngle:RotateAroundAxis( FixedAngle:Up(), self.Rotation )
@@ -525,7 +527,7 @@ function ENT:CorrectCartSpacing(dir)
 				self:CCS()
 			end
 		elseif dir == -1 then
-			if self == self.CartTable[table.Count(self.CartTable)] then
+			if self == self.CartTable[#self.CartTable] then
 				//print("train front, passing, all carts on segment")
 				self:CCS()
 			end
@@ -536,7 +538,7 @@ end
 function ENT:CCS()
 	//supplements the use of ENT:CorrectCartSpacing()
 	local prevpercent = 0
-	for i = 1, table.Count(self.CartTable) do
+	for i = 1, #self.CartTable do
 		if self.CartTable[i].CartTable[i-1] != nil && self.CartTable[i].CartTable[i-1].CurSegment == self.CurSegment then 
 			prevpercent = self.CartTable[i].CartTable[i-1].Percent
 			if i != 1 then 
@@ -805,7 +807,7 @@ function ENT:AngleAt(i, perc )
 
 	AngVec = Vec1 - Vec2
 
-	return AngVec:GetNormal():Angle()
+	return AngVec:Angle()
 end
 
 //Get the multiplier for the current spline (to make things smooth )
