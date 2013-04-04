@@ -412,6 +412,7 @@ if CLIENT then
 				end
 			end
 
+			panel:NumSlider("Steps per Frame: ", "coaster_stepspercycle", 1, 100, 0 )
 			panel:CheckBox("Draw track previews", "coaster_previews")
 			panel:CheckBox("Draw track supports", "coaster_supports")
 			panel:CheckBox("Draw motion blur", "coaster_motionblur")

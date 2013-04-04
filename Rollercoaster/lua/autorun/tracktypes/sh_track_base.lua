@@ -20,6 +20,7 @@ function TRACK:CoroutineCheck( Controller, Stage, Sections, Percent )
 	self.StepsPerCycle = self.StepsPerCycle + 1
 
 	if self.StepsPerCycle >= GetConVar("coaster_stepspercycle"):GetInt() && !Sections then
+		self.StepsPerCycle = 0
 		hook.Call("CoasterBuildProgress", GAMEMODE, Controller:GetCoasterID(), Stage, Percent or 1)
 		coroutine.yield()
 	end
