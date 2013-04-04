@@ -1,7 +1,6 @@
 
 module( "trackmanager", package.seeall )
 
-//ClassesFolder = string.sub( GM.Folder, 11 ) .. "/gamemode/classes/"
 
 List = {}
 
@@ -16,6 +15,15 @@ end
 
 function LoadClasses()
 	local fileList = file.Find("autorun/tracktypes/*", "LUA" )
+	local baseclass = "autorun/tracktypes/sh_track_base.lua"
+	-- Load the base class
+	if SERVER then
+		AddCSLuaFile( baseclass)
+		include( baseclass )
+	else
+		include( baseclass )
+	end
+
 	for _, name in pairs( fileList ) do
 	
 		local loadName = "tracktypes/" .. name
@@ -39,8 +47,12 @@ function Register( name, class )
 	List[ name ] = class
 end
 
-function Get( name )
+function GetStatic( name )
 	return List[ name ]
+end
+
+function Get( name )
+	return List[ name ]:Create()
 end
 
 function GetRandom()

@@ -1,6 +1,6 @@
 include("autorun/sh_enums.lua")
 
-local TRACK = {}
+local TRACK = TRACK:Create()
 
 TRACK.Name = "Wooden Track"
 TRACK.Description = "A wooden track"
@@ -82,7 +82,8 @@ end
 function TRACK:PassRails(controller)
 	local Vertices = {} //Create an array that will hold an array of vertices (This is to split up the model)
 
-	Cylinder.Start( self.CylinderRadius, self.CylinderPointCount ) //We're starting up making a beam of cylinders
+	self.Cylinder = Cylinder:Create()
+	
 	local LastAng = nil //Last angle so previous cylinder matches with the next cylinder
 
 	//For every single spline segment 
@@ -164,29 +165,31 @@ function TRACK:PassRails(controller)
 					FirstRight = controller.CatmullRom.PointsList[2] + ang:Right() * RailOffset
 				end
 
-				Cylinder.AddBeam( FirstLeft, LastAng, posL, NewAng, 4, ThisSegment:GetTrackColor() )
-				Cylinder.AddBeam( FirstRight, LastAng, posR, NewAng, 4, ThisSegment:GetTrackColor() )
+				self.Cylinder:AddBeam( FirstLeft, LastAng, posL, NewAng, 4, ThisSegment:GetTrackColor() )
+				self.Cylinder:AddBeam( FirstRight, LastAng, posR, NewAng, 4, ThisSegment:GetTrackColor() )
 
 			end
 
 			//Side rails
-			Cylinder.AddBeam( posL, LastAng, nPosL, NewAng, 4, ThisSegment:GetTrackColor() )
-			Cylinder.AddBeam( posR, LastAng, nPosR, NewAng, 4, ThisSegment:GetTrackColor() )
+			self.Cylinder:AddBeam( posL, LastAng, nPosL, NewAng, 4, ThisSegment:GetTrackColor() )
+			self.Cylinder:AddBeam( posR, LastAng, nPosR, NewAng, 4, ThisSegment:GetTrackColor() )
 
-			if #Cylinder.Vertices > 50000 then// some arbitrary limit to split up the verts into seperate meshes. It's surprisingly easy to hit that limit
+			if #self.Cylinder.Vertices > 50000 then// some arbitrary limit to split up the verts into seperate meshes. It's surprisingly easy to hit that limit
 
-				Vertices[self.ModelCount] = Cylinder.Vertices
+				Vertices[self.ModelCount] = self.Cylinder.Vertices
 				self.ModelCount = self.ModelCount + 1
 				print( self.ModelCount )
 
-				Cylinder.Vertices = {}
-				Cylinder.TriCount = 1
+				self.Cylinder.Vertices = {}
+				self.Cylinder.TriCount = 1
 			end
 			LastAng = NewAng
+
+			self:CoroutineCheck( controller, 1, nil, i / (#controller.CatmullRom.Spline) )
 		end
 	end	
 
-	local verts = Cylinder.EndBeam()
+	local verts = self.Cylinder:EndBeam()
 	Vertices[self.ModelCount] = verts //Dump the remaining vertices into its own model
 
 	return Vertices
@@ -195,7 +198,8 @@ end
 function TRACK:PassWoodRails(controller)
 	local Vertices = {} //Create an array that will hold an array of vertices (This is to split up the model)
 
-	Cylinder.Start( self.CylinderRadius, self.CylinderPointCount ) //We're starting up making a beam of cylinders
+	self.Cylinder = Cylinder:Create( self.Cylinder )
+
 	local LastPoints = {} //Last angle so previous cylinder matches with the next cylinder
 
 	local leftV = 0
@@ -291,39 +295,40 @@ function TRACK:PassWoodRails(controller)
 					FirstRight = controller.CatmullRom.PointsList[2] + ang:Right() * RailOffset
 					FarRight = FirstRight + ang:Right() * self.WoodRailWidth
 				end
-				Cylinder.TotalV = leftV
-				leftV = Cylinder.CreateSquare(FirstLeft, FarLeft, OnposL, nPosL, ang:Up(), ThisSegment:GetTrackColor() )
+				self.Cylinder.TotalV = leftV
+				leftV = self.Cylinder:CreateSquare(FirstLeft, FarLeft, OnposL, nPosL, ang:Up(), ThisSegment:GetTrackColor() )
 
-				Cylinder.TotalV = rightV
-				rightV = Cylinder.CreateSquare(FirstRight, FarRight, OnposR, nPosR, ang:Up(), ThisSegment:GetTrackColor() )
+				self.Cylinder.TotalV = rightV
+				rightV = self.Cylinder:CreateSquare(FirstRight, FarRight, OnposR, nPosR, ang:Up(), ThisSegment:GetTrackColor() )
 
 			end
 
 
 			//Side rails
-			Cylinder.TotalV = leftV
-			leftV = Cylinder.CreateSquare(LastPoints.LeftIn, LastPoints.LeftOut, OnposL, nPosL, ang:Up(), ThisSegment:GetTrackColor() )
+			self.Cylinder.TotalV = leftV
+			leftV = self.Cylinder:CreateSquare(LastPoints.LeftIn, LastPoints.LeftOut, OnposL, nPosL, ang:Up(), ThisSegment:GetTrackColor() )
 
-			Cylinder.TotalV = rightV
-			rightV = Cylinder.CreateSquare(LastPoints.RightIn, LastPoints.RightOut, OnposR, nPosR, ang:Up(), ThisSegment:GetTrackColor() )
+			self.Cylinder.TotalV = rightV
+			rightV = self.Cylinder:CreateSquare(LastPoints.RightIn, LastPoints.RightOut, OnposR, nPosR, ang:Up(), ThisSegment:GetTrackColor() )
 
-			if #Cylinder.Vertices > 50000 then// some arbitrary limit to split up the verts into seperate meshes. It's surprisingly easy to hit that limit
+			if #self.Cylinder.Vertices > 50000 then// some arbitrary limit to split up the verts into seperate meshes. It's surprisingly easy to hit that limit
 
-				Vertices[self.ModelCount] = Cylinder.Vertices
+				self.Vertices[self.ModelCount] = self.Cylinder.Vertices
 				self.ModelCount = self.ModelCount + 1
-				print( self.ModelCount )
 
-				Cylinder.Vertices = {}
-				Cylinder.TriCount = 1
+				self.Cylinder.Vertices = {}
+				self.Cylinder.TriCount = 1
 			end
 			LastPoints.LeftIn = nPosL
 			LastPoints.LeftOut = OnposL
 			LastPoints.RightIn = nPosR
 			LastPoints.RightOut = OnposR
+
+			self:CoroutineCheck( controller, 2, nil, i / (#controller.CatmullRom.Spline) )
 		end
 	end	
 
-	local verts = Cylinder.EndBeam()
+	local verts = self.Cylinder:EndBeam()
 	Vertices[self.ModelCount] = verts //Dump the remaining vertices into its own model
 
 	return Vertices
@@ -333,7 +338,7 @@ function TRACK:PassVerticalSupports( controller )
 	local WoodModels = {}
 	local ModelCount = 1
 
-	Cylinder.Start( self.CylinderRadius, self.CylinderPointCount ) //We're starting up making a beam of cylinders
+	self.Cylinder = Cylinder:Create(self.Cylinder )
 	//For every single spline segment 
 	for i = 1, #self.FixedSplines do
 		ang = self.FixedSplines[i].Ang
@@ -371,13 +376,13 @@ function TRACK:PassVerticalSupports( controller )
 		local angBeam = Angle( ang.p, ang.y, ang.r )
 		angBeam:RotateAroundAxis( angBeam:Forward(), -90 )
 
-		Cylinder.AddBeamSquare( posL - Vector( 0, 0, 2), ang, OffsetL, Angle( 0, ang.y, 0 ), self.BeamWidth )
-		Cylinder.AddBeamSquare( posR - Vector( 0, 0, 2), ang, OffsetR, Angle( 0, ang.y, 0 ), self.BeamWidth )
+		self.Cylinder:AddBeamSquare( posL - Vector( 0, 0, 2), ang, OffsetL, Angle( 0, ang.y, 0 ), self.BeamWidth )
+		self.Cylinder:AddBeamSquare( posR - Vector( 0, 0, 2), ang, OffsetR, Angle( 0, ang.y, 0 ), self.BeamWidth )
 
 		for n=1, self.InnerStrutsNum + 1 do 
 			if !self.FixedSplines[i].SubItems[n] then continue end
 			
-			Cylinder.AddBeamSquare( self.FixedSplines[i].SubItems[n].Pos + ang:Right() * -(RailOffset + self.WoodRailWidth - (self.BeamWidth/2)) - Vector( 0, 0, self.CylinderRadius), 
+			self.Cylinder:AddBeamSquare( self.FixedSplines[i].SubItems[n].Pos + ang:Right() * -(RailOffset + self.WoodRailWidth - (self.BeamWidth/2)) - Vector( 0, 0, self.CylinderRadius), 
 				angBeam, 
 				self.FixedSplines[i].SubItems[n].Pos + ang:Right() * (RailOffset + self.WoodRailWidth - (self.BeamWidth/2)) - Vector( 0, 0, self.CylinderRadius), 
 				angBeam, 
@@ -385,17 +390,18 @@ function TRACK:PassVerticalSupports( controller )
 			)
 		end
 		
-		if #Cylinder.Vertices > 50000 then //some arbitrary limit to split up the verts into seperate meshes. It's surprisingly easy to hit that limit
+		if #self.Cylinder.Vertices > 50000 then //some arbitrary limit to split up the verts into seperate meshes. It's surprisingly easy to hit that limit
 
-			WoodModels[ModelCount] = Cylinder.Vertices
+			WoodModels[ModelCount] = self.Cylinder.Vertices
 			ModelCount = ModelCount + 1
-			print( ModelCount )
 
-			Cylinder.Vertices = {}
-			Cylinder.TriCount = 1
+			self.Cylinder.Vertices = {}
+			self.Cylinder.TriCount = 1
 		end
 
-		local verts = Cylinder.EndBeam()
+		self:CoroutineCheck( controller, 3, nil, i / (#self.FixedSplines ) )
+
+		local verts = self.Cylinder:EndBeam()
 		WoodModels[ModelCount] = verts //Dump the remaining vertices into its own model
 	end
 
@@ -420,7 +426,8 @@ function TRACK:GetValidHeight( i, lowestPos )
 end
 
 function TRACK:PassHorizontalSupports( controller )
-	Cylinder.Start( self.CylinderRadius, self.CylinderPointCount ) //We're starting up making a beam of cylinders
+	self.Cylinder = Cylinder:Create( self.Cylinder )
+
 	local Models = {}
 	local ModelCount = 1
 	local lowestPos, heighestPos = GetLowestPosition(self.FixedSplines)
@@ -444,23 +451,24 @@ function TRACK:PassHorizontalSupports( controller )
 					local angBeam2 = Angle( 0, ang2.y, 0 )
 					angBeam2:RotateAroundAxis( angBeam:Right(), -90 )
 
-					Cylinder.AddBeamSquare( Vector(self.FixedSplines[i].PosLeft.x, self.FixedSplines[i].PosLeft.y, lowestPos), angBeam, Vector(self.FixedSplines[i+1].PosLeft.x, self.FixedSplines[i+1].PosLeft.y, lowestPos), angBeam2, self.BeamWidth )
-					Cylinder.AddBeamSquare( Vector(self.FixedSplines[i].PosRight.x, self.FixedSplines[i].PosRight.y, lowestPos), angBeam, Vector(self.FixedSplines[i+1].PosRight.x, self.FixedSplines[i+1].PosRight.y, lowestPos), angBeam2, self.BeamWidth )
+					self.Cylinder:AddBeamSquare( Vector(self.FixedSplines[i].PosLeft.x, self.FixedSplines[i].PosLeft.y, lowestPos), angBeam, Vector(self.FixedSplines[i+1].PosLeft.x, self.FixedSplines[i+1].PosLeft.y, lowestPos), angBeam2, self.BeamWidth )
+					self.Cylinder:AddBeamSquare( Vector(self.FixedSplines[i].PosRight.x, self.FixedSplines[i].PosRight.y, lowestPos), angBeam, Vector(self.FixedSplines[i+1].PosRight.x, self.FixedSplines[i+1].PosRight.y, lowestPos), angBeam2, self.BeamWidth )
 				end 
 
-				if #Cylinder.Vertices > 50000 then //some arbitrary limit to split up the verts into seperate meshes. It's surprisingly easy to hit that limit
-					Models[ModelCount] = Cylinder.Vertices
+				if #self.Cylinder.Vertices > 50000 then //some arbitrary limit to split up the verts into seperate meshes. It's surprisingly easy to hit that limit
+					Models[ModelCount] = self.Cylinder.Vertices
 					ModelCount = ModelCount + 1
-					print( self.ModelCount )
 
-					Cylinder.Vertices = {}
-					Cylinder.TriCount = 1
+					self.Cylinder.Vertices = {}
+					self.Cylinder.TriCount = 1
 				end
 			end
 		end
+
+		self:CoroutineCheck( controller, 4, nil, lowestPos / (heighestPos ) )
 	end
 
-	local verts = Cylinder.EndBeam()
+	local verts = self.Cylinder:EndBeam()
 	Models[ModelCount] = verts //Dump the remaining vertices into its own model
 
 	return Models
@@ -583,7 +591,7 @@ function TRACK:Generate( controller )
 	Sections[2] = WoodMeshes //Anything wooden
 	Sections[3] = WoodRailMeshes //the wooden walky bit of the siderails
 
-	return Sections
+	self:CoroutineCheck( controller, 5, Sections )
 end
 
 function TRACK:Draw( controller, Meshes )

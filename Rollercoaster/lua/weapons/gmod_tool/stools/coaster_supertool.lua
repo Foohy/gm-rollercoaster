@@ -286,6 +286,19 @@ if CLIENT then
 	language.Add( "tool.coaster_supertool.desc", "" )
 	language.Add( "tool.coaster_supertool.0", "" )
 
+	hook.Add("CoasterBuildProgress", "UpdateTrackPanelProgress", function( coasterID, stage, percent )
+		local panel = controlpanel.Get("coaster_supertool").CoasterList
+		if !panel then return end 
+
+		local lines = panel:GetLines()
+
+		for k, v in pairs( lines ) do
+			if v.CoasterID == coasterID && v.Button then
+				v.Button:SetFraction( percent )
+				return
+			end
+		end
+	end )
 
 	function UpdateTrackPanel( panel )
 		if panel == nil then return end 
@@ -314,7 +327,7 @@ if CLIENT then
 		for k, v in pairs( found ) do
 			if !IsValid( v ) || !v.GetController then continue end
 
-			btn = vgui.Create("DButton", panel )
+			btn = vgui.Create("DProgressButton", panel )
 			btn:SetText( "Build" )
 			btn:CenterHorizontal()
 			btn:SetWidth( 30 )
@@ -328,6 +341,14 @@ if CLIENT then
 				if v:HasInvalidNodes() then
 					btn:SetColor( Color( 255, 0, 0 ))
 				end
+
+				if v.BuildingMesh then
+					btn:SetText("Building...")
+					btn:SetShowProgress( true )
+				else
+					btn:SetShowProgress( false )
+					btn:SetFraction( 0 )
+				end
 			end
 			
 			local expld = string.Explode("_", k )
@@ -336,6 +357,8 @@ if CLIENT then
 			if IsValid( v:GetOwner() ) then name = v:GetOwner():Name() end
 			
 			local line = panel:AddLine( name, expld[#expld], btn )
+			line.CoasterID = v:GetCoasterID()
+			line.Button = btn
 		end
 	end
 

@@ -1,6 +1,6 @@
 include("autorun/sh_enums.lua")
 
-local TRACK = {}
+local TRACK = TRACK:Create()
 
 TRACK.Name = "B&M Track"
 TRACK.Description = "The upright design of Bolliger & Mabillard"
@@ -12,17 +12,6 @@ trackmanager.Register( EnumNames.Tracks[COASTER_TRACK_BM], TRACK )
 if !CLIENT then return end
 
 TRACK.Material = Material( "coaster/track_metal_clean")
-/*
-TRACK.Material =  CreateMaterial( "CoasterTrackBM", "UnlitGeneric", {
-	["$basetexture"]		= "models/debug/debugwhite",
-	["$vertexcolor"]		= 1,
-} )
-
-TRACK.StrutMaterial =  CreateMaterial( "CoasterTrackBMStrut", "UnlitGeneric", {
-	["$basetexture"]		= "models/debug/debugwhite",
-	["$vertexcolor"]		= 1,
-} )
-*/
 
 -- Distance track beams away from eachother
 local RailOffset = 20
@@ -356,36 +345,36 @@ local function CreateStrutsMesh(pos, ang, TrackColor)
 end
 
 function TRACK:CreateSideBeams( Position, Angle, Position2, Angle2, Node, CurrentCylinderAngle )
-
 	//Side rails
-	Cylinder.AddBeam( Position + Angle:Right() * -RailOffset, -- Position of beginning of cylinder
+	self.Cylinder:AddBeam( Position + Angle:Right() * -RailOffset, -- Position of beginning of cylinder
 		self.LastCylinderAngle, -- The angle of the first radius of the cylinder
 		Position2 + Angle2:Right() * -RailOffset, -- Position of end of cylinder
 		CurrentCylinderAngle, 
 		self.CylinderRadius, -- Radius of cylinder
 		Node:GetTrackColor() ) -- Color
 
-	Cylinder.AddBeam( Position + Angle:Right() * RailOffset, 
+	self.Cylinder:AddBeam( Position + Angle:Right() * RailOffset, 
 		self.LastCylinderAngle, 
 		Position2 + Angle2:Right() * RailOffset, 
 		CurrentCylinderAngle, 
 		self.CylinderRadius, 
 		Node:GetTrackColor() ) 
+
 end
 
 function TRACK:CreateCenterBeam( Position, Angle1, Position2, Angle2, Node, CurrentCylinderAngle )
-	Cylinder.AddBeamSquareSimple(Position - Angle1:Up() * CenterBeamOffset, Angle1, Position2 - Angle2:Up() * CenterBeamOffset, Angle2, CenterBeamWidth, Node:GetTrackColor() )
+	self.Cylinder:AddBeamSquareSimple(Position - Angle1:Up() * CenterBeamOffset, Angle1, Position2 - Angle2:Up() * CenterBeamOffset, Angle2, CenterBeamWidth, Node:GetTrackColor() )
 end
 
 function TRACK:PassRails( Controller )
 	if !IsValid( Controller ) || !Controller:IsController() then return end
+
 	local Models = {}
 	local ModelCount = 1
 
 	local Vertices = {} //Create an array that will hold an array of vertices (This is to split up the model)
 	Meshes = {} //If we hit the maximum for the number of vertices of a model, split it up into several
 
-	Cylinder.Start( self.CylinderRadius, self.CylinderPointCount ) //We're starting up making a beam of cylinders
 	self.BeginningSegmentAngle = nil
 	self.BeginningSegmentCylinderAngle = nil 
 
@@ -399,7 +388,6 @@ function TRACK:PassRails( Controller )
 		local SubsegmentAngle, SubsegmentNormal = GetAngleOfSubsegment( Controller, i )
 
 		if i == 1 then
-
 			local CylinderAngle = SubsegmentNormal:Angle()
 			CylinderAngle:RotateAroundAxis(SubsegmentNormal:Angle():Up(), 90 )
 
@@ -433,20 +421,23 @@ function TRACK:PassRails( Controller )
 
 
 		-- Split the model into multiple meshes if it gets large
-		if #Cylinder.Vertices > 50000 then
+		if #self.Cylinder.Vertices > 50000 then
 
-			Models[ModelCount] = Cylinder.Vertices
+			Models[ModelCount] = self.Cylinder.Vertices
 			ModelCount = ModelCount + 1
 
-			Cylinder.Vertices = {}
-			Cylinder.TriCount = 1
+			self.Cylinder.Vertices = {}
+			self.Cylinder.TriCount = 1
 		end
 		
 		self.LastAngle = SubsegmentAngle
 		self.LastNormal = SubsegmentNormal
+
+		-- Check if we need to yield, and report some information
+		self:CoroutineCheck( Controller, 1, nil, i / #Controller.CatmullRom.Spline)
 	end	
 
-	local verts = Cylinder.EndBeam()
+	local verts = self.Cylinder:EndBeam()
 	Models[ModelCount] = verts
 
 	return Models
@@ -507,6 +498,7 @@ function TRACK:PassStruts( Controller )
 			ModelCount = ModelCount + 1
 		end
 
+		self:CoroutineCheck( Controller, 2, nil, CurSegment / (#Controller.CatmullRom.PointsList - 1) )
 	end
 
 	//put the struts into the big vertices table
@@ -522,6 +514,9 @@ function TRACK:Generate( Controller )
 	local Struts = {}
 	local RailMeshes = {}
 	local StrutsMeshes = {}
+
+	-- Create the cylinder object that will assist in mesh generation
+	self.Cylinder = Cylinder:Create()
 
 	table.Add( Rails, self:PassRails( Controller ) )
 	table.Add( Struts, self:PassStruts(Controller))
@@ -545,7 +540,9 @@ function TRACK:Generate( Controller )
 	Sections[1] = RailMeshes
 	Sections[2] = StrutsMeshes
 
-	return Sections
+	-- Let's exit the thread, but give them our finalized sections too
+	self:CoroutineCheck( Controller, 3, Sections )
+	-- return Sections
 end
 
 function TRACK:Draw( Controller, Sections )

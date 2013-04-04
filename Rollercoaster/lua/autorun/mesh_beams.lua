@@ -10,28 +10,32 @@ AddCSLuaFile("mesh_beams.lua")
 Cylinder = {}
 
 
-function Cylinder.Start(Radius, Num)
+function Cylinder:Create(obj)
+	local obj = obj or {}
+	obj.__index = Cylinder 
+	setmetatable( obj, obj )
 
-	Cylinder.Vertices = {} //Table holding all of the current vertices in the correct format
+	obj.Vertices = {} //Table holding all of the current vertices in the correct format
 
-	Cylinder.CurVerts = {} //Holding the verts at the start of a cylinder
-	Cylinder.NextVerts = {} //holding all the verts at the end of a cylinder
+	obj.CurVerts = {} //Holding the verts at the start of a cylinder
+	obj.NextVerts = {} //holding all the verts at the end of a cylinder
 
-	Cylinder.Radius = Radius //Radius of the points
-	Cylinder.Count  = Num //Number of points
+	obj.Radius = 5 //Radius of the points
+	obj.Count  = 5 //Number of points
 
-	Cylinder.TriCount = 1 //Number of current vertices
-	Cylinder.TotalU = 0
-	Cylinder.TotalV = 0
+	obj.TriCount = 1 //Number of current vertices
+	obj.TotalU = 0
+	obj.TotalV = 0
 
-	Cylinder.LastV = 0
+	obj.LastV = 0
 
 
+	return obj
 end
 
-function Cylinder.CreateSquare( P1, P2, P3, P4, Normal, TrackColor )	//BACKRIGHT, BACKLEFT, FRONT LEFT, FRONT RIGHT
+function Cylinder:CreateSquare( P1, P2, P3, P4, Normal, TrackColor )	//BACKRIGHT, BACKLEFT, FRONT LEFT, FRONT RIGHT
 	local u =  ( P1:Distance( P2 ) / 200 ) //+ Cylinder.TotalU
-	local v = ( P2:Distance( P3 ) / 200 ) + Cylinder.TotalV
+	local v = ( P2:Distance( P3 ) / 200 ) + self.TotalV
 
 	//Create some variables for proper lightmapped color
 	local colVec = Vector( 0, 0, 0 )
@@ -46,38 +50,38 @@ function Cylinder.CreateSquare( P1, P2, P3, P4, Normal, TrackColor )	//BACKRIGHT
 	colVec = render.ComputeLighting( P1, Normal )
 	colVec = colVec + render.GetAmbientLightColor()
 	colVec = colVec + render.ComputeDynamicLighting(P1, Normal)
-	Cylinder.Vertices[Cylinder.TriCount] = { 
+	self.Vertices[self.TriCount] = { 
 		pos = P1, 
 		normal = Normal, 
 		u = u,
-		v = Cylinder.TotalV,
+		v = self.TotalV,
 		color = Color( colVec.x*SelectedColor.x*255, colVec.y*SelectedColor.y*255, colVec.z*SelectedColor.z*255)
 	}
-	Cylinder.TriCount = Cylinder.TriCount + 1
+	self.TriCount = self.TriCount + 1
 
 	colVec = render.ComputeLighting( P2, Normal )
 	colVec = colVec + render.GetAmbientLightColor()
 	colVec = colVec + render.ComputeDynamicLighting(P2, Normal)
-	Cylinder.Vertices[Cylinder.TriCount] = { 
+	self.Vertices[self.TriCount] = { 
 		pos = P2, 
 		normal = Normal, 
 		u = 0,
-		v = Cylinder.TotalV,
+		v = self.TotalV,
 		color = Color( colVec.x*SelectedColor.x*255, colVec.y*SelectedColor.y*255, colVec.z*SelectedColor.z*255)
 	}
-	Cylinder.TriCount = Cylinder.TriCount + 1
+	self.TriCount = self.TriCount + 1
 
 	colVec = render.ComputeLighting( P3, Normal )
 	colVec = colVec + render.GetAmbientLightColor()
 	colVec = colVec + render.ComputeDynamicLighting(P3, Normal )
-	Cylinder.Vertices[Cylinder.TriCount] = { 
+	self.Vertices[self.TriCount] = { 
 		pos = P3, 
 		normal = Normal, 
 		u = 0,
 		v = v,
 		color = Color( colVec.x*SelectedColor.x*255, colVec.y*SelectedColor.y*255, colVec.z*SelectedColor.z*255)
 	}
-	Cylinder.TriCount = Cylinder.TriCount + 1
+	self.TriCount = self.TriCount + 1
 	
 	
 
@@ -86,46 +90,47 @@ function Cylinder.CreateSquare( P1, P2, P3, P4, Normal, TrackColor )	//BACKRIGHT
 	colVec = render.ComputeLighting( P3, Normal )
 	colVec = colVec + render.GetAmbientLightColor()
 	colVec = colVec + render.ComputeDynamicLighting(P3, Normal )
-	Cylinder.Vertices[Cylinder.TriCount] = { 
+	self.Vertices[self.TriCount] = { 
 		pos = P3, 
 		normal = Normal, 
 		u = 0,
 		v = v,
 		color = Color( colVec.x*SelectedColor.x*255, colVec.y*SelectedColor.y*255, colVec.z*SelectedColor.z*255)
 	}
-	Cylinder.TriCount = Cylinder.TriCount + 1
+	self.TriCount = self.TriCount + 1
 
 	colVec = render.ComputeLighting( P4, Normal )
 	colVec = colVec + render.GetAmbientLightColor()
 	colVec = colVec + render.ComputeDynamicLighting(P4, Normal )
-	Cylinder.Vertices[Cylinder.TriCount] = { 
+	self.Vertices[self.TriCount] = { 
 		pos = P4, 
 		normal = Normal, 
 		u = u,
 		v = v,
 		color = Color( colVec.x*SelectedColor.x*255, colVec.y*SelectedColor.y*255, colVec.z*SelectedColor.z*255)
 	}
-	Cylinder.TriCount = Cylinder.TriCount + 1
+	self.TriCount = self.TriCount + 1
 
 	colVec = render.ComputeLighting( P1, Normal)
 	colVec = colVec + render.GetAmbientLightColor()
 	colVec = colVec + render.ComputeDynamicLighting(P1, Normal )
-	Cylinder.Vertices[Cylinder.TriCount] = { 
+	self.Vertices[self.TriCount] = { 
 		pos = P1, 
 		normal = Normal, 
 		u = u,
-		v = Cylinder.TotalV,
+		v = self.TotalV,
 		color = Color( colVec.x*SelectedColor.x*255, colVec.y*SelectedColor.y*255, colVec.z*SelectedColor.z*255)
 	}
-	Cylinder.TriCount = Cylinder.TriCount + 1
+	self.TriCount = self.TriCount + 1
 
 	return v
 	
 end
-
+/*
 function AdvanceTextureCoordinates()
 	Cylinder.TotalV = Cylinder.TotalV + Cylinder.LastV
 end
+*/
 
 local function Point( Position, Ang, Offset, Corner )
 	local ang = Angle(Ang.p,Ang.y,Ang.r)
@@ -139,13 +144,13 @@ local function Point2( Position, Ang, Offset, Corner )
 	return Position + (ang:Right() * Offset)
 end 
 
-function Cylinder.AddBeamSquare( Pos1, Ang1, Pos2, Ang2, Width, TrackColor )
+function Cylinder:AddBeamSquare( Pos1, Ang1, Pos2, Ang2, Width, TrackColor )
 	if Pos1 == nil || Ang1 == nil || Pos2 == nil || Ang2 == nil then 
 		print("FAILED TO CREATE SQUARE BEAM, NIL VALUE")
 		return
 	end
 
-	Cylinder.Radius = Width or Cylinder.Radius
+	self.Radius = Width or self.Radius
 
 	local offset = math.sqrt( 2 * math.pow(Width/2, 2) )
 
@@ -169,25 +174,25 @@ function Cylinder.AddBeamSquare( Pos1, Ang1, Pos2, Ang2, Width, TrackColor )
 	normFront:Normalize()
 
 	//Top
-	Cylinder.CreateSquare( TopBackRight, TopBackLeft, TopFrontLeft, TopFrontRight, normtop )
+	self:CreateSquare( TopBackRight, TopBackLeft, TopFrontLeft, TopFrontRight, normtop )
 
 	//Sides
-	Cylinder.CreateSquare( BottomBackLeft, BottomFrontLeft, TopFrontLeft, TopBackLeft, normLeft )
-	Cylinder.CreateSquare( BottomBackRight, BottomBackLeft, TopBackLeft, TopBackRight, -normFront )
-	Cylinder.CreateSquare( TopFrontRight, TopFrontLeft, BottomFrontLeft, BottomFrontRight, normFront )
-	Cylinder.CreateSquare( BottomFrontRight, BottomBackRight, TopBackRight, TopFrontRight, -normLeft )
+	self:CreateSquare( BottomBackLeft, BottomFrontLeft, TopFrontLeft, TopBackLeft, normLeft )
+	self:CreateSquare( BottomBackRight, BottomBackLeft, TopBackLeft, TopBackRight, -normFront )
+	self:CreateSquare( TopFrontRight, TopFrontLeft, BottomFrontLeft, BottomFrontRight, normFront )
+	self:CreateSquare( BottomFrontRight, BottomBackRight, TopBackRight, TopFrontRight, -normLeft )
 
 	//Bottom
-	Cylinder.CreateSquare( BottomFrontRight, BottomFrontLeft, BottomBackLeft, BottomBackRight, -normtop ) //BottomBackRight, BottomBackLeft, BottomFrontLeft, BottomFrontRight 
+	self:CreateSquare( BottomFrontRight, BottomFrontLeft, BottomBackLeft, BottomBackRight, -normtop ) //BottomBackRight, BottomBackLeft, BottomFrontLeft, BottomFrontRight 
 end
 
-function Cylinder.AddBeamSquareSimple( Pos1, Ang1, Pos2, Ang2, Width, TrackColor )
+function Cylinder:AddBeamSquareSimple( Pos1, Ang1, Pos2, Ang2, Width, TrackColor )
 	if Pos1 == nil || Ang1 == nil || Pos2 == nil || Ang2 == nil then 
 		print("FAILED TO CREATE SQUARE BEAM, NIL VALUE")
 		return
 	end
 
-	Cylinder.Radius = Width or Cylinder.Radius
+	self.Radius = Width or self.Radius
 
 	//local offset = math.sqrt( 2 * math.pow(Width/2, 2) )
 
@@ -208,71 +213,71 @@ function Cylinder.AddBeamSquareSimple( Pos1, Ang1, Pos2, Ang2, Width, TrackColor
 	normFront:Normalize()
 
 	//Sides
-	Cylinder.CreateSquare( BottomBackLeft, BottomFrontLeft, TopFrontLeft, TopBackLeft, normLeft, TrackColor )
-	Cylinder.CreateSquare( BottomBackRight, BottomBackLeft, TopBackLeft, TopBackRight, -normFront, TrackColor )
-	Cylinder.CreateSquare( TopFrontRight, TopFrontLeft, BottomFrontLeft, BottomFrontRight, normFront, TrackColor )
-	Cylinder.CreateSquare( BottomFrontRight, BottomBackRight, TopBackRight, TopFrontRight, -normLeft, TrackColor )
+	self:CreateSquare( BottomBackLeft, BottomFrontLeft, TopFrontLeft, TopBackLeft, normLeft, TrackColor )
+	self:CreateSquare( BottomBackRight, BottomBackLeft, TopBackLeft, TopBackRight, -normFront, TrackColor )
+	self:CreateSquare( TopFrontRight, TopFrontLeft, BottomFrontLeft, BottomFrontRight, normFront, TrackColor )
+	self:CreateSquare( BottomFrontRight, BottomBackRight, TopBackRight, TopFrontRight, -normLeft, TrackColor )
 end
 
-function Cylinder.AddBeam( Pos1, Ang1, Pos2, Ang2, Radius, TrackColor )
+function Cylinder:AddBeam( Pos1, Ang1, Pos2, Ang2, Radius, TrackColor )
 	if Pos1 == nil || Ang1 == nil || Pos2 == nil || Ang2 == nil then 
 		print("FAILED TO CREATE CYLINDER, NIL VALUE")
 		return
 	end
-	Cylinder.Radius = Radius or Cylinder.Radius
+	self.Radius = Radius or self.Radius
 
 	//Calculate the positions of the current Vertices
-	for i=1, Cylinder.Count do
+	for i=1, self.Count do
 		local ang = Angle(Ang1.p,Ang1.y,Ang1.r) //Create a new instance of the angle so we don't modify the original (Is there a better way to do this?)
-		Cylinder.CurVerts[i] = {}
+		self.CurVerts[i] = {}
 
-		ang:RotateAroundAxis(ang:Right(), (360 / Cylinder.Count) * i )
-		local pos = Pos1 + (ang:Up() * Cylinder.Radius)
+		ang:RotateAroundAxis(ang:Right(), (360 / self.Count) * i )
+		local pos = Pos1 + (ang:Up() * self.Radius)
 
-		Cylinder.CurVerts[i].pos = pos
-		Cylinder.CurVerts[i].norm = ang:Up()
+		self.CurVerts[i].pos = pos
+		self.CurVerts[i].norm = ang:Up()
 	end
 
 	//Calculate the positions of the next vertices
-	for i=1, Cylinder.Count do
+	for i=1, self.Count do
 		local ang = Angle(Ang2.p,Ang2.y,Ang2.r) 
-		Cylinder.NextVerts[i] = {}
+		self.NextVerts[i] = {}
 
-		ang:RotateAroundAxis(ang:Right(), (360 / Cylinder.Count) * i )
-		local pos = Pos2 + (ang:Up() * Cylinder.Radius)
+		ang:RotateAroundAxis(ang:Right(), (360 / self.Count) * i )
+		local pos = Pos2 + (ang:Up() * self.Radius)
 
-		Cylinder.NextVerts[i].pos = pos
-		Cylinder.NextVerts[i].norm = ang:Up()
+		self.NextVerts[i].pos = pos
+		self.NextVerts[i].norm = ang:Up()
 	end
 
 	//Variable to keep track of our triangle count
-	local OldU  	= Cylinder.TotalU
-	Cylinder.TotalU = Cylinder.TotalU + (Cylinder.CurVerts[1].pos:Distance( Cylinder.NextVerts[1].pos )) / 32//Get the distance so we can set the UV effectively
+	local OldU  	= self.TotalU
+	self.TotalU = self.TotalU + (self.CurVerts[1].pos:Distance( self.NextVerts[1].pos )) / 32//Get the distance so we can set the UV effectively
 
 
-	local NewV      = Cylinder.TotalV
+	local NewV      = self.TotalV
 
 
 	//put them into proper triangle format
-	for i=1, Cylinder.Count do
+	for i=1, self.Count do
 		//Set up our variables
-		local CurLeft = Cylinder.CurVerts[i]
-		local NextLeft = Cylinder.NextVerts[i]
+		local CurLeft = self.CurVerts[i]
+		local NextLeft = self.NextVerts[i]
 
 		local CurRight = Vector(0)
 		local NextRight = Vector(0)
 
-		if (i+1) > Cylinder.Count then //Wrap around to 1
-			CurRight = Cylinder.CurVerts[1]
-			NextRight = Cylinder.NextVerts[1]
+		if (i+1) > self.Count then //Wrap around to 1
+			CurRight = self.CurVerts[1]
+			NextRight = self.NextVerts[1]
 		else
-			CurRight = Cylinder.CurVerts[i+1]
-			NextRight = Cylinder.NextVerts[i+1]
+			CurRight = self.CurVerts[i+1]
+			NextRight = self.NextVerts[i+1]
 		end
 
 		//NewV = OldV + (i / Cylinder.Count)
-		local OldV      = Cylinder.TotalV
-		Cylinder.TotalV = Cylinder.TotalV + ( 1 / Cylinder.Count)
+		local OldV      = self.TotalV
+		self.TotalV = self.TotalV + ( 1 / self.Count)
 
 		//Create some variables for proper lightmapped color
 		local colVec = Vector( 0, 0, 0 )
@@ -287,83 +292,83 @@ function Cylinder.AddBeam( Pos1, Ang1, Pos2, Ang2, Radius, TrackColor )
 		colVec = render.ComputeLighting( CurRight.pos, CurRight.norm )
 		colVec = colVec + render.GetAmbientLightColor()
 		colVec = colVec + render.ComputeDynamicLighting(CurRight.pos, CurRight.norm )
-		Cylinder.Vertices[Cylinder.TriCount] = { 
+		self.Vertices[self.TriCount] = { 
 			pos = CurRight.pos, 
 			normal = CurRight.norm, 
 			u = OldU,
-			v = Cylinder.TotalV,
+			v = self.TotalV,
 			color = Color( colVec.x*SelectedColor.x*255, colVec.y*SelectedColor.y*255, colVec.z*SelectedColor.z*255)
 		}
-		Cylinder.TriCount = Cylinder.TriCount + 1
+		self.TriCount = self.TriCount + 1
 
 		colVec = render.ComputeLighting( CurLeft.pos, CurLeft.norm )
 		colVec = colVec + render.GetAmbientLightColor()
 		colVec = colVec + render.ComputeDynamicLighting(CurLeft.pos, CurLeft.norm )
-		Cylinder.Vertices[Cylinder.TriCount] = { 
+		self.Vertices[self.TriCount] = { 
 			pos = CurLeft.pos, 
 			normal = CurLeft.norm, 
 			u = OldU,
 			v = OldV,
 			color = Color( colVec.x*SelectedColor.x*255, colVec.y*SelectedColor.y*255, colVec.z*SelectedColor.z*255)
 		}
-		Cylinder.TriCount = Cylinder.TriCount + 1
+		self.TriCount = self.TriCount + 1
 
 		colVec = render.ComputeLighting( NextLeft.pos, NextLeft.norm )
 		colVec = colVec + render.GetAmbientLightColor()
 		colVec = colVec + render.ComputeDynamicLighting(NextLeft.pos, NextLeft.norm )
-		Cylinder.Vertices[Cylinder.TriCount] = { 
+		self.Vertices[self.TriCount] = { 
 			pos = NextLeft.pos, 
 			normal = NextLeft.norm, 
-			u = Cylinder.TotalU,
+			u = self.TotalU,
 			v = OldV,
 			color = Color( colVec.x*SelectedColor.x*255, colVec.y*SelectedColor.y*255, colVec.z*SelectedColor.z*255)
 		}
-		Cylinder.TriCount = Cylinder.TriCount + 1
+		self.TriCount = self.TriCount + 1
 
 		//Second tri
 		colVec = render.ComputeLighting( NextLeft.pos, NextLeft.norm )
 		colVec = colVec + render.GetAmbientLightColor()
 		colVec = colVec + render.ComputeDynamicLighting(NextLeft.pos, NextLeft.norm )
-		Cylinder.Vertices[Cylinder.TriCount] = { 
+		self.Vertices[self.TriCount] = { 
 			pos = NextLeft.pos, 
 			normal = NextLeft.norm, 
-			u = Cylinder.TotalU,
+			u = self.TotalU,
 			v = OldV,
 			color = Color( colVec.x*SelectedColor.x*255, colVec.y*SelectedColor.y*255, colVec.z*SelectedColor.z*255)
 		}
-		Cylinder.TriCount = Cylinder.TriCount + 1
+		self.TriCount = self.TriCount + 1
 
 		colVec = render.ComputeLighting( NextRight.pos, NextRight.norm )
 		colVec = colVec + render.GetAmbientLightColor()
 		colVec = colVec + render.ComputeDynamicLighting(NextRight.pos, NextRight.norm )
-		Cylinder.Vertices[Cylinder.TriCount] = { 
+		self.Vertices[self.TriCount] = { 
 			pos = NextRight.pos, 
 			normal = NextRight.norm, 
-			u = Cylinder.TotalU,
-			v = Cylinder.TotalV,
+			u = self.TotalU,
+			v = self.TotalV,
 			color = Color( colVec.x*SelectedColor.x*255, colVec.y*SelectedColor.y*255, colVec.z*SelectedColor.z*255)
 		}
-		Cylinder.TriCount = Cylinder.TriCount + 1
+		self.TriCount = self.TriCount + 1
 
 		colVec = render.ComputeLighting( CurRight.pos, CurRight.norm )
 		colVec = colVec + render.GetAmbientLightColor()
 		colVec = colVec + render.ComputeDynamicLighting(CurRight.pos, CurRight.norm )
-		Cylinder.Vertices[Cylinder.TriCount] = { 
+		self.Vertices[self.TriCount] = { 
 			pos = CurRight.pos, 
 			normal = CurRight.norm, 
 			u = OldU,
-			v = Cylinder.TotalV,
+			v = self.TotalV,
 			color = Color( colVec.x*SelectedColor.x*255, colVec.y*SelectedColor.y*255, colVec.z*SelectedColor.z*255)
 		}
-		Cylinder.TriCount = Cylinder.TriCount + 1
+		self.TriCount = self.TriCount + 1
 
 		OldV = NewV
 		
 	end
-	Cylinder.TotalV = NewV
+	self.TotalV = NewV
 	//Cylinder.TotalU = 0
 end
 
-function Cylinder.EndBeam()
-	return Cylinder.Vertices 
+function Cylinder:EndBeam()
+	return self.Vertices 
 end

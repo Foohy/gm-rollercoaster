@@ -1,7 +1,7 @@
 include("autorun/sh_enums.lua")
 include( "autorun/mesh_beams.lua")
 
-local TRACK = {}
+local TRACK = TRACK:Create()
 
 
 TRACK.Name = "Metal Track"
@@ -11,23 +11,7 @@ TRACK.PhysWidth = 30 //How wide the physics mesh should be
 trackmanager.Register( EnumNames.Tracks[COASTER_TRACK_METAL], TRACK )
 if !CLIENT then return end
 
-//TRACK.Material = Material("models/wireframe")
-//phoenix_storms/dome
 TRACK.Material = Material( "coaster/track_metal")
-/*
-TRACK.Material =  CreateMaterial( "CoasterTrackMaterial", "UnlitGeneric", { //VertexLitGeneric
-	["$basetexture"] 		= "phoenix_storms/dome", //models/debug/debugwhite
-    ["$bumpmap"]			= "phoenix_storms/dome_bump",
-    ["$vertexcolor"] 		= 1,
-    ["$phong"] 				= 1,
-    ["$phongexponent"] 		= 20,
-    ["$phongboost"] 		= 2,
-    ["$phongfresnelranges"] = "0.5 0.8 1",
-	//["$nocull"] = 1,
-	//["$translucent"] = 1,
-	//["$vertexalpha"] = 1,
-} )
-*/
 
 local StrutOffset = 1 //Space between coaster struts
 local Offset = 20  //Downwards offset of large center beam
@@ -44,7 +28,8 @@ function TRACK:Generate( controller )
 	local Meshes = {} 
 	local modelCount = 1 
 
-	Cylinder.Start( Radius, PointCount ) //We're starting up making a beam of cylinders
+	self.Cylinder = Cylinder:Create()
+	-- Cylinder.Start( Radius, PointCount ) //We're starting up making a beam of cylinders
 
 	local LastAng = nil
 	for i = 1, #controller.CatmullRom.Spline do
@@ -126,32 +111,34 @@ function TRACK:Generate( controller )
 					CenterBeam = controller.CatmullRom.PointsList[2] + ang:Up() * -Offset
 				end
 
-				Cylinder.AddBeam(CenterBeam, LastAng, controller.CatmullRom.Spline[i] + ang:Up() * -Offset, NewAng, Radius, ThisSegment:GetTrackColor() )
+				self.Cylinder:AddBeam(CenterBeam, LastAng, controller.CatmullRom.Spline[i] + ang:Up() * -Offset, NewAng, Radius, ThisSegment:GetTrackColor() )
 
-				Cylinder.AddBeam( FirstLeft, LastAng, posL, NewAng, 4, ThisSegment:GetTrackColor() )
-				Cylinder.AddBeam( FirstRight, LastAng, posR, NewAng, 4, ThisSegment:GetTrackColor() )
+				self.Cylinder:AddBeam( FirstLeft, LastAng, posL, NewAng, 4, ThisSegment:GetTrackColor() )
+				self.Cylinder:AddBeam( FirstRight, LastAng, posR, NewAng, 4, ThisSegment:GetTrackColor() )
 			end
 
 			//vec:ANgle()
-			Cylinder.AddBeam(controller.CatmullRom.Spline[i] + (ang:Up() * -Offset), LastAng, controller.CatmullRom.Spline[i+1] + (ang2:Up() * -Offset), NewAng, Radius, ThisSegment:GetTrackColor() )
+			self.Cylinder:AddBeam(controller.CatmullRom.Spline[i] + (ang:Up() * -Offset), LastAng, controller.CatmullRom.Spline[i+1] + (ang2:Up() * -Offset), NewAng, Radius, ThisSegment:GetTrackColor() )
 
 			//Side rails
-			Cylinder.AddBeam( posL, LastAng, nPosL, NewAng, 4, ThisSegment:GetTrackColor() )
-			Cylinder.AddBeam( posR, LastAng, nPosR, NewAng, 4, ThisSegment:GetTrackColor() )
+			self.Cylinder:AddBeam( posL, LastAng, nPosL, NewAng, 4, ThisSegment:GetTrackColor() )
+			self.Cylinder:AddBeam( posR, LastAng, nPosR, NewAng, 4, ThisSegment:GetTrackColor() )
 
-			if #Cylinder.Vertices > 50000 then// some arbitrary limit to split up the verts into seperate meshes
+			if #self.Cylinder.Vertices > 50000 then// some arbitrary limit to split up the verts into seperate meshes
 
-				Vertices[modelCount] = Cylinder.Vertices
+				Vertices[modelCount] = self.Cylinder.Vertices
 				modelCount = modelCount + 1
 
-				Cylinder.Vertices = {}
-				Cylinder.TriCount = 1
+				self.Cylinder.Vertices = {}
+				self.Cylinder.TriCount = 1
 			end
 			LastAng = NewAng
+
+			self:CoroutineCheck( controller, 1, nil, i / #controller.CatmullRom.Spline)
 		end
 	end	
 
-	local verts = Cylinder.EndBeam()
+	local verts = self.Cylinder:EndBeam()
 	Vertices[modelCount] = verts
 
 	//Stage 2, create the struts in between the coaster rails
@@ -192,6 +179,8 @@ function TRACK:Generate( controller )
 		end
 		local verts = CreateStrutsMesh(Position, ang, CurNode:GetTrackColor())
 		table.Add( StrutVerts, verts ) //Combine the tables into da big table
+
+		self:CoroutineCheck( controller, 1, nil, CurSegment / (#controller.CatmullRom.PointsList - 1) )
 	end
 
 	//put the struts into the big vertices table
@@ -210,7 +199,9 @@ function TRACK:Generate( controller )
 	//Create a new variable that will hold each section of the mesh
 	local Sections = {}
 	Sections[1] = Meshes
-	return Sections
+	-- return Sections
+
+	self:CoroutineCheck( controller, 3, Sections)
 end
 
 //I can't retrieve the triangles from a compiled model, SO LET'S MAKE OUR OWN
@@ -512,7 +503,7 @@ end
 /****************************
 Draw function. Draw the mesh
 ****************************/
-local MinLightLevel = 0.81
+
 function TRACK:Draw( controller, Meshes )
 	if !IsValid( controller ) || !controller:IsController() then return end
 	if !Meshes || #Meshes < 1 then return end

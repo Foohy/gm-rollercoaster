@@ -23,7 +23,7 @@ function ENT:BuildMesh()
 	if self.Segment < 2 or self.Segment >= #Controller.Nodes - 1 then return end
 
 	//change width according to the track type
-	local track = trackmanager.Get(EnumNames.Tracks[Controller:GetTrackType()])
+	local track = trackmanager.GetStatic(EnumNames.Tracks[Controller:GetTrackType()])
 	if track then
 		self.Tri_Width = track.PhysWidth or 30
 	else self.Tri_Width = 30 end

@@ -940,7 +940,7 @@ function ENT:PhysicsCollide(data, physobj)
 			NewID 		= data.HitEntity:GetCoasterID()
 			controller 	= data.HitEntity:GetController()
 		end
-
+		if !IsValid( controller ) || !controller:IsController() then print( "FALSE CONTROLLER: " .. tostring( controller ) .. ", reported from: " .. tostring(data.HitEntity)) return end
 		//estimate the percent along the track we're joining we are
 		local distClosest = math.huge
 		for i=1, controller.CatmullRom.STEPS do

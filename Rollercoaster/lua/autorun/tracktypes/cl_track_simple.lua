@@ -1,6 +1,6 @@
 include("autorun/sh_enums.lua")
 
-local TRACK = {}
+local TRACK = TRACK:Create()
 
 TRACK.Name = "Simple Track"
 TRACK.Description = "The bare basics of a track. Good for customization."
@@ -11,12 +11,7 @@ trackmanager.Register( EnumNames.Tracks[COASTER_TRACK_SIMPLE], TRACK )
 if !CLIENT then return end
 
 TRACK.Material = Material( "coaster/track_metal_clean")
-/*
-TRACK.Material =  CreateMaterial( "CoasterTrackMaterial", "UnlitGeneric", {
-	["$basetexture"]		= "phoenix_storms/dome",
-	["$vertexcolor"]		= 1,
-} )
-*/
+
 -- Distance track beams away from eachother
 local RailOffset = 25
 
@@ -53,14 +48,14 @@ end
 function TRACK:CreateSideBeams( Position, Angle, Position2, Angle2, Node, CurrentCylinderAngle )
 
 	//Side rails
-	Cylinder.AddBeam( Position + Angle:Right() * -RailOffset, -- Position of beginning of cylinder
+	self.Cylinder:AddBeam( Position + Angle:Right() * -RailOffset, -- Position of beginning of cylinder
 		self.LastCylinderAngle, -- The angle of the first radius of the cylinder
 		Position2 + Angle2:Right() * -RailOffset, -- Position of end of cylinder
 		CurrentCylinderAngle, 
 		self.CylinderRadius, -- Radius of cylinder
 		Node:GetTrackColor() ) -- Color
 
-	Cylinder.AddBeam( Position + Angle:Right() * RailOffset, 
+	self.Cylinder:AddBeam( Position + Angle:Right() * RailOffset, 
 		self.LastCylinderAngle, 
 		Position2 + Angle2:Right() * RailOffset, 
 		CurrentCylinderAngle, 
@@ -75,7 +70,8 @@ function TRACK:Generate( Controller )
 	Meshes = {} //If we hit the maximum for the number of vertices of a model, split it up into several
 	local modelCount = 1 //how many models the mesh has been split into
 
-	Cylinder.Start( self.CylinderRadius, self.CylinderPointCount ) //We're starting up making a beam of cylinders
+	self.Cylinder = Cylinder:Create()
+
 	self.BeginningSegmentAngle = nil
 	self.BeginningSegmentCylinderAngle = nil 
 
@@ -124,20 +120,23 @@ function TRACK:Generate( Controller )
 
 
 		-- Split the model into multiple meshes if it gets large
-		if #Cylinder.Vertices > 50000 then
+		if #self.Cylinder.Vertices > 50000 then
 
-			Vertices[modelCount] = Cylinder.Vertices
+			Vertices[modelCount] = self.Cylinder.Vertices
 			modelCount = modelCount + 1
 
-			Cylinder.Vertices = {}
-			Cylinder.TriCount = 1
+			self.Cylinder.Vertices = {}
+			self.Cylinder.TriCount = 1
 		end
 		
 		self.LastAngle = SubsegmentAngle
 		self.LastNormal = SubsegmentNormal
+
+		-- Check if we need to yield, and report some information
+		self:CoroutineCheck( Controller, 1, nil, i / #Controller.CatmullRom.Spline)
 	end	
 
-	local verts = Cylinder.EndBeam()
+	local verts = self.Cylinder:EndBeam()
 	Vertices[modelCount] = verts
 
 	//put the struts into the big vertices table
@@ -156,7 +155,9 @@ function TRACK:Generate( Controller )
 	//Create a new variable that will hold each section of the mesh
 	local Sections = {}
 	Sections[1] = Meshes
-	return Sections
+
+	-- Let's exit the thread, but give them our finalized sections too
+	self:CoroutineCheck( Controller, 2, Sections )
 end
 
 function TRACK:Draw( Controller, Meshes )

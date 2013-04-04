@@ -249,7 +249,7 @@ end )
 
 usermessage.Hook("Coaster_invalidateall", function( um )
 	local self = um:ReadEntity()
-	if !IsValid( self ) || !self.IsController then return end
+	if !IsValid( self ) || !self.IsController || !self:IsController() then return end
 
 	for k, v in pairs( self.Nodes ) do
 		v.Invalidated = true
@@ -259,6 +259,10 @@ usermessage.Hook("Coaster_invalidateall", function( um )
 	self:RefreshClientSpline()
 	self:SupportFullUpdate()
 	self:UpdateClientsidePhysics()
+
+	if self.BuildingMesh then
+		self:UpdateClientMesh()
+	end
 end )
 
 usermessage.Hook("Coaster_CartFailed", function( um )
@@ -306,6 +310,10 @@ usermessage.Hook("Coaster_AddNode", function( um )
 		end
 
 		self:SupportFullUpdate()
+
+		if self.BuildingMesh then
+			self:UpdateClientMesh()
+		end
 	end
 end )
 
@@ -320,6 +328,9 @@ usermessage.Hook("Coaster_nodeinvalidate", function( um )
 		controller:UpdateClientsidePhysics()
 	end
 
+	if controller.BuildingMesh then
+		controller:UpdateClientMesh()
+	end
 end )
 
 function ENT:UpdateClientsidePhysics( )
@@ -584,15 +595,17 @@ function ENT:UpdateClientMesh()
 			self.TrackClass = track
 
 			print("Compiling with GenType: " .. EnumNames.Tracks[gentype] )
-			self.TrackMeshes = self.TrackClass:Generate( self )
+
+			-- Create our coroutine thread that'll generate our mesh
+			self.GeneratorThread = coroutine.create( self.TrackClass.Generate )
+			coroutine.resume(self.GeneratorThread, self.TrackClass, self )
+
+			-- self.TrackMeshes = self.TrackClass:Generate( self )
 		else
 			print("Failed to use track type \"" .. ( EnumNames.Tracks[gentype] or "Unknown (" .. gentype .. ")" ) .. "\"!" )
 		end
 
-		self:ValidateNodes()
-		self.BuildingMesh = false
-
-		//One more update can't hurt
+		-- One more update can't hurt
 		self:SupportFullUpdate()
 
 		//Tell the track panel to update itself
@@ -646,12 +659,25 @@ end
 local nodeType = nil
 local CTime = 0
 
+local function foo()
+	for i = 0, 10 do
+		print( i )
+		if i == 5 then
+			coroutine.yield()
+		end
+	end
+end
+
 //Main function for all track rendering
 //track preview beams, track mesh
 function ENT:DrawTrack()
 	if self.CatmullRom == nil then return end //Shit
-	//if true then return end
 	if #self.CatmullRom.PointsList > 3 then
+
+		-- Check if we're coroutining, and resume if neccessary
+		if self.BuildingMesh && type(self.GeneratorThread) == "thread" && coroutine.status( self.GeneratorThread ) == "suspended" && !self.WasBeingHeld then
+			coroutine.resume(self.GeneratorThread, self.TrackClass, self )
+		end 
 
 		render.SetMaterial( mat_debug )
 		self:DrawRailMesh()
@@ -882,144 +908,7 @@ function ENT:DrawBreakModels( segment )
 	self.WheelModel:SetNoDraw( true )
 
 end
-/*
-local WheelOffset = 1
-local WheelNode = nil
-local ThisSegment = nil
-local NextSegment = nil
-local WheelPercent = 0
-local WheelAngle = Angle( 0, 0, 0)
-local WheelPosition = Vector( 0, 0, 0 )
 
-function ENT:DrawSpeedupModels( segment )
-	if not (segment > 1 && (#self.CatmullRom.PointsList > segment )) then return end
-	if not self.CatmullRom || !self.CatmullRom.Spline then return end
-	if !IsValid( self.WheelModel ) then return end
-
-	local node = (segment - 2) * self.CatmullRom.STEPS
-	local ThisSegment = self.Nodes[ segment ]
-	local NextSegment = self.Nodes[ segment + 1 ]
-
-	local Percent = 0
-	local ang = Angle( 0, 0, 0)
-	local Position = Vector( 0, 0, 0 )
-	local Roll = 0
-	local numwheels = 0
-
-	if !IsValid( ThisSegment ) || !IsValid( NextSegment ) then return end 
-	self.WheelModel:SetNoDraw( false )
-
-	Multiplier = self:GetMultiplier(segment, Percent)
-
-	//Move ourselves forward along the track
-	//Percent = ( Percent + ( Multiplier * 2 ) ) / 2 //move ourselves one half forward, so the wheels are between track struts
-	Percent = Multiplier / 2
-
-	while Percent < 1 do
-		if numwheels >= GetConVar("coaster_maxwheels"):GetInt() then return end
-
-		if numwheels % 2 == 0 then //Draw every other wheel
-			ang = self:AngleAt( segment, Percent)
-
-			//Change the roll depending on the track
-			Roll = -Lerp( Percent, math.NormalizeAngle( ThisSegment:GetRoll() ), NextSegment:GetRoll())	
-			
-			//Set the roll for the current track peice
-			ang.r = Roll
-			//ang.y = ang.y - 90
-			//ang:RotateAroundAxis( ang:Up(), -90 )
-			Position = self.CatmullRom:Point(segment, Percent)
-			Position = Position + ang:Up() * -13
-
-			ang:RotateAroundAxis( ang:Right(), CurTime() * 1000 ) //BAM
-
-			//Now... manage moving throughout the track evenly
-			//Each spline has a certain multiplier so the cart travel at a constant speed throughout the track
-			Multiplier = self:GetMultiplier(segment, Percent)
-
-			self.WheelModel:SetRenderOrigin( Position )
-			render.SetLightingOrigin( Position )
-			self.WheelModel:SetAngles( ang )
-			self.WheelModel:SetupBones()
-			self.WheelModel:DrawModel()
-
-			
-		end
-		numwheels = numwheels + 1
-
-		//Move ourselves forward along the track
-		Percent = Percent + ( Multiplier * WheelOffset )
-
-	end
-	self.WheelModel:SetNoDraw( true )
-end
-
-function ENT:DrawBreakModels( segment )
-	if not (segment > 1 && (#self.CatmullRom.PointsList > segment )) then return end
-	if not self.CatmullRom || !self.CatmullRom.Spline then return end
-	if !IsValid( self.WheelModel ) then return end
-
-	local node = (segment - 2) * self.CatmullRom.STEPS
-	local ThisSegment = self.Nodes[ segment ]
-	local NextSegment = self.Nodes[ segment + 1 ]
-
-	local Percent = 0
-	local ang = Angle( 0, 0, 0)
-	local PositionL = Vector( 0, 0, 0 )
-	local PositionR = Vector( 0, 0, 0 )
-	local Roll = 0
-	local numwheels = 0
-
-	if !IsValid( ThisSegment ) || !IsValid( NextSegment ) then return end 
-	self.WheelModel:SetNoDraw( false )
-
-	Multiplier = self:GetMultiplier(segment, Percent)
-
-	//Move ourselves forward along the track
-	Percent = Multiplier / 2 //move ourselves one half forward, so the wheels are between track struts
-
-	while Percent < 1 do
-		if numwheels >= GetConVar("coaster_maxwheels"):GetInt() then return end
-
-		if numwheels % 2 == 0 then //Draw every other wheel
-			ang = self:AngleAt( segment, Percent)
-
-			//Change the roll depending on the track
-			Roll = -Lerp( Percent, math.NormalizeAngle( ThisSegment:GetRoll() ), NextSegment:GetRoll())	
-			
-			//Set the roll for the current track peice
-			ang.r = Roll
-			//ang.y = ang.y - 90
-			//ang:RotateAroundAxis( ang:Up(), -90 )
-			PositionL = self.CatmullRom:Point(segment, Percent) + ( ang:Up() * -13 ) + ( ang:Right() * 15 )
-			PositionR = self.CatmullRom:Point(segment, Percent) + ( ang:Up() * -13 ) + ( ang:Right() * -15 )
-
-			ang:RotateAroundAxis( ang:Right(), CurTime() * -130 ) //BAM
-
-			//Now... manage moving throughout the track evenly
-			//Each spline has a certain multiplier so the cart travel at a constant speed throughout the track
-			Multiplier = self:GetMultiplier(segment, Percent)
-
-			self.WheelModel:SetRenderOrigin( PositionL )
-			render.SetLightingOrigin( PositionL )
-			self.WheelModel:SetAngles( ang )
-			self.WheelModel:SetupBones()
-			self.WheelModel:DrawModel()
-
-			self.WheelModel:SetRenderOrigin( PositionR )
-			render.SetLightingOrigin( PositionR )
-			self.WheelModel:SetupBones()
-			self.WheelModel:DrawModel()
-		end
-		numwheels = numwheels + 1
-
-		//Move ourselves forward along the track
-		Percent = Percent + ( Multiplier * WheelOffset )
-
-	end
-	self.WheelModel:SetNoDraw( true )
-end
-*/
 //Move these variables out to prevent excess garbage collection
 local node = -1
 local Dist = 0
@@ -1389,11 +1278,16 @@ function ENT:Think()
 
 
 			break //We really only need to do this once, not on a per segment basis.
-		else
+		elseif (k == #self.Nodes ) then
 			if self.WasBeingHeld then
 				self.WasBeingHeld = false
 				for _, node in pairs( self.Nodes ) do node.WasBeingHeld = false end
 				self:SupportFullUpdate() //Update all of the nodes when we let go of the node
+
+				-- If we were in the middle the build process, it's probably all bunked up
+				if self.BuildingMesh  then
+					self:UpdateClientMesh()
+				end
 			end
 		end
 	end

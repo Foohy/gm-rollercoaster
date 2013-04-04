@@ -300,8 +300,9 @@ if CLIENT then
 	CreateClientConVar("coaster_supports", 1, false, false )
 	CreateClientConVar("coaster_previews", 1, false, false )
 	CreateClientConVar("coaster_motionblur", 1, false, false )
-	CreateClientConVar("coaster_maxwheels", 15, false, false)
-	CreateClientConVar("coaster_resolution", 15, false, false)
+	CreateClientConVar("coaster_maxwheels", 15, false, false )
+	CreateClientConVar("coaster_resolution", 15, false, false )
+	CreateClientConVar("coaster_stepspercycle", 4, true, false )
 
 	//Misc Settings
 	CreateClientConVar("coaster_cart_spin_override", 0, false, true) //Override cart spawning to make it spin like the carousel
