@@ -260,8 +260,8 @@ usermessage.Hook("Coaster_invalidateall", function( um )
 	self:SupportFullUpdate()
 	self:UpdateClientsidePhysics()
 
-	if self.BuildingMesh then
-		self:UpdateClientMesh()
+	if self.BuildingMesh || GetConVarNumber("coaster_autobuild") == 1 then
+		self:SoftUpdateMesh()
 	end
 end )
 
@@ -311,25 +311,25 @@ usermessage.Hook("Coaster_AddNode", function( um )
 
 		self:SupportFullUpdate()
 
-		if self.BuildingMesh then
-			self:UpdateClientMesh()
+		if self.BuildingMesh || GetConVarNumber("coaster_autobuild") == 1 then
+			self:SoftUpdateMesh()
 		end
 	end
 end )
 
 //Invalidates nearby nodes, either due to roll changing or position changing. Means clientside mesh is out of date and needs to be rebuilt
 usermessage.Hook("Coaster_nodeinvalidate", function( um )
-	local controller = um:ReadEntity()
+	local self = um:ReadEntity()
 	local node	 = um:ReadEntity()
 	local inval_minimal = um:ReadBool() //Should we only invalidate the node before this one?
 
-	if IsValid( node ) && node.Invalidate && IsValid( controller ) then
-		node:Invalidate( controller, inval_minimal )
-		controller:UpdateClientsidePhysics()
+	if IsValid( node ) && node.Invalidate && IsValid( self ) then
+		node:Invalidate( self, inval_minimal )
+		self:UpdateClientsidePhysics()
 	end
 
-	if controller.BuildingMesh then
-		controller:UpdateClientMesh()
+	if self.BuildingMesh || GetConVarNumber("coaster_autobuild") == 1 then
+		self:SoftUpdateMesh()
 	end
 end )
 
@@ -561,6 +561,13 @@ function ENT:PercAlongNode(spline, qf)
 	return spline / self.CatmullRom.STEPS
 end
 
+-- Create a 'queue' that the mesh needs to be built, and wait a second before actually starting to build it
+-- Makes it so there isn't a noticable freeze when spawning nodes with coaster_autobuild 1
+function ENT:SoftUpdateMesh()
+	self.BuildQueued = true 
+	self.BuildAt = CurTime() + 1 -- TODO: Make this time customizable
+end
+
 //This baby is what builds the clientside mesh. It's really complicated.
 function ENT:UpdateClientMesh()
 	print("Building clientside mesh...")
@@ -598,7 +605,7 @@ function ENT:UpdateClientMesh()
 
 			-- Create our coroutine thread that'll generate our mesh
 			self.GeneratorThread = coroutine.create( self.TrackClass.Generate )
-			coroutine.resume(self.GeneratorThread, self.TrackClass, self )
+			assert(coroutine.resume(self.GeneratorThread, self.TrackClass, self ))
 
 			-- self.TrackMeshes = self.TrackClass:Generate( self )
 		else
@@ -676,7 +683,7 @@ function ENT:DrawTrack()
 
 		-- Check if we're coroutining, and resume if neccessary
 		if self.BuildingMesh && type(self.GeneratorThread) == "thread" && coroutine.status( self.GeneratorThread ) == "suspended" && !self.WasBeingHeld then
-			coroutine.resume(self.GeneratorThread, self.TrackClass, self )
+			assert(coroutine.resume(self.GeneratorThread, self.TrackClass, self ))
 		end 
 
 		render.SetMaterial( mat_debug )
@@ -1285,12 +1292,19 @@ function ENT:Think()
 				self:SupportFullUpdate() //Update all of the nodes when we let go of the node
 
 				-- If we were in the middle the build process, it's probably all bunked up
-				if self.BuildingMesh  then
-					self:UpdateClientMesh()
+				if self.BuildingMesh || GetConVarNumber("coaster_autobuild") == 1 then
+					self:SoftUpdateMesh()
 				end
 			end
 		end
 	end
+
+	-- Check if we are queued to update the mesh
+	if self.BuildQueued && CurTime() > self.BuildAt then
+		self.BuildQueued = false 
+		self:UpdateClientMesh()
+	end
+
 	self:UpdateSupportDrawBounds()
 end
 

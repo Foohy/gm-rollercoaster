@@ -300,6 +300,7 @@ if CLIENT then
 	CreateClientConVar("coaster_supports", 1, false, false )
 	CreateClientConVar("coaster_previews", 1, false, false )
 	CreateClientConVar("coaster_motionblur", 1, false, false )
+	CreateClientConVar("coaster_autobuild", 1, true, false )
 	CreateClientConVar("coaster_maxwheels", 15, false, false )
 	CreateClientConVar("coaster_resolution", 15, false, false )
 	CreateClientConVar("coaster_stepspercycle", 4, true, false )
@@ -413,6 +414,7 @@ if CLIENT then
 			end
 
 			panel:NumSlider("Steps per Frame: ", "coaster_stepspercycle", 1, 100, 0 )
+			panel:CheckBox("Automatically build coaster", "coaster_autobuild")
 			panel:CheckBox("Draw track previews", "coaster_previews")
 			panel:CheckBox("Draw track supports", "coaster_supports")
 			panel:CheckBox("Draw motion blur", "coaster_motionblur")
