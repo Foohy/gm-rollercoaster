@@ -38,7 +38,13 @@ local function ReconstructCoaster(coasterID, owner, Controller )
 	local unsortedNodes = GetNodesByID( coasterID )
 
 	if !IsValid( Controller ) || !unsortedNodes || #unsortedNodes < 4 then return end -- Awww you suck
-	print("Spawning coaster!")
+	
+	if game.SinglePlayer() then
+		Controller:SetOwner( Entity(1) ) -- If it's singleplayer, the player owns this save
+	elseif IsValid( owner ) then
+		Controller:SetOwner( owner )
+	end
+
 
 	for i=1, Controller:GetNumCoasterNodes() do
 		local node = GetNodeByOrder( i, UnconstructedCoasters[coasterID] )
@@ -49,6 +55,7 @@ local function ReconstructCoaster(coasterID, owner, Controller )
 			COASTERERRORTABLE = UnconstructedCoasters[coasterID] 
 			continue 
 		end
+
 		node:SetController( Controller )
 		if !IsValid( Rollercoasters[coasterID] ) then
 			Rollercoasters[coasterID] = node
@@ -85,57 +92,6 @@ local function ReconstructCoaster(coasterID, owner, Controller )
 	end )
 
 	UnconstructedCoasters[coasterID] = nil
-end
-
-local function DoGeneric( ent, data )
-	print("GENERIC FUNCTION START")
-	print( data.Pos )
-    if ( !data ) then return end
-    if ( data.Model ) then ent:SetModel( data.Model ) end
-    if ( data.Angle ) then ent:SetAngles( data.Angle ) end
-    print( data.Pos )
-    if ( data.Pos ) then ent:SetPos( data.Pos ) end
-    print( data.Pos )
-    if ( data.Skin ) then ent:SetSkin( data.Skin ) end
-    if ( data.Flex ) then DoFlex( ent, data.Flex, data.FlexScale ) end
-    if ( data.BoneManip ) then DoBoneManipulator( ent, data.BoneManip ) end
-    if ( data.ModelScale ) then ent:SetModelScale( data.ModelScale, 0 ) end
-    if ( data.ColGroup ) then ent:SetCollisionGroup( data.ColGroup ) end
-    print( data.Pos )
-    --
-    -- Restore NetworkVars/DataTable variables (the SetupDataTables values)
-    --
-    if ( ent.RestoreNetworkVars ) then
-        ent:RestoreNetworkVars( data.DT )
-    end
-    print( data.Pos )
-    print("GENERIC FUNCTION END")
-end
-
-local function GenericDebug( Player, data )
-    if ( !duplicator.IsAllowed( data.Class ) ) then
-        -- MsgN( "duplicator: ", data.Class, " isn't allowed to be duplicated!" )
-        return
-    end
-
-    local ent = ents.Create( data.Class )
-    if ( !IsValid( ent ) ) then return end
-
-    //DO stuff
-    print("again")
-    print( data.Pos )
-    DoGeneric( ent, data )
-
-    ent:Spawn()
-    ent:Activate()
-
-    print("last time i swear")
-    print( ent:GetPos(), data.Pos )
-    //Do physics stuff
-
-    //Add it to some nerd table
-    print("Spawned coaster node")
-    return ent
 end
 
 duplicator.RegisterEntityClass("coaster_node", function( ply, data )
