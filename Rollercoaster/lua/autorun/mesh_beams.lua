@@ -33,6 +33,23 @@ function Cylinder:Create(obj)
 	return obj
 end
 
+-- Utility function for creating vertices
+local function Vertex( Position, Normal, U, V, Col )
+	local colVec = render.ComputeLighting(Position, Normal )
+	colVec = colVec + render.GetAmbientLightColor()
+	colVec = colVec + render.ComputeDynamicLighting(Position, Normal)
+	local Vert = {
+		pos = Position,
+		normal = Normal,
+		u = U,
+		v = V,
+		color = Color( colVec.x*Col.x*255, colVec.y*Col.y*255, colVec.z*Col.z*255)
+	}
+
+	return Vert
+end
+
+
 function Cylinder:CreateSquare( P1, P2, P3, P4, Normal, TrackColor )	//BACKRIGHT, BACKLEFT, FRONT LEFT, FRONT RIGHT
 	local u =  ( P1:Distance( P2 ) / 200 ) //+ Cylinder.TotalU
 	local v = ( P2:Distance( P3 ) / 200 ) + self.TotalV
@@ -46,82 +63,15 @@ function Cylinder:CreateSquare( P1, P2, P3, P4, Normal, TrackColor )	//BACKRIGHT
 		SelectedColor = Vector( TrackColor.r / 255, TrackColor.g / 255, TrackColor.b / 255 ) 
 	end
 	
+
 	//Create the 6 verts that make up a single quad
-	colVec = render.ComputeLighting( P1, Normal )
-	colVec = colVec + render.GetAmbientLightColor()
-	colVec = colVec + render.ComputeDynamicLighting(P1, Normal)
-	self.Vertices[self.TriCount] = { 
-		pos = P1, 
-		normal = Normal, 
-		u = u,
-		v = self.TotalV,
-		color = Color( colVec.x*SelectedColor.x*255, colVec.y*SelectedColor.y*255, colVec.z*SelectedColor.z*255)
-	}
-	self.TriCount = self.TriCount + 1
+	table.insert(self.Vertices, Vertex( P1, Normal, u, self.TotalV, SelectedColor ))
+	table.insert(self.Vertices, Vertex( P2, Normal, 0, self.TotalV, SelectedColor ))
+	table.insert(self.Vertices, Vertex( P3, Normal, 0, v, SelectedColor ))
 
-	colVec = render.ComputeLighting( P2, Normal )
-	colVec = colVec + render.GetAmbientLightColor()
-	colVec = colVec + render.ComputeDynamicLighting(P2, Normal)
-	self.Vertices[self.TriCount] = { 
-		pos = P2, 
-		normal = Normal, 
-		u = 0,
-		v = self.TotalV,
-		color = Color( colVec.x*SelectedColor.x*255, colVec.y*SelectedColor.y*255, colVec.z*SelectedColor.z*255)
-	}
-	self.TriCount = self.TriCount + 1
-
-	colVec = render.ComputeLighting( P3, Normal )
-	colVec = colVec + render.GetAmbientLightColor()
-	colVec = colVec + render.ComputeDynamicLighting(P3, Normal )
-	self.Vertices[self.TriCount] = { 
-		pos = P3, 
-		normal = Normal, 
-		u = 0,
-		v = v,
-		color = Color( colVec.x*SelectedColor.x*255, colVec.y*SelectedColor.y*255, colVec.z*SelectedColor.z*255)
-	}
-	self.TriCount = self.TriCount + 1
-	
-	
-
-
-	//Second tri
-	colVec = render.ComputeLighting( P3, Normal )
-	colVec = colVec + render.GetAmbientLightColor()
-	colVec = colVec + render.ComputeDynamicLighting(P3, Normal )
-	self.Vertices[self.TriCount] = { 
-		pos = P3, 
-		normal = Normal, 
-		u = 0,
-		v = v,
-		color = Color( colVec.x*SelectedColor.x*255, colVec.y*SelectedColor.y*255, colVec.z*SelectedColor.z*255)
-	}
-	self.TriCount = self.TriCount + 1
-
-	colVec = render.ComputeLighting( P4, Normal )
-	colVec = colVec + render.GetAmbientLightColor()
-	colVec = colVec + render.ComputeDynamicLighting(P4, Normal )
-	self.Vertices[self.TriCount] = { 
-		pos = P4, 
-		normal = Normal, 
-		u = u,
-		v = v,
-		color = Color( colVec.x*SelectedColor.x*255, colVec.y*SelectedColor.y*255, colVec.z*SelectedColor.z*255)
-	}
-	self.TriCount = self.TriCount + 1
-
-	colVec = render.ComputeLighting( P1, Normal)
-	colVec = colVec + render.GetAmbientLightColor()
-	colVec = colVec + render.ComputeDynamicLighting(P1, Normal )
-	self.Vertices[self.TriCount] = { 
-		pos = P1, 
-		normal = Normal, 
-		u = u,
-		v = self.TotalV,
-		color = Color( colVec.x*SelectedColor.x*255, colVec.y*SelectedColor.y*255, colVec.z*SelectedColor.z*255)
-	}
-	self.TriCount = self.TriCount + 1
+	table.insert(self.Vertices, Vertex( P3, Normal, 0, v, SelectedColor ))
+	table.insert(self.Vertices, Vertex( P4, Normal, u, v, SelectedColor ))
+	table.insert(self.Vertices, Vertex( P1, Normal, u, self.TotalV, SelectedColor ))
 
 	return v
 	
@@ -289,78 +239,14 @@ function Cylinder:AddBeam( Pos1, Ang1, Pos2, Ang2, Radius, TrackColor )
 		end
 
 		//Create the 6 verts that make up a single quad
-		colVec = render.ComputeLighting( CurRight.pos, CurRight.norm )
-		colVec = colVec + render.GetAmbientLightColor()
-		colVec = colVec + render.ComputeDynamicLighting(CurRight.pos, CurRight.norm )
-		self.Vertices[self.TriCount] = { 
-			pos = CurRight.pos, 
-			normal = CurRight.norm, 
-			u = OldU,
-			v = self.TotalV,
-			color = Color( colVec.x*SelectedColor.x*255, colVec.y*SelectedColor.y*255, colVec.z*SelectedColor.z*255)
-		}
-		self.TriCount = self.TriCount + 1
-
-		colVec = render.ComputeLighting( CurLeft.pos, CurLeft.norm )
-		colVec = colVec + render.GetAmbientLightColor()
-		colVec = colVec + render.ComputeDynamicLighting(CurLeft.pos, CurLeft.norm )
-		self.Vertices[self.TriCount] = { 
-			pos = CurLeft.pos, 
-			normal = CurLeft.norm, 
-			u = OldU,
-			v = OldV,
-			color = Color( colVec.x*SelectedColor.x*255, colVec.y*SelectedColor.y*255, colVec.z*SelectedColor.z*255)
-		}
-		self.TriCount = self.TriCount + 1
-
-		colVec = render.ComputeLighting( NextLeft.pos, NextLeft.norm )
-		colVec = colVec + render.GetAmbientLightColor()
-		colVec = colVec + render.ComputeDynamicLighting(NextLeft.pos, NextLeft.norm )
-		self.Vertices[self.TriCount] = { 
-			pos = NextLeft.pos, 
-			normal = NextLeft.norm, 
-			u = self.TotalU,
-			v = OldV,
-			color = Color( colVec.x*SelectedColor.x*255, colVec.y*SelectedColor.y*255, colVec.z*SelectedColor.z*255)
-		}
-		self.TriCount = self.TriCount + 1
+		table.insert(self.Vertices, Vertex( CurRight.pos, CurRight.norm, OldU, self.TotalV, SelectedColor ))
+		table.insert(self.Vertices, Vertex( CurLeft.pos, CurLeft.norm, OldU, OldV, SelectedColor ))
+		table.insert(self.Vertices, Vertex( NextLeft.pos, NextLeft.norm, self.TotalU, OldV, SelectedColor ))
 
 		//Second tri
-		colVec = render.ComputeLighting( NextLeft.pos, NextLeft.norm )
-		colVec = colVec + render.GetAmbientLightColor()
-		colVec = colVec + render.ComputeDynamicLighting(NextLeft.pos, NextLeft.norm )
-		self.Vertices[self.TriCount] = { 
-			pos = NextLeft.pos, 
-			normal = NextLeft.norm, 
-			u = self.TotalU,
-			v = OldV,
-			color = Color( colVec.x*SelectedColor.x*255, colVec.y*SelectedColor.y*255, colVec.z*SelectedColor.z*255)
-		}
-		self.TriCount = self.TriCount + 1
-
-		colVec = render.ComputeLighting( NextRight.pos, NextRight.norm )
-		colVec = colVec + render.GetAmbientLightColor()
-		colVec = colVec + render.ComputeDynamicLighting(NextRight.pos, NextRight.norm )
-		self.Vertices[self.TriCount] = { 
-			pos = NextRight.pos, 
-			normal = NextRight.norm, 
-			u = self.TotalU,
-			v = self.TotalV,
-			color = Color( colVec.x*SelectedColor.x*255, colVec.y*SelectedColor.y*255, colVec.z*SelectedColor.z*255)
-		}
-		self.TriCount = self.TriCount + 1
-
-		colVec = render.ComputeLighting( CurRight.pos, CurRight.norm )
-		colVec = colVec + render.GetAmbientLightColor()
-		colVec = colVec + render.ComputeDynamicLighting(CurRight.pos, CurRight.norm )
-		self.Vertices[self.TriCount] = { 
-			pos = CurRight.pos, 
-			normal = CurRight.norm, 
-			u = OldU,
-			v = self.TotalV,
-			color = Color( colVec.x*SelectedColor.x*255, colVec.y*SelectedColor.y*255, colVec.z*SelectedColor.z*255)
-		}
-		self.TriCount = self.TriCount + 1
+		table.insert(self.Vertices, Vertex( NextLeft.pos, NextLeft.norm, self.TotalU, OldV, SelectedColor ))
+		table.insert(self.Vertices, Vertex( NextRight.pos, NextRight.norm, self.TotalU, self.TotalV, SelectedColor ))
+		table.insert(self.Vertices, Vertex( CurRight.pos, CurRight.norm, OldU, self.TotalV, SelectedColor ))
 
 		OldV = NewV
 		

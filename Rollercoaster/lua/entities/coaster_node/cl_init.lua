@@ -599,7 +599,9 @@ function ENT:UpdateClientMesh()
 		local generated = nil
 
 		if track then
+			self.PreviousTrackClass = self.TrackClass
 			self.TrackClass = track
+
 
 			print("Compiling with GenType: " .. EnumNames.Tracks[gentype] )
 
@@ -1053,8 +1055,10 @@ function ENT:DrawRailMesh()
 	//Set their colors
 	local r, g, b = self:GetTrackColor()
 
-	if self.TrackClass && self.TrackMeshes then
+	if self.TrackClass && self.TrackMeshes && !self.BuildingMesh then
 		self.TrackClass:Draw( self, self.TrackMeshes )
+	elseif self.BuildingMesh && self.PreviousTrackClass && self.TrackMeshes then
+		self.PreviousTrackClass:Draw( self, self.TrackMeshes )
 	end
 	
 end
