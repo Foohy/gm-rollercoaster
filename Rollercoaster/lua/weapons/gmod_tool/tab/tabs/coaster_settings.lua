@@ -127,7 +127,8 @@ function TAB:BuildPanel( )
 		local trackConVar = GetConVar("coaster_supertool_tab_track_settings_tracktype" )
 
 		if trackConVar && trackConVar:GetInt() > 0 then
-			ComboBox:ChooseOptionID( trackConVar:GetInt() )
+			local int = trackConVar:GetInt() 
+			ComboBox:ChooseOptionID( int < #ComboBox.Data and int or COASTER_TRACK_METAL )
 			RunConsoleCommand("coaster_supertool_tab_track_settings_tracktype", trackConVar:GetInt() ) //Default to normal
 		else
 			ComboBox:ChooseOptionID( COASTER_TRACK_METAL )
