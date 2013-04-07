@@ -251,14 +251,16 @@ usermessage.Hook("Coaster_invalidateall", function( um )
 	local self = um:ReadEntity()
 	if !IsValid( self ) || !self.IsController || !self:IsController() then return end
 
+
+	self:RefreshClientSpline()
+	self:SupportFullUpdate()
+	self:UpdateClientsidePhysics()
+
 	for k, v in pairs( self.Nodes ) do
 		v.Invalidated = true
 		self:InvalidatePhysmesh(k)
 
 	end
-	self:RefreshClientSpline()
-	self:SupportFullUpdate()
-	self:UpdateClientsidePhysics()
 
 	if self.BuildingMesh || GetConVarNumber("coaster_autobuild") == 1 then
 		self:SoftUpdateMesh()

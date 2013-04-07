@@ -172,16 +172,14 @@ if SERVER then
 	end )
 
 	//Tell newly joining players to update their shit
-	hook.Add( "PlayerInitialSpawn", "UpdateWithAllTracks", function( ply )
-		timer.Simple( 5, function() //is there a hook when the player is able to receive umsgs?
-			for k, v in pairs( ents.FindByClass("coaster_node") ) do
-				if IsValid( v ) && v:IsController() then
-					umsg.Start("Coaster_invalidateall", ply)
-						umsg.Entity(v)
-					umsg.End()
-				end
+	hook.Add( "PlayerAuthed", "UpdateWithAllTracks", function( ply )
+		for k, v in pairs( ents.FindByClass("coaster_node") ) do
+			if IsValid( v ) && v:IsController() then
+				umsg.Start("Coaster_invalidateall", ply)
+					umsg.Entity(v)
+				umsg.End()
 			end
-		end )
+		end
 	end )
 
 	//Be 1000% sure cart dummies are NEVER left over after their train has since exploded
