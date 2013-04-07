@@ -194,8 +194,10 @@ function TAB:Reload( trace, tool )
 		RunConsoleCommand("coaster_supertool_tab_node_creator_id", ID )
 		RunConsoleCommand("coaster_supertool_tab_node_creator_bank", Bank )
 
-		ply:SendLua("GAMEMODE:AddNotify( 'Retreived settings from node!', NOTIFY_GENERIC, 4 ); surface.PlaySound( 'ambient/water/drip'..math.random(1, 4)..'.wav' )")
-
+		if IsValid( ply ) && ply.SendLua then
+			ply:SendLua("GAMEMODE:AddNotify( 'Retreived settings from node!', NOTIFY_GENERIC, 4 ); surface.PlaySound( 'ambient/water/drip'..math.random(1, 4)..'.wav' )")
+		end
+		
 		return true
 	end
 end
