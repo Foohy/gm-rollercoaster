@@ -311,7 +311,7 @@ if CLIENT then
 				found[v:GetCoasterID()] = v
 			end
 		end
-		PrintTable( found )
+
 		for k, v in pairs( found ) do
 			if !IsValid( v ) || !v.GetController || !v:GetController() then continue end
 
