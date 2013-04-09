@@ -262,7 +262,7 @@ usermessage.Hook("Coaster_invalidateall", function( um )
 
 	end
 
-	if self.BuildingMesh || GetConVarNumber("coaster_autobuild") == 1 then
+	if self.BuildingMesh || GetConVarNumber("coaster_autobuild") == 1 && self.SoftUpdateMesh then
 		self:SoftUpdateMesh()
 	end
 end )
@@ -313,7 +313,7 @@ usermessage.Hook("Coaster_AddNode", function( um )
 
 		self:SupportFullUpdate()
 
-		if self.BuildingMesh || GetConVarNumber("coaster_autobuild") == 1 then
+		if self.BuildingMesh || GetConVarNumber("coaster_autobuild") == 1 && self.SoftUpdateMesh then
 			self:SoftUpdateMesh()
 		end
 	end
@@ -330,7 +330,7 @@ usermessage.Hook("Coaster_nodeinvalidate", function( um )
 		self:UpdateClientsidePhysics()
 	end
 
-	if self.BuildingMesh || GetConVarNumber("coaster_autobuild") == 1 then
+	if self.BuildingMesh || GetConVarNumber("coaster_autobuild") == 1 && self.SoftUpdateMesh then
 		self:SoftUpdateMesh()
 	end
 end )
@@ -572,8 +572,6 @@ end
 
 //This baby is what builds the clientside mesh. It's really complicated.
 function ENT:UpdateClientMesh()
-	print("Building clientside mesh...")
-
 	//Make sure we have the most up to date version of the track
 	self:RefreshClientSpline()
 
@@ -603,9 +601,6 @@ function ENT:UpdateClientMesh()
 		if track then
 			self.PreviousTrackClass = self.TrackClass
 			self.TrackClass = track
-
-
-			print("Compiling with GenType: " .. EnumNames.Tracks[gentype] )
 
 			-- Create our coroutine thread that'll generate our mesh
 			self.GeneratorThread = coroutine.create( self.TrackClass.Generate )
@@ -684,11 +679,6 @@ end
 function ENT:DrawTrack()
 	if self.CatmullRom == nil then return end //Shit
 	if #self.CatmullRom.PointsList > 3 then
-
-		-- Check if we're coroutining, and resume if neccessary
-		if self.BuildingMesh && type(self.GeneratorThread) == "thread" && coroutine.status( self.GeneratorThread ) == "suspended" && !self.WasBeingHeld then
-			assert(coroutine.resume(self.GeneratorThread, self.TrackClass, self ))
-		end 
 
 		render.SetMaterial( mat_debug )
 		self:DrawRailMesh()
@@ -1298,7 +1288,7 @@ function ENT:Think()
 				self:SupportFullUpdate() //Update all of the nodes when we let go of the node
 
 				-- If we were in the middle the build process, it's probably all bunked up
-				if self.BuildingMesh || GetConVarNumber("coaster_autobuild") == 1 then
+				if self.BuildingMesh || GetConVarNumber("coaster_autobuild") == 1 && self.SoftUpdateMesh then
 					self:SoftUpdateMesh()
 				end
 			end

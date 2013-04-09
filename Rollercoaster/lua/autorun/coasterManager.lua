@@ -328,7 +328,7 @@ if CLIENT then
 	end
 	hook.Add( "GetMotionBlurValues", "Coaster_motionblur", GetMotionBlurValues )
 
-	//Every little bit update the clientside 'tracklist' of tracks to update/draw/etc.
+	-- Every little bit update the clientside 'tracklist' of tracks to update/draw/etc so we're not looping through a potentially massive entity list to draw
 	local CoasterUpdateTrackTime = 0
 	hook.Add( "Think", "CoasterCacheTracks", function()
 		if CurTime() > CoasterUpdateTrackTime then
@@ -344,12 +344,24 @@ if CLIENT then
 		end
 	end )
 
-	//Track rendering. Renders meshes
+	-- Track rendering. Renders meshes, wheels, chains, etc.
 	hook.Add( "PreDrawOpaqueRenderables", "CoasterDrawTrack", function()
 		for k, v in pairs( CoasterTracks ) do
 			if IsValid( v ) then
 				v:DrawTrack()
 			end
+		end
+	end )
+
+	-- Hook to update coroutines for currently building tracks
+	hook.Add("Think", "CoasterStepforwardTrackGen", function()	
+		for k, v in pairs( CoasterTracks ) do
+			if IsValid( v ) then
+				-- Check if we're coroutining, and resume if neccessary
+				if v.BuildingMesh && type(v.GeneratorThread) == "thread" && coroutine.status( v.GeneratorThread ) == "suspended" && !v.WasBeingHeld then
+					assert(coroutine.resume(v.GeneratorThread, v.TrackClass, v ))
+				end
+			end 
 		end
 	end )
 
