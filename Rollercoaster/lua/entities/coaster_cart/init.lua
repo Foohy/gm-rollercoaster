@@ -152,7 +152,7 @@ function ENT:OffDaRailz(safemode)
 					end
 				end
 			end
-			if #self.CartTable == 1 then 
+			if #self.CartTable == 1 && IsValid(self.CartTable[1]) then 
 				self.CartTable[1]:Remove() 
 			end
 			self.CartTable = nil
@@ -629,9 +629,9 @@ end
 //Get if any carts are on a specific node type
 function ENT:TrainOnType( ENUM_TYPE )
 	for k, v in pairs(self.CartTable) do
-		local node = v:GetCurrentNode()
+		local node = v.GetCurrentNode && v:GetCurrentNode() or nil
 		if IsValid( node ) then 
-			if node:GetType() == ENUM_TYPE then return true end
+			if node.GetType && node:GetType() or -1 == ENUM_TYPE then return true end
 		end
 	end
 
@@ -730,7 +730,7 @@ function ENT:ChainThink()
 	if self.CartTable[1] == self then
 		for k, v in pairs(self.CartTable) do
 
-			local node = v:GetCurrentNode()
+			local node = v.GetCurrentNode && v:GetCurrentNode() or nil
 			if IsValid( node ) && node.GetType && node:GetType() == COASTER_NODE_CHAINS then
 				OnChain = true
 				ChainSpeed = node.ChainSpeed

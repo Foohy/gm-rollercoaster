@@ -153,7 +153,13 @@ end
 //END OF 'SHARED' FUNCTIONS
 ////////////////////////////////////////////////////////
 
-
+local function AddNotify( text, type, time )
+	if GAMEMODE && GAMEMODE.AddNotify then
+		GAMEMODE:AddNotify( text, type, time )
+	else
+		print( text )
+	end
+end
 
 
 
@@ -269,7 +275,7 @@ end )
 
 usermessage.Hook("Coaster_CartFailed", function( um )
 	local needed = um:ReadChar() or 0
-	GAMEMODE:AddNotify("Need " .. needed .. " more nodes to create track!", NOTIFY_ERROR, 3 )
+	AddNotify("Need " .. needed .. " more nodes to create track!", NOTIFY_ERROR, 3 )
 end )
 
 usermessage.Hook("Coaster_AddNode", function( um )
@@ -541,7 +547,7 @@ concommand.Add("coaster_update_mesh", function()
 			v:UpdateClientMesh()
 		end
 	end
-	GAMEMODE:AddNotify( "Updated rollercoaster mesh", NOTIFY_GENERIC, 4 )
+	AddNotify( "Updated rollercoaster mesh", NOTIFY_GENERIC, 4 )
 end )
 
 //Make doubly sure our client is up to date
