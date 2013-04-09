@@ -305,27 +305,15 @@ if CLIENT then
 		panel:Clear()
 
 		local found = {}
-		local exists = false
-		local coasterid = "dicks"
 
 		for k, v in pairs( ents.FindByClass("coaster_node") ) do
-			exists = false
-			if IsValid( v ) && v.GetCoasterID then coasterid = v:GetCoasterID() end
-
-			for m, t in pairs( found ) do
-				if coasterid == m then 
-					exists = true
-					continue
-				end
-			end
-
-			if !exists then
-				found[coasterid] = v
+			if IsValid( v ) && v.GetCoasterID && v.IsController && v:IsController() then
+				found[v:GetCoasterID()] = v
 			end
 		end
-
+		PrintTable( found )
 		for k, v in pairs( found ) do
-			if !IsValid( v ) || !v.GetController then continue end
+			if !IsValid( v ) || !v.GetController || !v:GetController() then continue end
 
 			btn = vgui.Create("DProgressButton", panel )
 			btn:SetText( "Build" )

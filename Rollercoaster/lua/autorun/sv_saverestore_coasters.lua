@@ -40,7 +40,8 @@ local function ReconstructCoaster(coasterID, owner, Controller )
 	if !IsValid( Controller ) || !unsortedNodes || #unsortedNodes < 4 then return end -- Awww you suck
 	
 	if game.SinglePlayer() then
-		Controller:SetOwner( Entity(1) ) -- If it's singleplayer, the player owns this save
+		local ply = #player.GetAll() > 0 && player.GetAll()[1] or Entity(1)
+		Controller:SetOwner( ply ) -- If it's singleplayer, the player owns this save
 	elseif IsValid( owner ) then
 		Controller:SetOwner( owner )
 	end
