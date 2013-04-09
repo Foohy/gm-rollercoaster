@@ -43,8 +43,10 @@ function LoadClasses()
 end
 
 function Register( name, class )
-	class.LastItem = 0
-	List[ name ] = class
+	if name && class then
+		class.LastItem = 0
+		List[ name ] = class
+	end
 end
 
 function GetStatic( name )
@@ -52,7 +54,7 @@ function GetStatic( name )
 end
 
 function Get( name )
-	return List[ name ]:Create()
+	return List[ name ] && List[ name ].Create && List[ name ]:Create()
 end
 
 function GetRandom()

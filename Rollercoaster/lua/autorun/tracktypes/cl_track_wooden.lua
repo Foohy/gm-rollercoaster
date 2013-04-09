@@ -1,6 +1,7 @@
 include("autorun/sh_enums.lua")
 
-local TRACK = TRACK:Create()
+local TRACK = TRACK && TRACK:Create()
+if !TRACK then return end
 
 TRACK.Name = "Wooden Track"
 TRACK.Description = "A wooden track"

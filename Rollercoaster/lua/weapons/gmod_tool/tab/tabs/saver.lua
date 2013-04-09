@@ -618,7 +618,8 @@ function GeneratePreview( positions_tbl )
 	local Radius = 18
 	local modelCount = 1 
 
-	Cylinder.Start( Radius, 6 ) //We're starting up making a beam of cylinders
+	local Cylinder = Cylinder:Create()
+	Cylinder.Count = 6
 
 	local LastAngle = Angle( 0, 0, 0 )
 	local ThisAngle = Angle( 0, 0, 0 )
@@ -640,12 +641,12 @@ function GeneratePreview( positions_tbl )
 
 		if i==1 then LastAngle = ThisAngle end
 
-		Cylinder.AddBeam(ThisPos, LastAngle, NextPos, ThisAngle, Radius )
+		Cylinder:AddBeam(ThisPos, LastAngle, NextPos, ThisAngle, Radius )
 
 		LastAngle = ThisAngle
 	end
 
-	local Verts = Cylinder.EndBeam()
+	local Verts = Cylinder:EndBeam()
 
 	coaster_saver_preview_trackmesh = Mesh()
 	coaster_saver_preview_trackmesh:BuildFromTriangles( Verts )

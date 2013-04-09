@@ -1,8 +1,8 @@
 include("autorun/sh_enums.lua")
 include( "autorun/mesh_beams.lua")
 
-local TRACK = TRACK:Create()
-
+local TRACK = TRACK && TRACK:Create()
+if !TRACK then return end
 
 TRACK.Name = "Metal Track"
 TRACK.Description = "A nice metal coaster"
@@ -33,6 +33,10 @@ function TRACK:Generate( controller )
 
 	local LastAng = nil
 	for i = 1, #controller.CatmullRom.Spline do
+		-- Double check things
+		if #controller.CatmullRom.PointsList < 4 or #controller.CatmullRom.Spline < 4 then continue end 
+
+
 		local NexterSegment = controller.Nodes[ controller:GetSplineSegment(i) + 2]
 		local NextSegment = controller.Nodes[controller:GetSplineSegment(i) + 1]
 		local ThisSegment = controller.Nodes[ controller:GetSplineSegment(i) ]
@@ -156,7 +160,7 @@ function TRACK:Generate( controller )
 		local ang = controller:AngleAt(CurSegment, Percent)
 
 		//Change the roll depending on the track
-		local Roll = -Lerp( Percent, math.NormalizeAngle( CurNode:GetRoll() ), NextNode:GetRoll())	
+		local Roll = (IsValid(CurNode) && IsValid(NextNode)) && -Lerp( Percent, math.NormalizeAngle( CurNode:GetRoll() ), NextNode:GetRoll()) or 0
 		
 		//Set the roll for the current track peice
 		ang.r = Roll
