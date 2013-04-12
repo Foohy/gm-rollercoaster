@@ -463,6 +463,11 @@ function ENT:RefreshClientSpline()
 	//Empty all current splines and nodes
 	self.CatmullRom:Reset()
 	table.Empty( self.Nodes )
+
+	-- If we were in the middle of building the track, tell it to queue the build again
+	if self.BuildingMesh then
+		self:SoftUpdateMesh()
+	end
 	
 	//Set ourselves as the first node as we're used to calculate the track's spline
 	self.CatmullRom:AddPointAngle( 1, self:GetPos(), self:GetAngles(), 1.0 ) 
@@ -572,6 +577,7 @@ end
 -- Create a 'queue' that the mesh needs to be built, and wait a second before actually starting to build it
 -- Makes it so there isn't a noticable freeze when spawning nodes with coaster_autobuild 1
 function ENT:SoftUpdateMesh()
+	self.GeneratorThread = nil -- Remove all progress if we were currently generating
 	self.BuildQueued = true 
 	self.BuildAt = CurTime() + 1 -- TODO: Make this time customizable
 end
