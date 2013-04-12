@@ -35,6 +35,7 @@ function TRACK:Generate( controller )
 	for i = 1, #controller.CatmullRom.Spline do
 		-- Double check things
 		if #controller.CatmullRom.PointsList < 4 or #controller.CatmullRom.Spline < 4 then continue end 
+		if !controller.CatmullRom.PointsList[ #controller.CatmullRom.PointsList ] then continue end 
 
 
 		local NexterSegment = controller.Nodes[ controller:GetSplineSegment(i) + 2]
