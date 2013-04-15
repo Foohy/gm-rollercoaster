@@ -101,12 +101,10 @@ end
 
 function ENT:SetCoasterID( id )
 	self.dt.CoasterID = id
-	//self:SetNetworkedString("CoasterID", id )
 end
 
 function ENT:GetCoasterID()
 	return self.dt.CoasterID;
-	//return self:GetNetworkedString("CoasterID")
 end
 
 function ENT:SetRoll(roll) //Not to be confused with CLuaParticle.SetRoll()
@@ -552,7 +550,7 @@ concommand.Add("coaster_update_mesh", function()
 			v:UpdateClientMesh()
 		end
 	end
-	AddNotify( "Updated rollercoaster mesh", NOTIFY_GENERIC, 4 )
+	AddNotify( "Updated rollercoaster meshes", NOTIFY_GENERIC, 4 )
 end )
 
 //Make doubly sure our client is up to date
@@ -579,6 +577,7 @@ end
 function ENT:SoftUpdateMesh()
 	self.GeneratorThread = nil -- Remove all progress if we were currently generating
 	self.BuildQueued = true 
+	self.BuildingMesh = false
 	self.BuildAt = CurTime() + 1 -- TODO: Make this time customizable
 end
 
@@ -676,15 +675,6 @@ end
 
 local nodeType = nil
 local CTime = 0
-
-local function foo()
-	for i = 0, 10 do
-		print( i )
-		if i == 5 then
-			coroutine.yield()
-		end
-	end
-end
 
 //Main function for all track rendering
 //track preview beams, track mesh
@@ -1291,6 +1281,10 @@ function ENT:Think()
 				if !IsValid( v.SupportModelBase ) then v.SupportModelBase = ClientsideModel( "models/sunabouzu/coaster_base.mdl" ) end
 			end
 
+			-- If we were in the middle the build process, it's probably all bunked up
+			if self.BuildQueued || GetConVarNumber("coaster_autobuild") == 1 && self.SoftUpdateMesh then
+				self:SoftUpdateMesh()
+			end
 
 			break //We really only need to do this once, not on a per segment basis.
 		elseif (k == #self.Nodes ) then
@@ -1298,11 +1292,6 @@ function ENT:Think()
 				self.WasBeingHeld = false
 				for _, node in pairs( self.Nodes ) do node.WasBeingHeld = false end
 				self:SupportFullUpdate() //Update all of the nodes when we let go of the node
-
-				-- If we were in the middle the build process, it's probably all bunked up
-				if self.BuildingMesh || GetConVarNumber("coaster_autobuild") == 1 && self.SoftUpdateMesh then
-					self:SoftUpdateMesh()
-				end
 			end
 		end
 	end
