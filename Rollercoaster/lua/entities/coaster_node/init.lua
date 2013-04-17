@@ -192,8 +192,10 @@ function ENT:Initialize()
 	self.CatmullRom = CoasterManager.Controller:New( self )
 	self.CatmullRom:Reset()
 
-	//Set the default color value for the track color
-	self:SetTrackColor( 255, 255, 255 )
+	local col = self:GetTrackColor()
+	if col.r == 0 && col.g == 0 && col.b == 0 then
+		self:SetTrackColor( 255, 255, 255 )
+	end
 
 end
 
@@ -216,8 +218,6 @@ function ENT:AddNodeSimple( ent, ply ) //For use when being spawned by a file
 
 		if IsValid( self.Nodes[ index - 1] ) then
 			self.Nodes[index - 1]:SetNextNode( ent )
-		else
-			print("oh god: ".. index)
 		end
 
 		// First node is the node after the controller
