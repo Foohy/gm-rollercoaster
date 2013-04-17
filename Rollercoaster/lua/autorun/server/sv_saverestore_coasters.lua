@@ -252,5 +252,11 @@ function meta:SetPersistent( bool )
 				oldSetPersistent( v, bool )
 			end
 		end
+
+		for k, v in pairs( ents.FindByClass("coaster_physmesh")) do
+			if IsValid( v ) && v.GetCoasterID && v:GetCoasterID() == self:GetCoasterID() then
+				oldSetPersistent( v, bool )
+			end
+		end
 	end
 end

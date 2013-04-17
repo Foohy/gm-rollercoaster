@@ -35,6 +35,11 @@ function ENT:Initialize()
 	end )
 end
 
+function ENT:GetCoasterID()
+	local ctrl = self:GetController()
+	return IsValid( ctrl ) && ctrl.GetCoasterID && ctrl:GetCoasterID() or -1 
+end
+
 //Build the mesh for the specific segment
 //This function is NOT controller only, call it on the segment you want to update the mesh on
 function ENT:BuildMesh()
