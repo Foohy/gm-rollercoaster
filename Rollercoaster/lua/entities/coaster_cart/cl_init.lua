@@ -166,7 +166,7 @@ hook.Add("Think", "coaster_cart_screenshake", function()
 		-- Shake according to distance and speed of nearby carts
 		local cart = closestcart( ply:GetPos() )
 		if IsValid( cart ) then
-			amp = math.Clamp( (cart:GetVelocity():Length() / ply:GetPos():Distance( cart:GetPos() ) * 0.1 ), 0, 2000 ) * cart.Multiplier
+			amp = math.Clamp( (cart:GetVelocity():Length() / ply:GetPos():Distance( cart:GetPos() ) * 0.1 ), 0, 2000 ) * ( cart.Multiplier or 1 )
 			if amp < 0.55 then amp = 0 end //So we don't have a bunch of tiny rumbles
 		end
 	end
