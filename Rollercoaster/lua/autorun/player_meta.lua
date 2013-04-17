@@ -78,3 +78,12 @@ function meta:Scream()
 	self:ViewPunch( Angle( -5, 0, 0 ) )
 	self:EmitSound( table.Random( Screams ), 100, 100 )
 end
+
+function meta:InRollercoaster()
+	if !IsValid( self ) || !self:InVehicle() then return false end
+
+	local pod = self:GetVehicle()
+	if !IsValid( pod ) || !IsValid( pod:GetParent() ) || pod:GetParent():GetClass() != "coaster_cart" then return false end
+
+	return true
+end

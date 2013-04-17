@@ -117,20 +117,6 @@ function ENT:Think()
 		end
 
 	end
-	
-	//I have no idea, I just threw these values in
-	local amp = 0
-	if LocalPlayer():InVehicle() then
-		amp = math.Clamp( self:GetVelocity():Length() / 1000, 0, 32 )
-		if amp < 0.15 then amp = 0 end //So we don't have a bunch of tiny rumbles
-	else
-		//amp = math.Clamp(  / 0.01, 0, 32 )
-		amp = math.Clamp( self:GetVelocity():Length() / LocalPlayer():GetPos():Distance( self:GetPos() ) *0.1, 0, 2000 )
-		if amp < 0.55 then amp = 0 end //So we don't have a bunch of tiny rumbles
-	end
-	amp = amp * self.ShakeMultiplier
-	util.ScreenShake( LocalPlayer():GetPos(), amp, 300, 0.10, 300 )
-
 end
 
 //Remove sounds
@@ -151,14 +137,47 @@ function ENT:OnRemove()
 	end
 end
 
+local function closestcart( pos )
+	local winDist = math.huge 
+	local winner = nil 
+
+	local carts = ents.FindByClass("coaster_cart")
+	for _, v in pairs( carts ) do
+		local dist = v:GetPos():Distance( pos ) 
+		if IsValid( v ) && dist < winDist then
+			winDist = dist
+			winner = v 
+		end
+	end
+
+	return winner
+end
+
+hook.Add("Think", "coaster_cart_screenshake", function()
+	local ply = LocalPlayer()
+	if !IsValid( ply ) then return end 
+
+	local amp = 0
+	if ply:InRollercoaster() then
+		-- Shake according to the speed of the cart
+		amp = math.Clamp( ply:GetVelocity():Length() / 2000 - 0.10, 0, 32 ) 
+		if amp < 0.15 then amp = 0 end --So we don't have a bunch of tiny rumbles
+	else 
+		-- Shake according to distance and speed of nearby carts
+		local cart = closestcart( ply:GetPos() )
+		if IsValid( cart ) then
+			amp = math.Clamp( (cart:GetVelocity():Length() / ply:GetPos():Distance( cart:GetPos() ) * 0.1 ), 0, 2000 ) * cart.Multiplier
+			if amp < 0.55 then amp = 0 end //So we don't have a bunch of tiny rumbles
+		end
+	end
+
+	util.ScreenShake( ply:GetPos(), amp, 300, 0.10, 300 )
+end )
 
 //There isn't a way to equip a swep while in a vehicle
 //And there isn't a way to hook into mouse pressing for none-HUD things
 hook.Add("PlayerBindPress", "Coaster_cart_events", function( ply, bind, pressed )
-	if !IsValid( ply ) || !ply:InVehicle() then return end
-
-	local pod = ply:GetVehicle()
-	if !IsValid( pod ) || !IsValid( pod:GetParent() ) || pod:GetParent():GetClass() != "coaster_cart" then return end
+	if !IsValid( ply ) || !ply:InRollercoaster() then return end
 
 	local ShouldVomit = string.find(bind, "+attack2")
 	local ShouldScream = string.find(bind, "+attack")
