@@ -27,7 +27,9 @@ ENT.NodeModel			= Model( "models/hunter/misc/sphere075x075.mdl" )
 
 
 
-
+duplicator.RegisterEntityModifier("rollercoaster_node_order", function( ply, ent, data )
+	duplicator.StoreEntityModifier( ent, "rollercoaster_node_order", data )
+end )
 ////////////////////////////////////////////////////////
 //Recreate the shared functions on the client, since MANY times they'll be called before shared.lua is included
 //This is incredibly annoying
@@ -133,19 +135,23 @@ function ENT:GetSupportColor()
 end
 
 function ENT:SetOrder( num )
-	self.dt.Order = num
+	local data = self.EntityMods && self.EntityMods["rollercoaster_node_order"] or {}
+	data.Order = num 
+	duplicator.StoreEntityModifier( self, "rollercoaster_node_order", data)
 end
 
 function ENT:GetOrder()
-	return self.dt.Order;
+	return istable(self.EntityMods) && self.EntityMods["rollercoaster_node_order"] && self.EntityMods["rollercoaster_node_order"].Order or self.dt.Order or -1
 end
 
 function ENT:SetNumCoasterNodes( num )
-	self.dt.NumCoasterNodes = num 
+	local data = self.EntityMods && self.EntityMods["rollercoaster_node_order"] or {}
+	data.Total = num 
+	duplicator.StoreEntityModifier( self, "rollercoaster_node_order", data)
 end
 
 function ENT:GetNumCoasterNodes()
-	return self.dt.NumCoasterNodes
+	return istable(self.EntityMods) && self.EntityMods["rollercoaster_node_order"] && self.EntityMods["rollercoaster_node_order"].Total or self.dt.NumCoasterNodes or -1
 end
 
 
@@ -210,6 +216,8 @@ function ENT:AddNodeSimple( ent, ply ) //For use when being spawned by a file
 
 		if IsValid( self.Nodes[ index - 1] ) then
 			self.Nodes[index - 1]:SetNextNode( ent )
+		else
+			print("oh god: ".. index)
 		end
 
 		// First node is the node after the controller

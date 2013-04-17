@@ -1,6 +1,4 @@
-if CLIENT then return end
 local UnconstructedCoasters = {}
-UnconstructedCoasters.ID = {}
 
 local function NumUnconstructedNodes( coasterID )
 	local num = 0
@@ -32,6 +30,18 @@ local function GetControllerByID( coasterID )
 	end
 
 	return nil
+end
+
+local function AllNodesAreValid( nodelist )
+	local valid = true
+	for k, v in pairs( nodelist ) do
+		if !IsValid( v ) then 
+			print("BAD NODE: " .. tostring( v ) .. " at index " .. k)
+			valid = false
+		end
+	end
+
+	return valid
 end
 
 local function ReconstructCoaster(coasterID, owner, Controller )
@@ -96,8 +106,16 @@ local function ReconstructCoaster(coasterID, owner, Controller )
 end
 
 duplicator.RegisterEntityClass("coaster_node", function( ply, data )
+
 	local node = duplicator.GenericDuplicatorFunction( ply, data )
 	local ID = node:GetCoasterID()
+
+	-- Make completely sure this list is empty before we start storing stuff in it
+	-- Kinda hacky but there isn't really a nice hook to clear it elsewhere
+	if CurTime() != UnconstructedCoasters.BuildTime then
+		UnconstructedCoasters = {}
+		UnconstructedCoasters.BuildTime = CurTime()
+	end
 
 	if !UnconstructedCoasters[ ID ] then
 		UnconstructedCoasters[ ID ] = {}
@@ -108,7 +126,7 @@ duplicator.RegisterEntityClass("coaster_node", function( ply, data )
 	local Controller = GetControllerByID( ID )
 
 	-- A controller has been spawned, and we have the same number nodes spawned as when we were saved
-	if IsValid( Controller ) && NumUnconstructedNodes( ID ) == Controller:GetNumCoasterNodes() then
+	if IsValid( Controller ) && NumUnconstructedNodes( ID ) == Controller:GetNumCoasterNodes() && AllNodesAreValid(UnconstructedCoasters[ ID ]) then
 		print("Beginning coaster rebuilding")
 		ReconstructCoaster( ID, ply, Controller  )
 		UnconstructedCoasters[ID] = nil

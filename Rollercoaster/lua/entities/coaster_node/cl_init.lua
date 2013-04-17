@@ -1,8 +1,6 @@
 include( "shared.lua" )
 include( "autorun/mesh_beams.lua")
 
-ENT.Spacing = 30 //How many units away each wood track is
-ENT.TrackModel = Model("models/props_debris/wood_board06a.mdl")
 ENT.PoleHeight = 512 //How tall, in source units, the coaster support poles are
 ENT.BaseHeight = 38 //How tall, in source units, the coaster base is
 ENT.BuildingMesh = false //Are we currently building a mesh? if so, don't draw them
@@ -129,22 +127,6 @@ end
 
 function ENT:GetSupportColor() 
 	return self.dt.SupportColor.x, self.dt.SupportColor.y, self.dt.SupportColor.z 
-end
-
-function ENT:SetOrder( num )
-	self.dt.Order = num
-end
-
-function ENT:GetOrder()
-	return self.dt.Order;
-end
-
-function ENT:GetNumNodes()
-	return self.dt.NumCoasterNodes
-end
-
-function ENT:SetNumNodes( num )
-	self.dt.NumCoasterNodes = num 
 end
 
 ////////////////////////////////////////////////////////
@@ -458,7 +440,7 @@ end
 //Refresh the client spline for track previews and mesh generation
 function ENT:RefreshClientSpline()
 
-	//Empty all current splines and nodes
+	--Empty all current splines and nodes
 	self.CatmullRom:Reset()
 	table.Empty( self.Nodes )
 
@@ -467,7 +449,7 @@ function ENT:RefreshClientSpline()
 		self:SoftUpdateMesh()
 	end
 	
-	//Set ourselves as the first node as we're used to calculate the track's spline
+	--Set ourselves as the first node as we're used to calculate the track's spline
 	self.CatmullRom:AddPointAngle( 1, self:GetPos(), self:GetAngles(), 1.0 ) 
 	table.insert( self.Nodes, self )
 	local firstNode = self:GetNextNode()
@@ -486,7 +468,7 @@ function ENT:RefreshClientSpline()
 
 	if !IsValid(node) then return end
 
-	//Recurse through all the nodes, adding them, until they are no longer valid
+	--Recurse through all the nodes, adding them, until they are no longer valid
 	local amt = 3
 	local End = false
 	repeat
@@ -507,11 +489,11 @@ function ENT:RefreshClientSpline()
 		end
 	until (!IsValid(node) || !node.IsController || node:IsController() || node == firstNode || End)
 
-	//If there are enough nodes (4 for catmull-rom), calculate the curve
+	--If there are enough nodes (4 for catmull-rom), calculate the curve
 	if #self.CatmullRom.PointsList > 3 then
 		self.CatmullRom:CalcEntireSpline()
 
-		//And the clientside mesh
+		--And the clientside mesh
 		self:UpdateClientsidePhysics()
 		self:SupportFullUpdate()
 	end

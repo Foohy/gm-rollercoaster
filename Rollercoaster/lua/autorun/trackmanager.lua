@@ -1,4 +1,4 @@
-
+AddCSLuaFile()
 module( "trackmanager", package.seeall )
 
 

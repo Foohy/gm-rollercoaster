@@ -18,13 +18,15 @@ function ENT:SetupDataTables()
 	self:DTVar("Entity", 1, "Controller")
 	self:DTVar("Int", 0, "Type")
 	self:DTVar("Int", 1, "TrackType")
-	self:DTVar("Int", 2, "Order") //Hack. Store the index of this node in the list so it can later be reconstructed
-	self:DTVar("Int", 3, "NumCoasterNodes") //Hack. Store the total number of nodes
+	self:DTVar("Int", 2, "Order") -- Backwards compatability 
+	self:DTVar("Int", 3, "NumCoasterNodes") -- Backwards compatability
 	self:DTVar("Float", 0, "Roll")
 	self:DTVar("Vector", 0, "TrackColor")
 	self:DTVar("Vector", 1, "SupportColor")
-
-	//self:SetNetworkedString( "CoasterID", "")//The string is STEAMID_ID (ex: STEAM_0:1:18712009_3 )
-	self:DTVar("String", 0, "CoasterID") 
+	self:DTVar("String", 0, "CoasterID") --The string is STEAMID_ID (ex: STEAM_0:1:18712009_3 )
 end
 
+-- The clients should always know about the nodes
+function ENT:UpdateTransmitState()
+	return TRANSMIT_ALWAYS
+end
