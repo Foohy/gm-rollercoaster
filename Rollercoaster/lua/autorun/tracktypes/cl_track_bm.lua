@@ -546,26 +546,14 @@ function TRACK:Generate( Controller )
 	-- return Sections
 end
 
-function TRACK:Draw( Controller, Sections )
-	if !IsValid( Controller ) || !Controller:IsController() then return end
-
-	if !Sections || #Sections < 1 then return end
+function TRACK:Draw()
 
 	-- Draw the rails (side, center)
 	render.SetMaterial(self.Material)
-	for k, v in pairs( Sections[1] ) do
-		if v then 
-			v:Draw() 
-		end
-	end
+	self:DrawSection( 1 )
 
 	-- Draw the center struts
-	//render.SetMaterial(self.StrutMaterial)
-	for k, v in pairs( Sections[2] ) do
-		if v then 
-			v:Draw() 
-		end
-	end
+	self:DrawSection( 2 )
 
 end
 

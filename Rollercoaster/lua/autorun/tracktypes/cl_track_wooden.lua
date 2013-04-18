@@ -595,35 +595,19 @@ function TRACK:Generate( controller )
 	self:CoroutineCheck( controller, 5, Sections )
 end
 
-function TRACK:Draw( controller, Meshes )
-	if !IsValid( controller ) || !controller:IsController() then return end
-
-	if !Meshes || #Meshes < 3 then return end
+function TRACK:Draw()
 
 	-- Metal siderails
 	render.SetMaterial(self.MaterialMetal)
-	for k, v in pairs( Meshes[1] ) do
-		if v then 
-			v:Draw() 
-		end
-	end
+	self:DrawSection( 1 )
 
 	-- Wood beams/supports
 	render.SetMaterial(self.MaterialWood)
-	for k, v in pairs( Meshes[2] ) do
-		if v then 
-			v:Draw() 
-		end
-	end
+	self:DrawSection( 2 )
 
+	-- The flat 'walkable' area that is visible from both sides
 	render.SetMaterial( self.MaterialWoodNocull )
-	for k, v in pairs( Meshes[3] ) do
-		if v then 
-			v:Draw() 
-		end
-	end
-
-
+	self:DrawSection( 3 )
 
 end
 

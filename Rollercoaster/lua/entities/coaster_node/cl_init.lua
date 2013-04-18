@@ -17,10 +17,6 @@ ENT.LastGenTime = 0
 ENT.Nodes = {}
 ENT.CatmullRom = {}
 
-local MatLaser  = Material("cable/hydra")
-local MatCable  = Material("phoenix_storms/stripes") //cable/cable2
-local mat_beam 	= Material("phoenix_storms/metalfloor_2-3")
-local mat_debug	= Material("phoenix_storms/stripes") //models/wireframe // phoenix_storms/stripes
 local mat_chain = Material("sunabouzu/old_chain") //sunabouzu/old_chain
 local mat_debug = Material("foohy/warning")
 
@@ -183,23 +179,8 @@ function ENT:Initialize()
 
 	//Other misc. clientside models that are only used by the controller
 	self.WheelModel	= ClientsideModel( "models/props_vehicles/carparts_wheel01a.mdl")
-
 	self.WheelModel:SetPos( Vector( 100000, 100000, -100000 ) )
 	SetModelScale(self.WheelModel,  Vector( 1.6, 1.6, 1.6))
-
-	//Create the index to hold all compiled track meshes
-	self.TrackMeshes = {}
-
-	//Track material
-	/*
-	self.TrackMaterial = CreateMaterial( "OBJMaterial", "UnlitGeneric", {
-    ["$basetexture"] = "phoenix_storms/metalfloor_2-3k",
-	["$nocull"] = 1,
-	["$translucent"] = 1,
-	["$vertexalpha"] = 1,
-	} )
-	*/
-	self.TrackMaterial = Material( "sunabouzu/coaster_track")
 
 	//Initialize the clientside list of nodes
 	self.Nodes = {}
@@ -207,9 +188,7 @@ function ENT:Initialize()
 	//And create the clientside spline controller to govern drawing the spline
 	self.CatmullRom = {}
 	self.CatmullRom = CoasterManager.Controller:New( self )
-	//self.CatmullRom.STEPS = 20
 	self.CatmullRom:Reset()
-
 
 	//Create a list of invalid physmeshes
 	self.InvalidNodes = {}
@@ -574,32 +553,28 @@ function ENT:UpdateClientMesh()
 	if #self.CatmullRom.PointsList > 3 then
 		self.BuildingMesh = true //Tell the mesh to stop drawing because we're gonna rebuild it
 
-		//Destroy ALL meshes
-		if self.TrackMeshes then
-			for k,v in pairs( self.TrackMeshes ) do
-				for x, y in pairs( v ) do 
-					if IsValid ( y ) then
-						y:Destroy() 
-						y = nil
-					end
-				end
-			end
-		end
-
 		//Get the currently selected node type
 		local gentype = self:GetTrackType()
 		local track = trackmanager.Get(EnumNames.Tracks[gentype])
 		local generated = nil
 
 		if track then
-			self.PreviousTrackClass = self.TrackClass
+
+			-- Tell the last track class to immolate itself, if applicable
+			if self.TrackClass && istable( self.TrackClass.TrackMeshes ) && #self.TrackClass.TrackMeshes > 0 then
+				if self.PreviousTrackClass then
+					self.PreviousTrackClass:Remove()
+				end
+				self.PreviousTrackClass = self.TrackClass
+			end
+
+
 			self.TrackClass = track
 
 			-- Create our coroutine thread that'll generate our mesh
 			self.GeneratorThread = coroutine.create( self.TrackClass.Generate )
 			assert(coroutine.resume(self.GeneratorThread, self.TrackClass, self ))
 
-			-- self.TrackMeshes = self.TrackClass:Generate( self )
 		else
 			print("Failed to use track type \"" .. ( EnumNames.Tracks[gentype] or "Unknown (" .. gentype .. ")" ) .. "\"!" )
 		end
@@ -1025,16 +1000,12 @@ function ENT:DrawSideRail2( segment, offset )
 end
 
 
-//Draw the pre-generated rail mesh
-//I can't easily set the color :( )
+--Draw the pre-generated rail mesh
 function ENT:DrawRailMesh()
-	//Set their colors
-	local r, g, b = self:GetTrackColor()
-
-	if self.TrackClass && self.TrackMeshes && !self.BuildingMesh then
-		self.TrackClass:Draw( self, self.TrackMeshes )
-	elseif self.BuildingMesh && self.PreviousTrackClass && self.TrackMeshes then
-		self.PreviousTrackClass:Draw( self, self.TrackMeshes )
+	if !self.BuildingMesh && self.TrackClass && #self.TrackClass.TrackMeshes > 0 then
+		self.TrackClass:Draw()
+	else
+		if self.PreviousTrackClass then self.PreviousTrackClass:Draw() end
 	end
 	
 end

@@ -254,7 +254,7 @@ end
 function Controller:CalcEntireSpline()
 	local nodecount = #self.PointsList
 	if CLIENT && !self.DisableDynamicStep then
-		self.STEPS = math.Clamp( GetConVar("coaster_resolution"):GetInt(), 1, 100 )
+		self.STEPS = math.Clamp( GetConVar("coaster_resolution"):GetInt(), 1, 100000 )
 	end
 
 	if nodecount < 4 then
@@ -275,7 +275,7 @@ end
 function Controller:CalcSection( from, to )
 	local nodecount = #self.PointsList
 	if CLIENT && !self.DisableDynamicStep then
-		self.STEPS = math.Clamp( GetConVar("coaster_resolution"):GetInt(), 1, 100 )
+		self.STEPS = math.Clamp( GetConVar("coaster_resolution"):GetInt(), 1, 100000 )
 	end
 
 	if nodecount < 4 then

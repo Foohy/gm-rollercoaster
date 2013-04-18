@@ -429,29 +429,15 @@ function TRACK:Generate( Controller )
 
 	-- Let's exit the thread, but give them our finalized sections too
 	self:CoroutineCheck( Controller, 3, Sections )
-	-- return Sections
 end
 
-function TRACK:Draw( Controller, Sections )
-	if !IsValid( Controller ) || !Controller:IsController() then return end
+function TRACK:Draw()
 
-	if !Sections || #Sections < 1 then return end
-
-	-- Draw the rails (side, center)
 	render.SetMaterial(self.Material)
-	for k, v in pairs( Sections[1] ) do
-		if v then 
-			v:Draw() 
-		end
-	end
+	-- Draw the rails (side, center)
+	self:DrawSection( 1 )
 
 	-- Draw the center struts
-	//render.SetMaterial(self.StrutMaterial)
-	for k, v in pairs( Sections[2] ) do
-		if v then 
-			v:Draw() 
-		end
-	end
-
+	self:DrawSection( 2 )
 end
 

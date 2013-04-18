@@ -161,17 +161,10 @@ function TRACK:Generate( Controller )
 	self:CoroutineCheck( Controller, 2, Sections )
 end
 
-function TRACK:Draw( Controller, Meshes )
-	if !IsValid( Controller ) || !Controller:IsController() then return end
+function TRACK:Draw( )
 
-	if !Meshes || #Meshes < 1 then return end
-
-	for k, v in pairs( Meshes[1] ) do
-		render.SetMaterial(self.Material)
-		if v then 
-			v:Draw() 
-		end
-	end
+	render.SetMaterial(self.Material)
+	self:DrawSection( 1 )
 
 end
 

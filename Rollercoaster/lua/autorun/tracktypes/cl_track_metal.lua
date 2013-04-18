@@ -204,7 +204,6 @@ function TRACK:Generate( controller )
 	//Create a new variable that will hold each section of the mesh
 	local Sections = {}
 	Sections[1] = Meshes
-	-- return Sections
 
 	self:CoroutineCheck( controller, 3, Sections)
 end
@@ -509,14 +508,9 @@ end
 Draw function. Draw the mesh
 ****************************/
 
-function TRACK:Draw( controller, Meshes )
-	if !IsValid( controller ) || !controller:IsController() then return end
-	if !Meshes || #Meshes < 1 then return end
+function TRACK:Draw()
+	render.SetMaterial(self.Material)
 
-	for k, v in pairs( Meshes[1] ) do
-		render.SetMaterial(self.Material)
-		if v then 
-			v:Draw()
-		end
-	end
+	self:DrawSection( 1 )
 end
+
