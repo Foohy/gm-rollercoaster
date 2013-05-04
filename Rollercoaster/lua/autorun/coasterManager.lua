@@ -3,7 +3,7 @@ AddCSLuaFile()
 //I should probably make this a package and combine these two global tables into one.
 Rollercoasters = Rollercoasters or {} //Holds all the rollercoasters
 CoasterManager = CoasterManager or {} //Holds all the methods and variables for rollercoasters
-COASTER_VERSION = 16
+COASTER_VERSION = 17
 
 cleanup.Register("Rollercoaster")
 
@@ -118,7 +118,7 @@ if SERVER then
 			//Call the hook telling a node was removed
 			hook.Call("Coaster_NodeRemoved", GAMEMODE, ent )
 
-			if ent:IsController() then
+			if ent:GetIsController() then
 				//Call the hook telling a new node was created
 				hook.Call("Coaster_CoasterRemoved", GAMEMODE, node )
 			end
@@ -144,7 +144,7 @@ if SERVER then
 	//Tell newly joining players to update their shit
 	hook.Add( "PlayerAuthed", "UpdateWithAllTracks", function( ply )
 		for k, v in pairs( ents.FindByClass("coaster_node") ) do
-			if IsValid( v ) && v:IsController() then
+			if IsValid( v ) && v:GetIsController() then
 				umsg.Start("Coaster_invalidateall", ply)
 					umsg.Entity(v)
 				umsg.End()
@@ -280,7 +280,7 @@ if CLIENT then
 	cvars.AddChangeCallback( "coaster_supports", function()
 		//Go through all of the nodes and tell them to update their shit
 		for k, v in pairs( ents.FindByClass("coaster_node") ) do
-			if IsValid( v ) && v:IsController() then
+			if IsValid( v ) && v:GetIsController() then
 				v:SupportFullUpdate()
 			end
 		end
@@ -305,7 +305,7 @@ if CLIENT then
 			CoasterTracks = {}
 
 			for k, v in pairs( ents.FindByClass( "coaster_node" ) ) do
-				if IsValid( v ) && v.IsController && v:IsController() then
+				if IsValid( v ) && v.GetIsController && v:GetIsController() then
 					table.insert( CoasterTracks, v )
 				end
 			end
@@ -387,7 +387,7 @@ if CLIENT then
 			local TrackResolutionSlider = panel:NumSlider("Track Resolution: ", "coaster_resolution", 1, 100, 0 )
 			TrackResolutionSlider.OnValueChanged = function() //See the effects in realtime
 				for _, v in pairs( ents.FindByClass("coaster_node") ) do
-					if IsValid( v ) && !v.IsSpawning && v.IsController && v:IsController() then 
+					if IsValid( v ) && !v.IsSpawning && v.GetIsController && v:GetIsController() then 
 						v:UpdateClientSpline()
 					end
 				end
