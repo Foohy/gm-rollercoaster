@@ -19,11 +19,15 @@ local RailOffset = 25 //Distance track beams away from eachother
 local Radius = 10 	//radius of the circular track beams
 local PointCount = 7 //how many points make the cylinder of the track mesh
 
+local function GetColorFromVector( colorvector )
+	return Color( colorvector.x, colorvector.y, colorvector.z )
+end
+
 /******************************
 Generate function. Generate the IMeshes.
 ******************************/
 function TRACK:Generate( controller )
-	if !IsValid( controller ) || !controller:IsController() then return end
+	if !IsValid( controller ) || !controller:GetIsController() then return end
 	local Vertices = {} //Create an array that will hold an array of vertices (This is to split up the model)
 	local Meshes = {} 
 	local modelCount = 1 
@@ -69,17 +73,11 @@ function TRACK:Generate( controller )
 			local perc = controller:PercAlongNode( i )
 
 			local Roll = -Lerp( perc, math.NormalizeAngle( ThisSegment:GetRoll() ) ,NextSegment:GetRoll())	
-			if ThisSegment:RelativeRoll() then
-				Roll = Roll - ( ang.p - 180 )
-			end
 			ang:RotateAroundAxis( AngVec, Roll )
 
 			//For shits and giggles get it for this one too
 			local perc2 = controller:PercAlongNode( i + 1, true )
 			local Roll2 = -Lerp( perc2, math.NormalizeAngle( ThisSegment:GetRoll() ), NextSegment:GetRoll() )
-			if ThisSegment:RelativeRoll() then
-				Roll2 = Roll2 - ( ang2.p - 180 )
-			end
 			ang2:RotateAroundAxis( AngVec2, Roll2 )
 		end
 
@@ -104,30 +102,31 @@ function TRACK:Generate( controller )
 
 			if LastAng == nil then LastAng = NewAng end
 
+			local color = GetColorFromVector( ThisSegment:GetTrackColor() )
 			//Draw the first segment
 			if i==1 then
 				local FirstLeft = controller:GetPos() + ang:Right() * -RailOffset
 				local FirstRight = controller:GetPos() + ang:Right() * RailOffset
 				local CenterBeam = controller:GetPos() +  ang:Up() * -Offset 
 
-				if controller:Looped() then
+				if controller:GetLooped() then
 					FirstLeft = controller.CatmullRom.PointsList[2] + ang:Right() * -RailOffset
 					FirstRight = controller.CatmullRom.PointsList[2] + ang:Right() * RailOffset
 					CenterBeam = controller.CatmullRom.PointsList[2] + ang:Up() * -Offset
 				end
 
-				self.Cylinder:AddBeam(CenterBeam, LastAng, controller.CatmullRom.Spline[i] + ang:Up() * -Offset, NewAng, Radius, ThisSegment:GetTrackColor() )
+				self.Cylinder:AddBeam(CenterBeam, LastAng, controller.CatmullRom.Spline[i] + ang:Up() * -Offset, NewAng, Radius, color )
 
-				self.Cylinder:AddBeam( FirstLeft, LastAng, posL, NewAng, 4, ThisSegment:GetTrackColor() )
-				self.Cylinder:AddBeam( FirstRight, LastAng, posR, NewAng, 4, ThisSegment:GetTrackColor() )
+				self.Cylinder:AddBeam( FirstLeft, LastAng, posL, NewAng, 4, color)
+				self.Cylinder:AddBeam( FirstRight, LastAng, posR, NewAng, 4, color  )
 			end
 
 			//vec:ANgle()
-			self.Cylinder:AddBeam(controller.CatmullRom.Spline[i] + (ang:Up() * -Offset), LastAng, controller.CatmullRom.Spline[i+1] + (ang2:Up() * -Offset), NewAng, Radius, ThisSegment:GetTrackColor() )
+			self.Cylinder:AddBeam(controller.CatmullRom.Spline[i] + (ang:Up() * -Offset), LastAng, controller.CatmullRom.Spline[i+1] + (ang2:Up() * -Offset), NewAng, Radius, color)
 
 			//Side rails
-			self.Cylinder:AddBeam( posL, LastAng, nPosL, NewAng, 4, ThisSegment:GetTrackColor() )
-			self.Cylinder:AddBeam( posR, LastAng, nPosR, NewAng, 4, ThisSegment:GetTrackColor() )
+			self.Cylinder:AddBeam( posL, LastAng, nPosL, NewAng, 4, color )
+			self.Cylinder:AddBeam( posR, LastAng, nPosR, NewAng, 4, color)
 
 			if #self.Cylinder.Vertices > 50000 then// some arbitrary limit to split up the verts into seperate meshes
 
@@ -182,7 +181,7 @@ function TRACK:Generate( controller )
 			end	
 			Percent = 0
 		end
-		local verts = CreateStrutsMesh(Position, ang, CurNode:GetTrackColor())
+		local verts = CreateStrutsMesh(Position, ang, GetColorFromVector(CurNode:GetTrackColor()) ) 
 		table.Add( StrutVerts, verts ) //Combine the tables into da big table
 
 		self:CoroutineCheck( controller, 1, nil, CurSegment / (#controller.CatmullRom.PointsList - 1) )

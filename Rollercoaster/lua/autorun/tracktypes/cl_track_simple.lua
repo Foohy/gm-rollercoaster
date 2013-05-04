@@ -19,6 +19,10 @@ local RailOffset = 25
 TRACK.CylinderRadius = 4 -- Radius of the circular track beams
 TRACK.CylinderPointCount = 7 -- How many points make the cylinder of the track mesh
 
+local function GetColorFromVector( colorvector )
+	return Color( colorvector.x, colorvector.y, colorvector.z )
+end
+
 local function GetAngleOfSubsegment( Controller, subsegment )
 	local SubAngle = Angle( 0, 0, 0 )
 	local NearSub = Controller.CatmullRom.Spline[subsegment+1] -- Get a subsegment that's just next to us
@@ -47,25 +51,25 @@ local function GetAngleOfSubsegment( Controller, subsegment )
 end 
 
 function TRACK:CreateSideBeams( Position, Angle, Position2, Angle2, Node, CurrentCylinderAngle )
-
+	local color = GetColorFromVector( Node:GetTrackColor() )
 	//Side rails
 	self.Cylinder:AddBeam( Position + Angle:Right() * -RailOffset, -- Position of beginning of cylinder
 		self.LastCylinderAngle, -- The angle of the first radius of the cylinder
 		Position2 + Angle2:Right() * -RailOffset, -- Position of end of cylinder
 		CurrentCylinderAngle, 
 		self.CylinderRadius, -- Radius of cylinder
-		Node:GetTrackColor() ) -- Color
+		color) -- Color
 
 	self.Cylinder:AddBeam( Position + Angle:Right() * RailOffset, 
 		self.LastCylinderAngle, 
 		Position2 + Angle2:Right() * RailOffset, 
 		CurrentCylinderAngle, 
 		self.CylinderRadius, 
-		Node:GetTrackColor() ) 
+		color ) 
 end
 
 function TRACK:Generate( Controller )
-	if !IsValid( Controller ) || !Controller:IsController() then return end
+	if !IsValid( Controller ) || !Controller:GetIsController() then return end
 
 	local Vertices = {} //Create an array that will hold an array of vertices (This is to split up the model)
 	Meshes = {} //If we hit the maximum for the number of vertices of a model, split it up into several
@@ -108,7 +112,7 @@ function TRACK:Generate( Controller )
 			CylinderAngle:RotateAroundAxis( self.LastNormal:Angle():Up(), -270 )
 
 			-- If this is the last segment, adjust the angles so it will seamlessly fit with the beginning of the track (if it's looped)
-			if i == #Controller.CatmullRom.Spline && Controller:Looped() then
+			if i == #Controller.CatmullRom.Spline && Controller:GetLooped() then
 				SubsegmentAngle = self.BeginningSegmentAngle
 				CylinderAngle = self.BeginningSegmentCylinderAngle
 			end

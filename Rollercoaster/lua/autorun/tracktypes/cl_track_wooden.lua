@@ -32,6 +32,10 @@ TRACK.InnerStrutsNum = 2 //how densely the inner struts should be placed
 TRACK.ModelCount = 1 //Keep track of how many seperate models we've created
 TRACK.FixedSplines = {}
 
+local function GetColorFromVector( colorvector )
+	return Color( colorvector.x, colorvector.y, colorvector.z )
+end
+
 local function GetAngleAtSpline( spline, controller )
 	local AngVec = Vector( 0, 0, 0 )
 
@@ -114,10 +118,6 @@ function TRACK:PassRails(controller)
 			
 			//Note all Lerps are negated. This is because the actual roll value from the gun is backwards.
 			local Roll = -Lerp( perc, math.NormalizeAngle( ThisSegment:GetRoll() ),NextSegment:GetRoll())	
-			if ThisSegment:RelativeRoll() then
-				Roll = Roll - ( ang.p - 180 )
-			end
-
 			//Rotated around axis
 			//This takes roll into account in the angle so far
 			ang:RotateAroundAxis( AngVec, Roll ) 
@@ -125,9 +125,6 @@ function TRACK:PassRails(controller)
 			//Now do it for the segment just ahead of us
 			local perc2 = controller:PercAlongNode( i + 1, true ) //We have to do a quickfix so the function can handle how to end the track
 			local Roll2 = -Lerp( perc2, math.NormalizeAngle( ThisSegment:GetRoll() ), NextSegment:GetRoll() )
-			if ThisSegment:RelativeRoll() then
-				Roll2 = Roll2 - ( ang2.p - 180 )
-			end
 			ang2:RotateAroundAxis( AngVec2, Roll2 )
 		end
 
@@ -155,25 +152,26 @@ function TRACK:PassRails(controller)
 			//only if LastAng is null do we set to it
 			LastAng = LastAng or NewAng
 
+			local color = GetColorFromVector( ThisSegment:GetTrackColor() )
 			//Main center beam
 			//Cylinder.AddBeam(controller.CatmullRom.Spline[i] + (ang:Up() * -Offset), LastAng, controller.CatmullRom.Spline[i+1] + (ang2:Up() * -Offset), NewAng, Radius )
 			if i==1 then
 				local FirstLeft = controller:GetPos() + ang:Right() * -RailOffset
 				local FirstRight = controller:GetPos() + ang:Right() * RailOffset
 
-				if controller:Looped() then
+				if controller:GetLooped() then
 					FirstLeft = controller.CatmullRom.PointsList[2] + ang:Right() * -RailOffset
 					FirstRight = controller.CatmullRom.PointsList[2] + ang:Right() * RailOffset
 				end
 
-				self.Cylinder:AddBeam( FirstLeft, LastAng, posL, NewAng, 4, ThisSegment:GetTrackColor() )
-				self.Cylinder:AddBeam( FirstRight, LastAng, posR, NewAng, 4, ThisSegment:GetTrackColor() )
+				self.Cylinder:AddBeam( FirstLeft, LastAng, posL, NewAng, 4, color )
+				self.Cylinder:AddBeam( FirstRight, LastAng, posR, NewAng, 4, color )
 
 			end
 
 			//Side rails
-			self.Cylinder:AddBeam( posL, LastAng, nPosL, NewAng, 4, ThisSegment:GetTrackColor() )
-			self.Cylinder:AddBeam( posR, LastAng, nPosR, NewAng, 4, ThisSegment:GetTrackColor() )
+			self.Cylinder:AddBeam( posL, LastAng, nPosL, NewAng, 4, color)
+			self.Cylinder:AddBeam( posR, LastAng, nPosR, NewAng, 4, color )
 
 			if #self.Cylinder.Vertices > 50000 then// some arbitrary limit to split up the verts into seperate meshes. It's surprisingly easy to hit that limit
 
@@ -233,9 +231,6 @@ function TRACK:PassWoodRails(controller)
 			
 			//Note all Lerps are negated. This is because the actual roll value from the gun is backwards.
 			local Roll = -Lerp( perc, math.NormalizeAngle( ThisSegment:GetRoll() ),NextSegment:GetRoll())	
-			if ThisSegment:RelativeRoll() then
-				Roll = Roll - ( ang.p - 180 )
-			end
 
 			//Rotated around axis
 			//This takes roll into account in the angle so far
@@ -244,9 +239,6 @@ function TRACK:PassWoodRails(controller)
 			//Now do it for the segment just ahead of us
 			local perc2 = controller:PercAlongNode( i + 1, true ) //We have to do a quickfix so the function can handle how to end the track
 			local Roll2 = -Lerp( perc2, math.NormalizeAngle( ThisSegment:GetRoll() ), NextSegment:GetRoll() )
-			if ThisSegment:RelativeRoll() then
-				Roll2 = Roll2 - ( ang2.p - 180 )
-			end
 			ang2:RotateAroundAxis( AngVec2, Roll2 )
 		end
 
@@ -282,6 +274,8 @@ function TRACK:PassWoodRails(controller)
 			LastPoints.RightIn = LastPoints.RightIn or nPosR
 			LastPoints.RightOut = LastPoints.RightOut or OnposR
 
+			local color = GetColorFromVector( ThisSegment:GetTrackColor() )
+
 			if i==1 then
 				local FirstLeft = controller:GetPos() + ang:Right() * -RailOffset
 				local FarLeft = FirstLeft + ang:Right() * -self.WoodRailWidth
@@ -289,7 +283,7 @@ function TRACK:PassWoodRails(controller)
 				local FirstRight = controller:GetPos() + ang:Right() * RailOffset
 				local FarRight = FirstRight + ang:Right() * self.WoodRailWidth
 
-				if controller:Looped() then
+				if controller:GetLooped() then
 					FirstLeft = controller.CatmullRom.PointsList[2] + ang:Right() * -RailOffset
 					FarLeft = FirstLeft + ang:Right() * -self.WoodRailWidth
 
@@ -297,20 +291,20 @@ function TRACK:PassWoodRails(controller)
 					FarRight = FirstRight + ang:Right() * self.WoodRailWidth
 				end
 				self.Cylinder.TotalV = leftV
-				leftV = self.Cylinder:CreateSquare(FirstLeft, FarLeft, OnposL, nPosL, ang:Up(), ThisSegment:GetTrackColor() )
+				leftV = self.Cylinder:CreateSquare(FirstLeft, FarLeft, OnposL, nPosL, ang:Up(), color)
 
 				self.Cylinder.TotalV = rightV
-				rightV = self.Cylinder:CreateSquare(FirstRight, FarRight, OnposR, nPosR, ang:Up(), ThisSegment:GetTrackColor() )
+				rightV = self.Cylinder:CreateSquare(FirstRight, FarRight, OnposR, nPosR, ang:Up(), color )
 
 			end
 
 
 			//Side rails
 			self.Cylinder.TotalV = leftV
-			leftV = self.Cylinder:CreateSquare(LastPoints.LeftIn, LastPoints.LeftOut, OnposL, nPosL, ang:Up(), ThisSegment:GetTrackColor() )
+			leftV = self.Cylinder:CreateSquare(LastPoints.LeftIn, LastPoints.LeftOut, OnposL, nPosL, ang:Up(), color )
 
 			self.Cylinder.TotalV = rightV
-			rightV = self.Cylinder:CreateSquare(LastPoints.RightIn, LastPoints.RightOut, OnposR, nPosR, ang:Up(), ThisSegment:GetTrackColor() )
+			rightV = self.Cylinder:CreateSquare(LastPoints.RightIn, LastPoints.RightOut, OnposR, nPosR, ang:Up(), color )
 
 			if #self.Cylinder.Vertices > 50000 then// some arbitrary limit to split up the verts into seperate meshes. It's surprisingly easy to hit that limit
 
@@ -544,7 +538,7 @@ function TRACK:CreateFixedPointTable( controller )
 end
 
 function TRACK:Generate( controller )
-	if !IsValid( controller ) || !controller:IsController() then return end
+	if !IsValid( controller ) || !controller:GetIsController() then return end
 	self.ModelCount = 1
 
 	local Models = {}

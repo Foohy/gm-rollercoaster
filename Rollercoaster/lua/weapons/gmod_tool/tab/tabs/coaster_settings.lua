@@ -41,8 +41,8 @@ function TAB:LeftClick( trace, tool )
 			else node = controller.Nodes[ Ent.Segment ] end
 
 			if IsValid( node ) then
-				node:SetTrackColor( r,g,b )
-				controller:SetTrackColor(r,g,b)
+				node:SetTrackColor( Vector(r,g,b) )
+				controller:SetTrackColor( Vector(r,g,b))
 
 				-- If we're changing to a new generation type, invalidate the entire track as it needs to be rebuilt
 				if controller:GetTrackType() != tracktype then

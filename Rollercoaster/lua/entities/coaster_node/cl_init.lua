@@ -37,94 +37,6 @@ function ENT:IsBeingDriven()
 	return false
 end
 
-function ENT:SetIsController(bController)
-	self.dt.IsController = bController
-end
-
-function ENT:IsController()
-	return self.dt.IsController or false
-end
-
-function ENT:SetController( cont )
-	self.dt.Controller = cont
-end
-
-function ENT:GetController()
-	return self.dt.Controller
-end
-
-function ENT:SetRelativeRoll(bRelRoll)
-	self.dt.RelativeRoll = bRelRoll
-end
-
-function ENT:RelativeRoll()
-	return self.dt.RelativeRoll or false
-end
-
-function ENT:SetLooped(looped)
-	self.dt.Looped = looped
-end
-
-function ENT:Looped()
-	return self.dt.Looped or false
-end
-
-function ENT:SetNextNode(node)
-	self.dt.NextNode = node
-end
-
-function ENT:GetNextNode()
-	return self.dt.NextNode
-end
-
-function ENT:SetType(type)
-	self.dt.Type = type
-end
-
-function ENT:GetType()
-	return self.dt.Type or COASTER_NODE_NORMAL
-end
-
-function ENT:SetTrackType(type)
-	self.dt.TrackType = type
-end
-
-function ENT:GetTrackType()
-	return self.dt.TrackType or COASTER_TRACK_METAL
-end
-
-function ENT:SetCoasterID( id )
-	self.dt.CoasterID = id
-end
-
-function ENT:GetCoasterID()
-	return self.dt.CoasterID;
-end
-
-function ENT:SetRoll(roll) //Not to be confused with CLuaParticle.SetRoll()
-	self.dt.Roll = roll
-end
-
-function ENT:GetRoll() //Not to be confused with CLuaParticle.GetRoll()
-	return self.dt.Roll or 0
-end
-
-function ENT:SetTrackColor(r,g,b) 
-	self.dt.TrackColor = Vector( r, g, b )
-end
-
-function ENT:GetTrackColor() 
-	return Color( self.dt.TrackColor.x, self.dt.TrackColor.y, self.dt.TrackColor.z )
-end
-
-function ENT:SetSupportColor(r,g,b) 
-	self.dt.SupportColor = Vector( r, g, b )
-end
-
-function ENT:GetSupportColor() 
-	return self.dt.SupportColor.x, self.dt.SupportColor.y, self.dt.SupportColor.z 
-end
-
 ////////////////////////////////////////////////////////
 //END OF 'SHARED' FUNCTIONS
 ////////////////////////////////////////////////////////
@@ -171,7 +83,7 @@ function ENT:Initialize()
 		if #controller.Nodes == 2 then controller:InvalidatePhysmesh(#controller.Nodes) end
 	end
 
-	if !self:IsController() then return end //Don't continue executing -- the rest of this stuff is for only the controller
+	if !self:GetIsController() then return end //Don't continue executing -- the rest of this stuff is for only the controller
 	CoasterUpdateTrackTime = 0 //Tell the thingy that it's time to update its cache of coasters
 
 	//The controller handles the drawing of the track mesh -- so we always want it to draw.
@@ -196,9 +108,9 @@ end
 
 usermessage.Hook("Coaster_RefreshTrack", function( um )
 	self = um:ReadEntity()
-	if !IsValid( self ) || !self.IsController then return end
+	if !IsValid( self ) || !self.GetIsController then return end
 
-	if self:IsController() then
+	if self:GetIsController() then
 		self:RefreshClientSpline()
 		self:SupportFullUpdate()
 
@@ -214,7 +126,7 @@ end )
 
 usermessage.Hook("Coaster_invalidateall", function( um )
 	local self = um:ReadEntity()
-	if !IsValid( self ) || !self.IsController || !self:IsController() then return end
+	if !IsValid( self ) || !self.GetIsController || !self:GetIsController() then return end
 
 
 	self:RefreshClientSpline()
@@ -240,9 +152,9 @@ end )
 usermessage.Hook("Coaster_AddNode", function( um )
 	local self = Entity(um:ReadShort())
 
-	if !IsValid( self ) || !self.IsController then return end //Shared functions don't exist yet.
+	if !IsValid( self ) || !self.GetIsController then return end //Shared functions don't exist yet.
 
-	if (self:IsController()) then
+	if (self:GetIsController()) then
 		
 		self:RefreshClientSpline()
 
@@ -293,10 +205,11 @@ usermessage.Hook("Coaster_nodeinvalidate", function( um )
 	if IsValid( node ) && node.Invalidate && IsValid( self ) then
 		node:Invalidate( self, inval_minimal )
 		self:UpdateClientsidePhysics()
-	end
 
-	if self.BuildingMesh || GetConVarNumber("coaster_autobuild") == 1 && self.SoftUpdateMesh then
-		self:SoftUpdateMesh()
+		
+		if self.BuildingMesh || GetConVarNumber("coaster_autobuild") == 1 && self.SoftUpdateMesh then
+			self:SoftUpdateMesh()
+		end
 	end
 end )
 
@@ -356,7 +269,7 @@ function ENT:Invalidate( controller, minimal_invalidation )
 					controller.Nodes[ k - 1 ].Invalidated = true
 					//table.insert(controller.InvalidNodes, controller:FindPhysmeshBySegment(k - 1))
 					controller:InvalidatePhysmesh(k-1)
-				elseif controller:Looped() then
+				elseif controller:GetLooped() then
 					fourthlastnode.Invalidated = true
 					//table.insert(controller.InvalidNodes, controller:FindPhysmeshBySegment(#controller.Nodes-3))
 					controller:InvalidatePhysmesh(#controller.Nodes-3)
@@ -366,7 +279,7 @@ function ENT:Invalidate( controller, minimal_invalidation )
 					controller.Nodes[ k - 2 ].Invalidated = true
 					//table.insert(controller.InvalidNodes, controller:FindPhysmeshBySegment(k - 2))
 					controller:InvalidatePhysmesh(k-2)
-				elseif controller:Looped() then
+				elseif controller:GetLooped() then
 					thirdlastnode.Invalidated = true
 					//table.insert(controller.InvalidNodes, controller:FindPhysmeshBySegment(#controller.Nodes-2))
 					controller:InvalidatePhysmesh(#controller.Nodes-2)
@@ -376,13 +289,13 @@ function ENT:Invalidate( controller, minimal_invalidation )
 					controller.Nodes[ k + 1 ].Invalidated = true
 					//table.insert(controller.InvalidNodes, controller:FindPhysmeshBySegment(k + 1))
 					controller:InvalidatePhysmesh(k+1)
-				elseif controller:Looped() then
+				elseif controller:GetLooped() then
 					firstnode.Invalidated = true
 					//table.insert(controller.InvalidNodes, controller:FindPhysmeshBySegment(2))
 					controller:InvalidatePhysmesh(2)
 				end
 
-				if controller:Looped() && k == #controller.Nodes - 1 then
+				if controller:GetLooped() && k == #controller.Nodes - 1 then
 					firstnode.Invalidated = true
 					secondnode.Invalidated = true
 					//table.insert(controller.InvalidNodes, controller:FindPhysmeshBySegment(2))
@@ -406,7 +319,7 @@ end
 //Return if the track has any unbuilt nodes
 function ENT:HasInvalidNodes()
 	local controller = self
-	if !controller:IsController() then controller = self:GetController() end
+	if !controller:GetIsController() then controller = self:GetController() end
 	if !IsValid( controller ) then return end
 
 	for k, v in pairs( controller.Nodes ) do
@@ -466,7 +379,7 @@ function ENT:RefreshClientSpline()
 		else
 			End = true
 		end
-	until (!IsValid(node) || !node.IsController || node:IsController() || node == firstNode || End)
+	until (!IsValid(node) || !node.GetIsController || node:GetIsController() || node == firstNode || End)
 
 	--If there are enough nodes (4 for catmull-rom), calculate the curve
 	if #self.CatmullRom.PointsList > 3 then
@@ -507,7 +420,7 @@ end
 //Build all coaster's clientside mesh
 concommand.Add("coaster_update_mesh", function()
 	for _, v in pairs( ents.FindByClass("coaster_node") ) do
-		if IsValid( v ) && v:IsController() then 
+		if IsValid( v ) && v:GetIsController() then 
 			v:UpdateClientMesh()
 		end
 	end
@@ -517,7 +430,7 @@ end )
 //Make doubly sure our client is up to date
 concommand.Add("coaster_update_nodes", function() 
 	for _, v in pairs( ents.FindByClass("coaster_node") ) do
-		if IsValid( v ) && v:IsController() then 
+		if IsValid( v ) && v:GetIsController() then 
 			v:RefreshClientSpline()
 		end
 	end
@@ -1047,7 +960,7 @@ function ENT:DrawRail(offset)
 end
 
 function ENT:UpdateSupportDrawBounds()
-	if self:IsController() then
+	if self:GetIsController() then
 		self:SetRenderBoundsWS(Vector(-1000000,-1000000,-1000000), Vector( 1000000, 1000000, 1000000 ) ) //There must be a better way to do this
 	else
 		if !IsValid( self.SupportModel ) then return end
@@ -1092,9 +1005,9 @@ function ENT:DrawSupport()
 	if !IsValid( controller ) then return end
 	if LocalPlayer().GetInfoNum && LocalPlayer():GetInfoNum("coaster_supports", 0) == 0 then return end //Don't draw if they don't want us to draw.
 	if controller.TrackClass && controller.TrackClass.SupportOverride then return end //Dont' draw supports if the current track makes its own
-	if self.IsController && self:IsController() || controller.Nodes[ #controller.Nodes ] == self then return false end //Don't draw the controller or the very last (unconnected) node
+	if self.GetIsController && self:GetIsController() || controller.Nodes[ #controller.Nodes ] == self then return false end //Don't draw the controller or the very last (unconnected) node
 	if math.abs( math.NormalizeAngle( self:GetRoll() ) ) > 90 then return false end //If a track is upside down, don't draw the supports
-	if controller:Looped() && controller.Nodes[ 2 ] == self then return false end //Don't draw the supports for the second node ONLY if the track is looped
+	if controller:GetLooped() && controller.Nodes[ 2 ] == self then return false end //Don't draw the supports for the second node ONLY if the track is looped
 
 	self.SupportModelStart:SetNoDraw( false )
 	self.SupportModel:SetNoDraw( false )
@@ -1161,18 +1074,18 @@ function ENT:Draw()
 	
 	// Don't draw if we're taking pictures
 	local wep = LocalPlayer():GetActiveWeapon()
-	if wep:IsValid() && wep:GetClass() == "gmod_camera" && !self:IsController() then
+	if wep:IsValid() && wep:GetClass() == "gmod_camera" && !self:GetIsController() then
 		return
 	end
 
 	//If we're in a vehicle ( cart ), don't draw
-	if LocalPlayer():InVehicle() && !self:IsController() then
+	if LocalPlayer():InVehicle() && !self:GetIsController() then
 		return
 	end
 
 
 	local controller = self:GetController()
-	if ( IsValid( controller ) && controller.Nodes && self == controller.Nodes[ #controller.Nodes ] && #controller.Nodes > 2 ) or self:IsController() then //Don't draw if we are the start/end nodes
+	if ( IsValid( controller ) && controller.Nodes && self == controller.Nodes[ #controller.Nodes ] && #controller.Nodes > 2 ) or self:GetIsController() then //Don't draw if we are the start/end nodes
 		return
 	end
 
@@ -1181,7 +1094,7 @@ function ENT:Draw()
 	//Usually for proper lighting to work we need to draw the mesh after we draw a proper model
 	//However, because I pretty much fake all of the lighting, that doesn't matter any more.
 	/*
-	if self:IsController() then
+	if self:GetIsController() then
 		if #self.CatmullRom.PointsList > 3 then
 			//self:DrawRailMesh()
 		end
@@ -1197,7 +1110,7 @@ function ENT:Think()
 		self:Invalidate( self:GetController(), false )
 	end
 
-	if !self:IsController() then return end
+	if !self:GetIsController() then return end
 
 	for k, v in pairs( self.Nodes ) do	
 		if IsValid( v ) && v:GetVelocity():Length() > 0 && v != self then
@@ -1277,7 +1190,7 @@ function ENT:OnRemove()
 	end
 
 
-	if IsValid( self ) && self:IsController() then
+	if IsValid( self ) && self:GetIsController() then
 
 		if IsValid( self.WheelModel ) then 
 			self.WheelModel:Remove() 

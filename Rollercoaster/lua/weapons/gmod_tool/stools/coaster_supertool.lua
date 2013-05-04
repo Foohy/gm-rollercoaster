@@ -250,7 +250,7 @@ function TOOL.BuildCPanel(panel)
 	btnBuildMine:SetTooltip("Build only the meshes of your own tracks")
 	btnBuildMine.DoClick = function()
 		for _, v in pairs( ents.FindByClass("coaster_node") ) do
-			if IsValid( v ) && v:IsController() && v:GetOwner() == LocalPlayer() then 
+			if IsValid( v ) && v:GetIsController() && v:GetOwner() == LocalPlayer() then 
 				v:UpdateClientMesh()
 			end
 		end
@@ -307,7 +307,7 @@ if CLIENT then
 		local found = {}
 
 		for k, v in pairs( ents.FindByClass("coaster_node") ) do
-			if IsValid( v ) && v.GetCoasterID && v.IsController && v:IsController() then
+			if IsValid( v ) && v.GetCoasterID && v.GetIsController && v:GetIsController() then
 				found[v:GetCoasterID()] = v
 			end
 		end

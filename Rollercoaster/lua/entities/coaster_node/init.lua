@@ -44,96 +44,6 @@ function ENT:IsBeingDriven()
 	return false
 end
 
-function ENT:SetIsController(bController)
-	self.dt.IsController = bController
-end
-
-function ENT:IsController()
-	return self.dt.IsController or false
-end
-
-function ENT:SetController( cont )
-	self.dt.Controller = cont
-end
-
-function ENT:GetController()
-	return self.dt.Controller
-end
-
-function ENT:SetRelativeRoll(bRelRoll)
-	self.dt.RelativeRoll = bRelRoll
-end
-
-function ENT:RelativeRoll()
-	return self.dt.RelativeRoll or false
-end
-
-function ENT:SetLooped(looped)
-	self.dt.Looped = looped
-end
-
-function ENT:Looped()
-	return self.dt.Looped or false
-end
-
-function ENT:SetNextNode(node)
-	self.dt.NextNode = node
-end
-
-function ENT:GetNextNode()
-	return self.dt.NextNode
-end
-
-function ENT:SetType(type)
-	self.dt.Type = type
-end
-
-function ENT:GetType()
-	return self.dt.Type or COASTER_NODE_NORMAL
-end
-
-function ENT:SetTrackType(type)
-	self.dt.TrackType = type
-end
-
-function ENT:GetTrackType()
-	return self.dt.TrackType or COASTER_TRACK_METAL
-end
-
-function ENT:SetCoasterID( id )
-	self.dt.CoasterID = id
-	//self:SetNetworkedString("CoasterID", id )
-end
-
-function ENT:GetCoasterID()
-	return self.dt.CoasterID;
-	//return self:GetNetworkedString("CoasterID")
-end
-
-function ENT:SetRoll(roll) //Not to be confused with CLuaParticle.SetRoll()
-	self.dt.Roll = roll
-end
-
-function ENT:GetRoll() //Not to be confused with CLuaParticle.GetRoll()
-	return self.dt.Roll or 0
-end
-
-function ENT:SetTrackColor(r,g,b) 
-	self.dt.TrackColor = Vector( r, g, b )
-end
-
-function ENT:GetTrackColor() 
-	return Color( self.dt.TrackColor.x, self.dt.TrackColor.y, self.dt.TrackColor.z )
-end
-
-function ENT:SetSupportColor(r,g,b) 
-	self.dt.SupportColor = Vector( r, g, b )
-end
-
-function ENT:GetSupportColor() 
-	return self.dt.SupportColor.x, self.dt.SupportColor.y, self.dt.SupportColor.z 
-end
-
 function ENT:SetOrder( num )
 	local data = self.EntityMods && self.EntityMods["rollercoaster_node_order"] or {}
 	data.Order = num 
@@ -193,8 +103,8 @@ function ENT:Initialize()
 	self.CatmullRom:Reset()
 
 	local col = self:GetTrackColor()
-	if col.r == 0 && col.g == 0 && col.b == 0 then
-		self:SetTrackColor( 255, 255, 255 )
+	if col.x == 0 && col.y == 0 && col.z == 0 then
+		self:SetTrackColor( Vector(255, 255, 255) )
 	end
 
 end
@@ -221,7 +131,7 @@ function ENT:AddNodeSimple( ent, ply ) //For use when being spawned by a file
 		end
 
 		// First node is the node after the controller
-		if !IsValid(self:GetFirstNode()) and !ent:IsController() then
+		if !IsValid(self:GetFirstNode()) and !ent:GetIsController() then
 			self:SetFirstNode(ent)
 		end
 	end
@@ -237,7 +147,7 @@ function ENT:AddTrackNode( ent, ply )
 			prevNode:SetNextNode(ent)	
 
 			//Set the new node to the old 'unconnected' node's position
-			if !prevNode:IsController() && prevNode != FirstNode then
+			if !prevNode:GetIsController() && prevNode != FirstNode then
 				prevNode:SetModel( self.NodeModel )
 				prevNode:SetPos( ent:GetPos() )
 				ent:SetModel( "models/props_junk/PopCan01a.mdl" )
@@ -255,7 +165,7 @@ function ENT:AddTrackNode( ent, ply )
 		end
 		
 		//Create the second node if we are the very first created node(controller)
-		if ( !IsValid( FirstNode ) || FirstNode:EntIndex() == 1 ) && ent:IsController() then
+		if ( !IsValid( FirstNode ) || FirstNode:EntIndex() == 1 ) && ent:GetIsController() then
 			local node = CoasterManager.CreateNode( ent:GetCoasterID(), ent:GetPos(), ent:GetAngles(), ent:GetType(), ply )
 
 			undo.Create("Rollercoaster")
@@ -282,7 +192,7 @@ function ENT:AddTrackNode( ent, ply )
 		end
 		
 		// First node is the node after the controller
-		if ( !IsValid(FirstNode ) || FirstNode:EntIndex() == 1 ) and !ent:IsController() then
+		if ( !IsValid(FirstNode ) || FirstNode:EntIndex() == 1 ) and !ent:GetIsController() then
 			self:SetFirstNode(ent)
 			self:SetPos( ent:GetPos() )
 		end
@@ -325,7 +235,7 @@ function ENT:UpdateServerSpline()
 		end
 		//controller:BuildPhysicsMesh()
 
-		//if self:IsController() then
+		//if self:GetIsController() then
 		//	local node = self.Nodes[3]
 			//controller:UpdateTrackLength()
 		//end
@@ -334,7 +244,7 @@ end
 
 concommand.Add("update_physmesh", function()
 	for k, v in pairs( ents.FindByClass("coaster_node")) do
-		if IsValid( v ) && v:IsController() then
+		if IsValid( v ) && v:GetIsController() then
 			v:UpdateServerSpline()
 		end
 	end
@@ -422,12 +332,12 @@ end
 function ENT:UpdateMagicPositions()
 	if !IsValid( Rollercoasters[ self:GetCoasterID() ] ) then return end 
 
-	if self:Looped() || Rollercoasters[ self:GetCoasterID() ]:Looped() then
+	if self:GetLooped() || Rollercoasters[ self:GetCoasterID() ]:GetLooped() then
 		local controller = Rollercoasters[ self:GetCoasterID() ]
 		
 		if controller.Nodes[ #controller.Nodes - 2] == self then
 			controller:SetPos( self:GetPos() )
-		elseif self:IsController() && IsValid( controller.Nodes[ #controller.Nodes - 2 ] ) then
+		elseif self:GetIsController() && IsValid( controller.Nodes[ #controller.Nodes - 2 ] ) then
 			controller.Nodes[ #controller.Nodes - 2 ]:SetPos( self:GetPos() )
 		elseif controller:GetFirstNode() == self then
 			controller.Nodes[ #controller.Nodes - 1 ]:SetPos( self:GetPos() )
@@ -506,7 +416,7 @@ function ENT:GetSegmentLength()
 
 	controller = Rollercoasters[ self:GetCoasterID() ]
 
-	//if not self:IsController() then print("fail1") return end
+	//if not self:GetIsController() then print("fail1") return end
 	//print("segment: "..segment)
 	//print("otherthing: "..#Rollercoasters[self:GetCoasterID()].CatmullRom.PointsList)
 	if not (segment > 1 && (#controller.CatmullRom.PointsList > segment )) then /*print("fail2")*/ return end
@@ -685,7 +595,7 @@ function ENT:OnRemove()
 	local cont = Rollercoasters[self:GetCoasterID()]
 
 	//if it is the controller, or there are less than 4 nodes, or this is the second node
-	if self:IsController() then
+	if self:GetIsController() then
 		for _, v in pairs( self.Nodes ) do
 			if IsValid( v ) then 
 				v.SafeDeleted = true 
@@ -753,7 +663,7 @@ function ENT:OnRemove()
 						end
 						
 						//If it's a looped track and we are either the last or very last node	
-						if cont:Looped() && ( cont.Nodes[ #cont.Nodes ] == self || cont.Nodes[ #cont.Nodes - 1 ] == self ) then
+						if cont:GetLooped() && ( cont.Nodes[ #cont.Nodes ] == self || cont.Nodes[ #cont.Nodes - 1 ] == self ) then
 							cont:SetLooped( false )
 						end
 						

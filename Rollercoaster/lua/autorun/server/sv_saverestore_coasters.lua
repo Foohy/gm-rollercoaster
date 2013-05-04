@@ -22,11 +22,13 @@ local function GetNodeByOrder( num, unsortedNodes )
 	for k, v in pairs( unsortedNodes ) do
 		if IsValid( v ) && v:GetOrder() == num then return v end
 	end
+
+	return nil
 end
 
 local function GetControllerByID( coasterID )
 	for k, v in pairs( UnconstructedCoasters[coasterID] ) do
-		if v.IsController && v:IsController() then return v end
+		if v.GetIsController && v:GetIsController() then return v end
 	end
 
 	return nil
@@ -139,7 +141,7 @@ UnconstructedTrains.ID = {}
 
 local function FindNodeByID( trackid )
 	for k, v in pairs( ents.FindByClass("coaster_node" ) ) do
-		if IsValid( v ) && v:GetCoasterID() == trackid && v:IsController() then 
+		if IsValid( v ) && v:GetCoasterID() == trackid && v:GetIsController() then 
 			return v
 		end
 	end

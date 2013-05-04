@@ -394,7 +394,7 @@ function ENT:PhysicsSimulate(phys, deltatime)
 		
 			//If the track isn't looped, it's OFF DA RAILZ
 			if IsValid( Rollercoasters[ self.CoasterID ] ) then
-				if !Rollercoasters[ self.CoasterID ]:Looped() then
+				if !Rollercoasters[ self.CoasterID ]:GetLooped() then
 					self:OffDaRailz()
 					return
 				end
@@ -416,7 +416,7 @@ function ENT:PhysicsSimulate(phys, deltatime)
 		
 			//If the track isn't looped, it's OFF DA RAILZ
 			if IsValid( Rollercoasters[ self.CoasterID ] ) then
-				if !Rollercoasters[ self.CoasterID ]:Looped() then
+				if !Rollercoasters[ self.CoasterID ]:GetLooped() then
 					self:OffDaRailz()
 					return
 				end
@@ -508,7 +508,7 @@ function ENT:PhysicsSimulate(phys, deltatime)
 end
 
 function ENT:CorrectCartSpacing(dir)
-	if dir == nil then return end
+	if dir == nil || !self.CartTable then return end
 	
 	//before continuing, check that all carts are on the same segment
 	local proceed = true
@@ -942,7 +942,7 @@ function ENT:PhysicsCollide(data, physobj)
 			NewID 		= data.HitEntity:GetCoasterID()
 			controller 	= data.HitEntity:GetController()
 		end
-		if !IsValid( controller ) || !controller:IsController() then print( "FALSE CONTROLLER: " .. tostring( controller ) .. ", reported from: " .. tostring(data.HitEntity)) return end
+		if !IsValid( controller ) || !controller:GetIsController() then print( "FALSE CONTROLLER: " .. tostring( controller ) .. ", reported from: " .. tostring(data.HitEntity)) return end
 		//estimate the percent along the track we're joining we are
 		local distClosest = math.huge
 		for i=1, controller.CatmullRom.STEPS do

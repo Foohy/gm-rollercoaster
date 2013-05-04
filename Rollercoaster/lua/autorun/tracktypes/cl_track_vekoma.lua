@@ -23,6 +23,10 @@ local StrutOffset = 0.4
 TRACK.CylinderRadius = 3.28 -- Radius of the circular track beams
 TRACK.CylinderPointCount = 7 -- How many points make the cylinder of the track mesh
 
+local function GetColorFromVector( colorvector )
+	return Color( colorvector.x, colorvector.y, colorvector.z )
+end
+
 local function GetAngleOfSubsegment( Controller, subsegment )
 	local SubAngle = Angle( 0, 0, 0 )
 	local NearSub = Controller.CatmullRom.Spline[subsegment+1] -- Get a subsegment that's just next to us
@@ -225,20 +229,21 @@ local function CreateStrutsMesh(pos, ang, TrackColor)
 end
 
 function TRACK:CreateSideBeams( Position, Angle, Position2, Angle2, Node, CurrentCylinderAngle )
+	local color = GetColorFromVector(Node:GetTrackColor() )
 	//Side rails
 	self.Cylinder:AddBeam( Position + Angle:Right() * -RailOffset, -- Position of beginning of cylinder
 		self.LastCylinderAngle, -- The angle of the first radius of the cylinder
 		Position2 + Angle2:Right() * -RailOffset, -- Position of end of cylinder
 		CurrentCylinderAngle, 
 		self.CylinderRadius, -- Radius of cylinder
-		Node:GetTrackColor() ) -- Color
+		color ) -- Color
 
 	self.Cylinder:AddBeam( Position + Angle:Right() * RailOffset, 
 		self.LastCylinderAngle, 
 		Position2 + Angle2:Right() * RailOffset, 
 		CurrentCylinderAngle, 
 		self.CylinderRadius, 
-		Node:GetTrackColor() ) 
+		color ) 
 
 end
 
@@ -248,11 +253,11 @@ function TRACK:CreateCenterBeam( Position, Angle1, Position2, Angle2, Node, Curr
 	 	Position2 + Angle2:Up() * -CenterBeamOffset, 
 	 	CurrentCylinderAngle, 
 	 	CenterBeamWidth, 
-	 	Node:GetTrackColor() )
+	 	GetColorFromVector( Node:GetTrackColor() ) )
 end
 
 function TRACK:PassRails( Controller )
-	if !IsValid( Controller ) || !Controller:IsController() then return end
+	if !IsValid( Controller ) || !Controller:GetIsController() then return end
 
 	local Models = {}
 	local ModelCount = 1
@@ -292,7 +297,7 @@ function TRACK:PassRails( Controller )
 			CylinderAngle:RotateAroundAxis(SubsegmentNormal:Angle():Up(), 90 )
 
 			-- If this is the last segment, adjust the angles so it will seamlessly fit with the beginning of the track (if it's looped)
-			if i == #Controller.CatmullRom.Spline && Controller:Looped() then
+			if i == #Controller.CatmullRom.Spline && Controller:GetLooped() then
 				SubsegmentAngle = self.BeginningSegmentAngle
 				CylinderAngle = self.BeginningSegmentCylinderAngle
 			end
@@ -329,7 +334,7 @@ function TRACK:PassRails( Controller )
 end
 
 function TRACK:PassStruts( Controller )
-	if !IsValid( Controller ) || !Controller:IsController() then return end
+	if !IsValid( Controller ) || !Controller:GetIsController() then return end
 	local Models = {}
 	local ModelCount = 1
 
@@ -372,7 +377,7 @@ function TRACK:PassStruts( Controller )
 			Percent = 0
 		end
 
-		local verts = CreateStrutsMesh(Position, ang, CurNode:GetTrackColor())
+		local verts = CreateStrutsMesh(Position, ang, GetColorFromVector(CurNode:GetTrackColor()))
 
 		table.Add( StrutVerts, verts )
 
@@ -394,7 +399,7 @@ function TRACK:PassStruts( Controller )
 end
 
 function TRACK:Generate( Controller )
-	if !IsValid( Controller ) || !Controller:IsController() then return end
+	if !IsValid( Controller ) || !Controller:GetIsController() then return end
 
 	local Rails = {}
 	local Struts = {}

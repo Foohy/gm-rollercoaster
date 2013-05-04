@@ -19,7 +19,6 @@ TAB.ClientConVar["tracktype"] = "1"
 
 TAB.ClientConVar["prev_nodeheight"] = "0"
 TAB.ClientConVar["trackchains"] = "0"
-TAB.ClientConVar["relativeroll"] = "0"
 
 TAB.GhostModel = Model("models/Combine_Helicopter/helicopter_bomb01.mdl")
 TAB.WaitTime	= 0 //Time to wait to make sure the dtvars are updated
@@ -31,7 +30,6 @@ function TAB:LeftClick( trace, tool )
 	local Bank	 	= GetClientNumber( self, "bank", tool )
 	local ID 		= ply:SteamID() .. "_" ..  GetClientInfo( self, "id", tool )
 	local Type 		= GetClientNumber( self, "tracktype", tool )
-	local RelRoll 	= GetClientNumber( self, "relativeroll", tool ) == 1
 	local matchZ 	= GetClientNumber( self, "prev_nodeheight", tool ) == 1
 	local plyAng	= ply:GetAngles()
 			
@@ -43,7 +41,6 @@ function TAB:LeftClick( trace, tool )
 		if IsValid( Node ) && Node:GetClass() == "coaster_node" then //Update an existing node's settings
 			local ShouldInvalidate = Node:GetRoll() != Bank
 			Node:SetType( Type )
-			Node:SetRelativeRoll( RelRoll )
 			Node:SetRoll( Bank )
 
 			if ShouldInvalidate then
@@ -52,7 +49,7 @@ function TAB:LeftClick( trace, tool )
 
 			local controller = Node:GetController()
 
-			if controller.Looped && controller:Looped() then
+			if IsValid( controller ) && controller:GetLooped() then
 				local prevnode = nil
 				if Node == controller.Nodes[2] then
 					prevnode = controller.Nodes[#controller.Nodes - 1]
@@ -62,7 +59,6 @@ function TAB:LeftClick( trace, tool )
 
 				if IsValid( prevnode ) then
 					prevnode:SetType( Type )
-					prevnode:SetRelativeRoll( RelRoll )
 					prevnode:SetRoll( Bank )
 					if ShouldInvalidate then
 						prevnode:Invalidate( true )
@@ -74,19 +70,17 @@ function TAB:LeftClick( trace, tool )
 			//If the coaster is looped, unloop it
 			local controller = Rollercoasters[ID]
 			
-			if IsValid( controller ) && controller:Looped() then
+			if IsValid( controller ) && controller:GetLooped() then
 				local LastNode = controller.Nodes[ #controller.Nodes - 1 ]
 				local VeryLastNode = controller.Nodes[ #controller.Nodes ]
 				if IsValid( LastNode ) && IsValid( VeryLastNode ) && VeryLastNode.FinalNode then
 					LastNode:SetPos( newPos )
 					LastNode:SetAngles( newAng )
 					LastNode:SetType( Type )
-					//LastNode:SetRelativeRoll( RelRoll)
 					
 					VeryLastNode:SetPos( newPos )
 					VeryLastNode:SetAngles( newAng )
 					VeryLastNode:SetType( Type )
-					//VeryLastNode:SetRelativeRoll( RelRoll )
 					
 					VeryLastNode.FinalNode = false
 				end
@@ -104,7 +98,6 @@ function TAB:LeftClick( trace, tool )
 				if !IsValid( node ) then return end
 
 				node:SetRoll( Bank )
-				//node:SetRelativeRoll( RelRoll )
 
 				//Set the previous node to use the current values, to make things have more sense
 				local controller = Rollercoasters[ID]
@@ -118,7 +111,7 @@ function TAB:LeftClick( trace, tool )
 				end
 				
 
-				if node:IsController() then
+				if node:GetIsController() then
 					node:SetOwner( ply )
 				end
 			end
@@ -148,7 +141,7 @@ function TAB:RightClick( trace, tool )
 			local FirstNode  = Controller:GetFirstNode()
 			local SecondToLast = Controller.Nodes[ #Controller.Nodes - 1 ]
 			
-			if IsValid( Controller ) && IsValid( FirstNode ) && !Controller:Looped() then
+			if IsValid( Controller ) && IsValid( FirstNode ) && !Controller:GetLooped() then
 				local newNode = CoasterManager.CreateNode( Cur_ID, FirstNode:GetPos(), FirstNode:GetAngles(), COASTER_NODE_NORMAL, ply )
 				local lastNode = Controller.Nodes[ #Controller.Nodes ]
 				local SecondNode = FirstNode:GetNextNode()
@@ -252,9 +245,9 @@ function TAB:Think( tool )
 			if Node.GetCoasterID then
 				toolText = toolText .. " (" .. Node:GetCoasterID() .. ")"
 			end
-			if Node.IsController && Node:IsController() then 
+			if Node.GetIsController && Node:GetIsController() then 
 				toolText = toolText .. " (Controller)" 
-				toolText = toolText .. "\nLooped: " .. tostring( Node:Looped() )
+				toolText = toolText .. "\nLooped: " .. tostring( Node:GetLooped() )
 			end
 			if Node.GetType && Node.GetRoll then
 				toolText = toolText .. "\nType: " .. ( EnumNames.Nodes[ Node:GetType() ] or "Unknown(?)" )
@@ -293,7 +286,7 @@ end
 //TODO: include in rollercoaster table
 function GetControllerFromID( id )
 	for _, v in pairs( ents.FindByClass("coaster_node")) do
-		if v.IsController && v:IsController() && v:GetCoasterID() == id then return v end
+		if v.GetIsController && v:GetIsController() && v:GetCoasterID() == id then return v end
 	end
 
 end
@@ -421,17 +414,6 @@ function TAB:BuildPanel( )
 	easyroll.Offset = 45
 
 	panel:AddItem( easyroll )
-
-	//panel:AddControl("Slider",   {Label = "ID: ",    Description = "The ID of the specific rollercoaster (Change the ID if you want to make a seperate coaster)",       Type = "Int", Min = "1", Max = "8", Command = "coaster_track_creator_id"})
-	//panel:AddControl("Slider",   {Label = "Elevation: ",    Description = "The height of the track node",       Type = "Float", Min = "0.00", Max = "5000", Command = "coaster_track_creator_elevation"})
-	//panel:AddControl("Slider",   {Label = "Bank: ",    Description = "How far to bank at that node",       Type = "Float", Min = "-180.0", Max = "180.0", Command = "coaster_track_creator_bank"})
-
-
-
-	//panel:AddControl("CheckBox", {Label = "Relative Roll: ", Description = "Roll of the cart is relative to the tracks angle (LOOPDY LOOP HEAVEN)", Command = "coaster_track_creator_relativeroll"})
-
-	//panel:AddControl("Button",	 {Label = "BUILD COASTER (CAUTION WEEOOO)", Description = "Build the current rollercoaster with a pretty mesh track. WARNING FREEZES FOR A FEW SECONDS.", Command = "coaster_update_mesh"})
-
 
 	return panel
 end
