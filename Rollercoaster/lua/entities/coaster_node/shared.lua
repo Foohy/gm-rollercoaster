@@ -11,19 +11,18 @@ ENT.AdminSpawnable	= false
 ENT.Material 		= "hunter/myplastic"
 
 function ENT:SetupDataTables()
-	self:DTVar("Bool", 0, "IsController")
-	self:DTVar("Bool", 1, "RelativeRoll")
-	self:DTVar("Bool", 2, "Looped")
-	self:DTVar("Entity", 0, "NextNode")
-	self:DTVar("Entity", 1, "Controller")
-	self:DTVar("Int", 0, "Type")
-	self:DTVar("Int", 1, "TrackType")
+	self:NetworkVar("Bool", 0, "IsController")
+	self:NetworkVar("Bool", 2, "Looped")
+	self:NetworkVar("Entity", 0, "NextNode")
+	self:NetworkVar("Entity", 1, "Controller")
+	self:NetworkVar("Int", 0, "Type")
+	self:NetworkVar("Int", 1, "TrackType")
+	self:NetworkVar("Float", 0, "Roll")
+	self:NetworkVar("Vector", 0, "TrackColor")
+	self:NetworkVar("String", 0, "CoasterID") --The string is STEAMID_ID (ex: STEAM_0:1:18712009_3 )
+
 	self:DTVar("Int", 2, "Order") -- Backwards compatability 
 	self:DTVar("Int", 3, "NumCoasterNodes") -- Backwards compatability
-	self:DTVar("Float", 0, "Roll")
-	self:DTVar("Vector", 0, "TrackColor")
-	self:DTVar("Vector", 1, "SupportColor")
-	self:DTVar("String", 0, "CoasterID") --The string is STEAMID_ID (ex: STEAM_0:1:18712009_3 )
 end
 
 -- The clients should always know about the nodes

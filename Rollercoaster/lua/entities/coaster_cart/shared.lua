@@ -9,13 +9,5 @@ ENT.AdminSpawnable	= false
 ENT.Model			= Model( "models/XQM/coastertrain2seat.mdl" )
 
 function ENT:SetupDataTables()
-	self:DTVar("Int", 0, "CurrentNode")
-end
-
-function ENT:SetCurrentNode(node)
-	self.dt.CurrentNode = node:EntIndex()
-end
-
-function ENT:GetCurrentNode()
-	return Entity( self.dt.CurrentNode )
+	self:NetworkVar("Entity", 0, "CurrentNode")
 end

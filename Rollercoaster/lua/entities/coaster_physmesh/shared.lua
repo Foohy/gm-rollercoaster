@@ -14,28 +14,12 @@ ENT.Resolution 		= 10
 
 
 function ENT:SetupDataTables()
-	self:DTVar("Int", 0, "Segment")
-	self:DTVar("Int", 1, "Controller")
+	self:NetworkVar("Int", 0, "Segment")
+	self:NetworkVar("Entity", 0, "Controller")
 end
 
 function ENT:Initialize()
 	self:SetMaterial( "metal" )
-end
-
-function ENT:SetSegment(segment)
-	self.dt.Segment = segment
-end
-
-function ENT:GetSegment()
-	return self.dt.Segment
-end
-
-function ENT:SetController(node)
-	self.dt.Controller = node:EntIndex()
-end
-
-function ENT:GetController()
-	return Entity(self.dt.Controller)
 end
 
 function ENT:Think()
