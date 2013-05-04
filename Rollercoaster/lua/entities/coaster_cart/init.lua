@@ -463,6 +463,10 @@ function ENT:PhysicsSimulate(phys, deltatime)
 		ang:RotateAroundAxis( ang:Up(), -90 )
 	end
 
+	if (self.IsBackwards) then
+		ang:RotateAroundAxis( ang:Up(), 180 )
+	end
+
 	//If we are a carousel, SPIN
 	if self.Carousel && !self.IsDummy then
 		local FixedAngle = Angle( ang.p, ang.y, ang.r )
@@ -965,11 +969,15 @@ function ENT:PhysicsCollide(data, physobj)
 		//If the yaw is in this range, the cart is boarding the track going the opposite direction
 		local trackang = self:AngleAt(self.CurSegment, self.Percent)
 		local curang = data.OurOldVelocity:Angle()
-		local yawDif = trackang.y - curang.y 
-		if yawDif > 270 || yawDif < 90 then 
+
+		local angdif = math.abs(math.AngleDifference( trackang.y, curang.y ))
+
+		if angdif < 90 then 
 			self.Velocity = data.OurOldVelocity:Length() / -25
+			self.IsBackwards = true
 		else
 			self.Velocity = data.OurOldVelocity:Length() / 25
+			self.IsBackwards = false
 		end
 
 		//Recreate the cart table
