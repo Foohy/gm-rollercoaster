@@ -23,10 +23,6 @@ local StrutOffset = 0.5
 TRACK.CylinderRadius = 3 -- Radius of the circular track beams
 TRACK.CylinderPointCount = 7 -- How many points make the cylinder of the track mesh
 
-local function GetColorFromVector( colorvector )
-	return Color( colorvector.x, colorvector.y, colorvector.z )
-end
-
 local function GetAngleOfSubsegment( Controller, subsegment )
 	local SubAngle = Angle( 0, 0, 0 )
 	local NearSub = Controller.CatmullRom.Spline[subsegment+1] -- Get a subsegment that's just next to us
@@ -350,7 +346,7 @@ local function CreateStrutsMesh(pos, ang, TrackColor)
 end
 
 function TRACK:CreateSideBeams( Position, Angle, Position2, Angle2, Node, CurrentCylinderAngle )
-	local color = GetColorFromVector( Node:GetTrackColor() )
+	local color = Node:GetActualTrackColor()
 	//Side rails
 	self.Cylinder:AddBeam( Position + Angle:Right() * -RailOffset, -- Position of beginning of cylinder
 		self.LastCylinderAngle, -- The angle of the first radius of the cylinder
@@ -369,7 +365,7 @@ function TRACK:CreateSideBeams( Position, Angle, Position2, Angle2, Node, Curren
 end
 
 function TRACK:CreateCenterBeam( Position, Angle1, Position2, Angle2, Node, CurrentCylinderAngle )
-	self.Cylinder:AddBeamSquareSimple(Position - Angle1:Up() * CenterBeamOffset, Angle1, Position2 - Angle2:Up() * CenterBeamOffset, Angle2, CenterBeamWidth, GetColorFromVector(Node:GetTrackColor()) )
+	self.Cylinder:AddBeamSquareSimple(Position - Angle1:Up() * CenterBeamOffset, Angle1, Position2 - Angle2:Up() * CenterBeamOffset, Angle2, CenterBeamWidth, Node:GetActualTrackColor() )
 end
 
 function TRACK:PassRails( Controller )
@@ -494,7 +490,7 @@ function TRACK:PassStruts( Controller )
 		end
 
 
-		local verts = CreateStrutsMesh(Position, ang, GetColorFromVector( CurNode:GetTrackColor() ))
+		local verts = CreateStrutsMesh(Position, ang, CurNode:GetActualTrackColor())
 		table.Add( StrutVerts, verts )
 
 		-- Split the model into multiple meshes if it gets large

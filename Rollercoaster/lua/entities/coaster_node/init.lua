@@ -30,49 +30,6 @@ ENT.NodeModel			= Model( "models/hunter/misc/sphere075x075.mdl" )
 duplicator.RegisterEntityModifier("rollercoaster_node_order", function( ply, ent, data )
 	duplicator.StoreEntityModifier( ent, "rollercoaster_node_order", data )
 end )
-////////////////////////////////////////////////////////
-//Recreate the shared functions on the client, since MANY times they'll be called before shared.lua is included
-//This is incredibly annoying
-////////////////////////////////////////////////////////
-
-//Function to get if we are being driven with garry's new drive system
-function ENT:IsBeingDriven()
-	for _, v in pairs( player.GetAll() ) do
-		if v:GetViewEntity() == self then return true end
-	end
-
-	return false
-end
-
-function ENT:SetOrder( num )
-	local data = self.EntityMods && self.EntityMods["rollercoaster_node_order"] or {}
-	data.Order = num 
-	duplicator.StoreEntityModifier( self, "rollercoaster_node_order", data)
-end
-
-function ENT:GetOrder()
-	return istable(self.EntityMods) && self.EntityMods["rollercoaster_node_order"] && self.EntityMods["rollercoaster_node_order"].Order or self.dt.Order or -1
-end
-
-function ENT:SetNumCoasterNodes( num )
-	local data = self.EntityMods && self.EntityMods["rollercoaster_node_order"] or {}
-	data.Total = num 
-	duplicator.StoreEntityModifier( self, "rollercoaster_node_order", data)
-end
-
-function ENT:GetNumCoasterNodes()
-	return istable(self.EntityMods) && self.EntityMods["rollercoaster_node_order"] && self.EntityMods["rollercoaster_node_order"].Total or self.dt.NumCoasterNodes or -1
-end
-
-
-////////////////////////////////////////////////////////
-//END OF 'SHARED' FUNCTIONS
-////////////////////////////////////////////////////////
-
-
-
-
-
 
 
 function ENT:Initialize()
@@ -104,10 +61,55 @@ function ENT:Initialize()
 
 	local col = self:GetTrackColor()
 	if col.x == 0 && col.y == 0 && col.z == 0 then
-		self:SetTrackColor( Vector(255, 255, 255) )
+		self:SetTrackColor( Vector(1, 1, 1) )
 	end
 
+	self:NetworkVarNotify("TrackType", self.OnTrackTypeChanged )
+
 end
+
+function ENT:OnTrackTypeChanged(varname, oldvalue, newvalue)
+	local controller = self:GetController()
+
+	if oldvalue == newvalue || !IsValid( controller ) || !istable( controller.Nodes ) then return end 
+
+	for k, v in pairs( controller.Nodes ) do
+		v.dt.TrackType = newvalue
+	end
+
+	controller:InvalidateTrack()
+end
+
+//Function to get if we are being driven with garry's new drive system
+function ENT:IsBeingDriven()
+	for _, v in pairs( player.GetAll() ) do
+		if v:GetViewEntity() == self then return true end
+	end
+
+	return false
+end
+
+function ENT:SetOrder( num )
+	local data = self.EntityMods && self.EntityMods["rollercoaster_node_order"] or {}
+	data.Order = num 
+	duplicator.StoreEntityModifier( self, "rollercoaster_node_order", data)
+end
+
+function ENT:GetOrder()
+	return istable(self.EntityMods) && self.EntityMods["rollercoaster_node_order"] && self.EntityMods["rollercoaster_node_order"].Order or self.dt.Order or -1
+end
+
+function ENT:SetNumCoasterNodes( num )
+	local data = self.EntityMods && self.EntityMods["rollercoaster_node_order"] or {}
+	data.Total = num 
+	duplicator.StoreEntityModifier( self, "rollercoaster_node_order", data)
+end
+
+function ENT:GetNumCoasterNodes()
+	return istable(self.EntityMods) && self.EntityMods["rollercoaster_node_order"] && self.EntityMods["rollercoaster_node_order"].Total or self.dt.NumCoasterNodes or -1
+end
+
+
 
 function ENT:GetNumNodes()
 	return #self.Nodes or 0

@@ -19,10 +19,6 @@ local RailOffset = 25 //Distance track beams away from eachother
 local Radius = 10 	//radius of the circular track beams
 local PointCount = 7 //how many points make the cylinder of the track mesh
 
-local function GetColorFromVector( colorvector )
-	return Color( colorvector.x, colorvector.y, colorvector.z )
-end
-
 /******************************
 Generate function. Generate the IMeshes.
 ******************************/
@@ -102,7 +98,7 @@ function TRACK:Generate( controller )
 
 			if LastAng == nil then LastAng = NewAng end
 
-			local color = GetColorFromVector( ThisSegment:GetTrackColor() )
+			local color = ThisSegment:GetActualTrackColor()
 			//Draw the first segment
 			if i==1 then
 				local FirstLeft = controller:GetPos() + ang:Right() * -RailOffset
@@ -181,7 +177,7 @@ function TRACK:Generate( controller )
 			end	
 			Percent = 0
 		end
-		local verts = CreateStrutsMesh(Position, ang, GetColorFromVector(CurNode:GetTrackColor()) ) 
+		local verts = CreateStrutsMesh(Position, ang, CurNode:GetActualTrackColor() ) 
 		table.Add( StrutVerts, verts ) //Combine the tables into da big table
 
 		self:CoroutineCheck( controller, 1, nil, CurSegment / (#controller.CatmullRom.PointsList - 1) )

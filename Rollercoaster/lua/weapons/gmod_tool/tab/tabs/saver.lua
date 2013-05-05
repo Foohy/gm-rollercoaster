@@ -134,7 +134,7 @@ function CreateTrackTable( controller )
 		coaster_saver_ClipboardTrack[k].Type = v:GetType()
 		coaster_saver_ClipboardTrack[k].Roll = v:GetRoll()
 		coaster_saver_ClipboardTrack[k].Color = v:GetColor()
-		coaster_saver_ClipboardTrack[k].TrackColor = Color(v:GetTrackColor().x, v:GetTrackColor().y, v:GetTrackColor().z )
+		coaster_saver_ClipboardTrack[k].TrackColor = v:GetActualTrackColor()
 	end
 
 	coaster_saver_ClipboardTrack.numnodes = #controller.Nodes
@@ -681,7 +681,7 @@ if SERVER then
 		node:SetType( nodeinfo.type )
 		node:SetColor( color  )
 		if nodeinfo.trackcolor then //backwards compatibility 
-			node:SetTrackColor( Vector(nodeinfo.trackcolor.r, nodeinfo.trackcolor.g, nodeinfo.trackcolor.b)  )
+			node:SetTrackColor( Vector(nodeinfo.trackcolor.r/255, nodeinfo.trackcolor.g/255, nodeinfo.trackcolor.b/255)  )
 		end
 
 		node.Filename = filename //Prevent duplicates of the coaster to be spawned
@@ -850,7 +850,7 @@ if SERVER then
 				trackTable[k].Type = v:GetType()
 				trackTable[k].Roll = v:GetRoll()
 				trackTable[k].Color = v:GetColor()
-				trackTable[k].TrackColor = Color(v:GetTrackColor().x, v:GetTrackColor().y, v:GetTrackColor().z )
+				trackTable[k].TrackColor = v:GetActualTrackColor()
 			end
 
 			trackTable.numnodes = #controller.Nodes

@@ -70,6 +70,14 @@ local function ReconstructCoaster(coasterID, owner, Controller )
 		end
 
 		node:SetController( Controller )
+
+		-- Fix colors from older saves
+		local color = node:GetTrackColor()
+		if (color.x > 1 || color.y > 1 || color.z > 1) then
+			color = color / 255	
+			node:SetTrackColor( color )
+		end
+
 		if !IsValid( Rollercoasters[coasterID] ) then
 			Rollercoasters[coasterID] = node
 			Rollercoasters[coasterID]:SetIsController(true)

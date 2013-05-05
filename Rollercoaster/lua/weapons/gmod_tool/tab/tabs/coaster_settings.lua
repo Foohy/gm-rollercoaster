@@ -24,9 +24,9 @@ function TAB:LeftClick( trace, tool )
 	local CartNum = GetClientNumber( self, "cart_amount", tool )
 	local Powered = GetClientNumber( self, "powered", tool)
 	local tracktype = GetClientNumber( self, "tracktype", tool)
-	local r = GetClientNumber( self, "r", tool) or 255
-	local g = GetClientNumber( self, "g", tool) or 255
-	local b = GetClientNumber( self, "b", tool) or 255
+	local r = GetClientNumber( self, "r", tool)/255 or 1
+	local g = GetClientNumber( self, "g", tool)/255 or 1
+	local b = GetClientNumber( self, "b", tool)/255 or 1
 
 	local Ent = trace.Entity
 	

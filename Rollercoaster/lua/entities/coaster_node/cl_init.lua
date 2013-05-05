@@ -21,13 +21,6 @@ local mat_chain = Material("sunabouzu/old_chain") //sunabouzu/old_chain
 local mat_debug = Material("foohy/warning")
 
 
-
-
-////////////////////////////////////////////////////////
-//Recreate the shared functions on the client, since MANY times they'll be called before shared.lua is included
-//This is incredibly annoying
-////////////////////////////////////////////////////////
-
 //Function to get if we are being driven with garry's new drive system
 function ENT:IsBeingDriven()
 	for _, v in pairs( player.GetAll() ) do
@@ -36,10 +29,6 @@ function ENT:IsBeingDriven()
 
 	return false
 end
-
-////////////////////////////////////////////////////////
-//END OF 'SHARED' FUNCTIONS
-////////////////////////////////////////////////////////
 
 local function AddNotify( text, type, time )
 	if GAMEMODE && GAMEMODE.AddNotify then
