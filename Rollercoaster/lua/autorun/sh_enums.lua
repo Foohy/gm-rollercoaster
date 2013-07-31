@@ -18,6 +18,7 @@ COASTER_TRACK_WOOD 		= 2
 COASTER_TRACK_SIMPLE 	= 3
 COASTER_TRACK_BM		= 4
 COASTER_TRACK_VEKOMA	= 5
+COASTER_TRACK_BLANK		= 6
 
 //Nice names for above
 
@@ -34,3 +35,4 @@ EnumNames.Tracks[COASTER_TRACK_WOOD]	= "Wooden Track"
 EnumNames.Tracks[COASTER_TRACK_SIMPLE]	= "Simple Track"
 EnumNames.Tracks[COASTER_TRACK_BM]		= "B and M Track"
 EnumNames.Tracks[COASTER_TRACK_VEKOMA]	= "Vekoma Track"
+EnumNames.Tracks[COASTER_TRACK_BLANK]	= "Blank Track"
