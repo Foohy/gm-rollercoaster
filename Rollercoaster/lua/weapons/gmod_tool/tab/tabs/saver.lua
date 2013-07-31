@@ -131,7 +131,7 @@ function CreateTrackTable( controller )
 		coaster_saver_ClipboardTrack[k] = {}
 		coaster_saver_ClipboardTrack[k].Pos = tostring(v:GetPos())
 		coaster_saver_ClipboardTrack[k].Ang = tostring(v:GetAngles())
-		coaster_saver_ClipboardTrack[k].Type = v:GetType()
+		coaster_saver_ClipboardTrack[k].Type = v:GetNodeType()
 		coaster_saver_ClipboardTrack[k].Roll = v:GetRoll()
 		coaster_saver_ClipboardTrack[k].Color = v:GetColor()
 		coaster_saver_ClipboardTrack[k].TrackColor = v:GetActualTrackColor()
@@ -678,7 +678,7 @@ if SERVER then
 		local node = CoasterManager.CreateNodeSimple(id, pos, ang )
 		node:SetRoll( nodeinfo.roll )
 
-		node:SetType( nodeinfo.type )
+		node:SetNodeType( nodeinfo.type )
 		node:SetColor( color  )
 		if nodeinfo.trackcolor then //backwards compatibility 
 			node:SetTrackColor( Vector(nodeinfo.trackcolor.r/255, nodeinfo.trackcolor.g/255, nodeinfo.trackcolor.b/255)  )
@@ -847,7 +847,7 @@ if SERVER then
 				trackTable[k] = {}
 				trackTable[k].Pos = tostring(v:GetPos())
 				trackTable[k].Ang = tostring(v:GetAngles())
-				trackTable[k].Type = v:GetType()
+				trackTable[k].Type = v:GetNodeType()
 				trackTable[k].Roll = v:GetRoll()
 				trackTable[k].Color = v:GetColor()
 				trackTable[k].TrackColor = v:GetActualTrackColor()

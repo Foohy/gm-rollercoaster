@@ -65,7 +65,7 @@ function ENT:Think()
 
 
 	local CurrentNode = self:GetCurrentNode()
-	if IsValid( CurrentNode ) && CurrentNode:EntIndex() != 1 && CurrentNode.GetType && CurrentNode:GetType() == COASTER_NODE_CHAINS then
+	if IsValid( CurrentNode ) && CurrentNode:EntIndex() != 1 && CurrentNode.GetType && CurrentNode:GetNodeType() == COASTER_NODE_CHAINS then
 		if self.ChainSound then
 			if !self.ChainSound:IsPlaying() then
 				self.ChainSound:PlayEx(1, 100)

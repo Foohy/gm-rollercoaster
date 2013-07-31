@@ -40,7 +40,7 @@ function TAB:LeftClick( trace, tool )
 		local Node = GetActualNodeEntity( trace.Entity )
 		if IsValid( Node ) && Node:GetClass() == "coaster_node" then //Update an existing node's settings
 			local ShouldInvalidate = Node:GetRoll() != Bank
-			Node:SetType( Type )
+			Node:SetNodeType( Type )
 			Node:SetRoll( Bank )
 
 			if ShouldInvalidate then
@@ -58,7 +58,7 @@ function TAB:LeftClick( trace, tool )
 				end
 
 				if IsValid( prevnode ) then
-					prevnode:SetType( Type )
+					prevnode:SetNodeType( Type )
 					prevnode:SetRoll( Bank )
 					if ShouldInvalidate then
 						prevnode:Invalidate( true )
@@ -76,11 +76,11 @@ function TAB:LeftClick( trace, tool )
 				if IsValid( LastNode ) && IsValid( VeryLastNode ) && VeryLastNode.FinalNode then
 					LastNode:SetPos( newPos )
 					LastNode:SetAngles( newAng )
-					LastNode:SetType( Type )
+					LastNode:SetNodeType( Type )
 					
 					VeryLastNode:SetPos( newPos )
 					VeryLastNode:SetAngles( newAng )
-					VeryLastNode:SetType( Type )
+					VeryLastNode:SetNodeType( Type )
 					
 					VeryLastNode.FinalNode = false
 				end
@@ -106,7 +106,7 @@ function TAB:LeftClick( trace, tool )
 					if IsValid( LastNode ) then
 						LastNode:SetPos( newPos )
 						LastNode:SetAngles( newAng )
-						LastNode:SetType( Type )
+						LastNode:SetNodeType( Type )
 					end
 				end
 				
@@ -179,7 +179,7 @@ function TAB:Reload( trace, tool )
 	if IsValid( Node ) && Node:GetClass() == "coaster_node" then //Update an existing node's settings
 		local expldID = string.Explode("_", Node:GetCoasterID() )
 		//Info gathering time
-		local type = Node:GetType()
+		local type = Node:GetNodeType()
 		local ID = expldID[#expldID]
 		local Bank = Node:GetRoll()
 
@@ -250,7 +250,7 @@ function TAB:Think( tool )
 				toolText = toolText .. "\nLooped: " .. tostring( Node:GetLooped() )
 			end
 			if Node.GetType && Node.GetRoll then
-				toolText = toolText .. "\nType: " .. ( EnumNames.Nodes[ Node:GetType() ] or "Unknown(?)" )
+				toolText = toolText .. "\nType: " .. ( EnumNames.Nodes[ Node:GetNodeType() ] or "Unknown(?)" )
 				toolText = toolText .. "\nRoll: " .. tostring( Node:GetRoll() )
 			end
 

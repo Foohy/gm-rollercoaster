@@ -168,7 +168,7 @@ function ENT:AddTrackNode( ent, ply )
 		
 		//Create the second node if we are the very first created node(controller)
 		if ( !IsValid( FirstNode ) || FirstNode:EntIndex() == 1 ) && ent:GetIsController() then
-			local node = CoasterManager.CreateNode( ent:GetCoasterID(), ent:GetPos(), ent:GetAngles(), ent:GetType(), ply )
+			local node = CoasterManager.CreateNode( ent:GetCoasterID(), ent:GetPos(), ent:GetAngles(), ent:GetNodeType(), ply )
 
 			undo.Create("Rollercoaster")
 				undo.AddEntity( ent )
@@ -181,7 +181,7 @@ function ENT:AddTrackNode( ent, ply )
 		
 		//Create the 4th node if we are the 3rd node created (2nd click)
 		if IsValid( FirstNode ) && FirstNode:EntIndex() != 1 && FirstNode:GetNextNode() == ent then
-			local node = CoasterManager.CreateNode( ent:GetCoasterID(), ent:GetPos(), ent:GetAngles(), ent:GetType(), ply )
+			local node = CoasterManager.CreateNode( ent:GetCoasterID(), ent:GetPos(), ent:GetAngles(), ent:GetNodeType(), ply )
 			
 			undo.Create("Coaster Node")
 				undo.AddEntity( ent )

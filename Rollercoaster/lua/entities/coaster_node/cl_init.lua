@@ -105,7 +105,7 @@ usermessage.Hook("Coaster_RefreshTrack", function( um )
 
 		//Update the positions of the wheels
 		for num, node in pairs( self.Nodes ) do 
-			if node:GetType() == COASTER_NODE_BRAKES || node:GetType() == COASTER_NODE_SPEEDUP then
+			if node:GetNodeType() == COASTER_NODE_BRAKES || node:GetNodeType() == COASTER_NODE_SPEEDUP then
 				self:UpdateWheelPositions( num )
 			end
 		end
@@ -172,7 +172,7 @@ usermessage.Hook("Coaster_AddNode", function( um )
 		//Update the positions of the wheels
 		for num, node in pairs( self.Nodes ) do 
 			if !IsValid( node ) || !node.GetType then continue end
-			if node:GetType() == COASTER_NODE_BRAKES || node:GetType() == COASTER_NODE_SPEEDUP then
+			if node:GetNodeType() == COASTER_NODE_BRAKES || node:GetNodeType() == COASTER_NODE_SPEEDUP then
 				self:UpdateWheelPositions( num )
 			end
 		end
@@ -549,7 +549,7 @@ function ENT:DrawTrack()
 		render.SetMaterial( mat_chain ) //mat_chain
 		for i = 2, (#self.CatmullRom.PointsList - 2) do
 			if IsValid( self.Nodes[i] ) then
-				nodeType = self.Nodes[i]:GetType()
+				nodeType = self.Nodes[i]:GetNodeType()
 				
 				if nodeType == COASTER_NODE_CHAINS then
 					
@@ -1115,7 +1115,7 @@ function ENT:Think()
 
 			//Update the positions of the wheels
 			for num, node in pairs( self.Nodes ) do 
-				if IsValid( node ) && node.GetType && (node:GetType() == COASTER_NODE_BRAKES || node:GetType() == COASTER_NODE_SPEEDUP) then
+				if IsValid( node ) && node.GetType && (node:GetNodeType() == COASTER_NODE_BRAKES || node:GetNodeType() == COASTER_NODE_SPEEDUP) then
 					self:UpdateWheelPositions( num )
 				end
 			end

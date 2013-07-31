@@ -351,7 +351,7 @@ function ENT:PhysicsSimulate(phys, deltatime)
 	end
 
 	//Do some fancy effects
-	if self:GetCurrentNode():GetType() == COASTER_NODE_SPEEDUP then
+	if self:GetCurrentNode():GetNodeType() == COASTER_NODE_SPEEDUP then
 		if self.LastSpark && self.LastSpark < CurTime() then
 			self.LastSpark = CurTime() + 0.08
 
@@ -474,7 +474,7 @@ function ENT:PhysicsSimulate(phys, deltatime)
 		local angDif = math.AngleDifference( CurrentAngle.y, ang2.y )
 		self.FakeFriction = 1.0003
 
-		if self:GetCurrentNode():GetType() == COASTER_NODE_BRAKES || self:GetCurrentNode():GetType() == COASTER_NODE_HOME then
+		if self:GetCurrentNode():GetNodeType() == COASTER_NODE_BRAKES || self:GetCurrentNode():GetNodeType() == COASTER_NODE_HOME then
 			self.FakeFriction = 1.04
 		end
 		//Make it so it doesnt rotate with the track
@@ -635,7 +635,7 @@ function ENT:TrainOnType( ENUM_TYPE )
 	for k, v in pairs(self.CartTable) do
 		local node = v.GetCurrentNode && v:GetCurrentNode() or nil
 		if IsValid( node ) then 
-			if node.GetType && node:GetType() or -1 == ENUM_TYPE then return true end
+			if node.GetType && node:GetNodeType() or -1 == ENUM_TYPE then return true end
 		end
 	end
 
@@ -653,7 +653,7 @@ function ENT:SpeedupThink(dt)
 		for k, v in pairs(self.CartTable) do
 			if k > 1 || #self.CartTable == 1 then
 				local node = v:GetCurrentNode()
-				if IsValid( node ) && node.GetType && node:GetType() == COASTER_NODE_SPEEDUP then
+				if IsValid( node ) && node.GetType && node:GetNodeType() == COASTER_NODE_SPEEDUP then
 					OnSpeedup = true
 					SpeedupForce = node.SpeedupForce
 					MaxSpeed = node.MaxSpeed
@@ -687,7 +687,7 @@ function ENT:BreakThink(dt)
 		for k, v in pairs(self.CartTable) do
 			if k > 1 || #self.CartTable == 1 then
 				local node = v:GetCurrentNode()
-				if IsValid( node ) && node.GetType && node:GetType() == COASTER_NODE_BRAKES then
+				if IsValid( node ) && node.GetType && node:GetNodeType() == COASTER_NODE_BRAKES then
 					OnBreaks = true
 					BreakForce = node.BreakForce
 					MinSpeed = node.BreakSpeed
@@ -718,7 +718,7 @@ end
 /*
 //Basically the exact opposite of speedup
 function ENT:BreakThink(dt)
-	if self:GetCurrentNode():GetType() == COASTER_NODE_BRAKES && self.Velocity > self.BreakSpeed then
+	if self:GetCurrentNode():GetNodeType() == COASTER_NODE_BRAKES && self.Velocity > self.BreakSpeed then
 		local Acceleration = self.BreakForce / self:GetPhysicsObject():GetMass() //F = MA. thus, (F / M) = A
 		local Velocity = Acceleration * dt //A = VelocityChange / TimeChange. thus, V = AT
 
@@ -735,7 +735,7 @@ function ENT:ChainThink()
 		for k, v in pairs(self.CartTable) do
 
 			local node = v.GetCurrentNode && v:GetCurrentNode() or nil
-			if IsValid( node ) && node.GetType && node:GetType() == COASTER_NODE_CHAINS then
+			if IsValid( node ) && node.GetType && node:GetNodeType() == COASTER_NODE_CHAINS then
 				OnChain = true
 				ChainSpeed = node.ChainSpeed
 				break
@@ -759,7 +759,7 @@ function ENT:HomeStationThink(dt)
 		for k, v in pairs(self.CartTable) do
 
 			local node = v:GetCurrentNode()
-			if IsValid( node ) && node.GetType && node:GetType() == COASTER_NODE_HOME then
+			if IsValid( node ) && node.GetType && node:GetNodeType() == COASTER_NODE_HOME then
 				OnHome = true
 				HomeWaitTime = node.StopTime
 				break

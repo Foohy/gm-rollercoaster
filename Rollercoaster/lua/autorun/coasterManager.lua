@@ -3,7 +3,7 @@ AddCSLuaFile()
 //I should probably make this a package and combine these two global tables into one.
 Rollercoasters = Rollercoasters or {} //Holds all the rollercoasters
 CoasterManager = CoasterManager or {} //Holds all the methods and variables for rollercoasters
-COASTER_VERSION = 18
+COASTER_VERSION = 19
 
 cleanup.Register("Rollercoaster")
 
@@ -56,7 +56,7 @@ if SERVER then
 
 		local node = ents.Create("coaster_node")		
 		node:SetCoasterID( id )
-		node:SetType( type )
+		node:SetNodeType( type )
 		node:SetTrackType( COASTER_TRACK_METAL )
 
 		node:SetController( Rollercoasters[id] or node )
