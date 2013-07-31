@@ -313,7 +313,7 @@ local function PlayerLeaveVehice( vehicle, ply )
 
 end
 
-hook.Add("CanExitVehicle", "Leave", PlayerLeaveVehice)
+hook.Add("RollercoasterCanExitVehicle", "Leave", PlayerLeaveVehice)
 
 function PlayerExitLeft( ply )
 	local Vehicle = ply:GetVehicle()
