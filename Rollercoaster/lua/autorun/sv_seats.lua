@@ -275,6 +275,11 @@ local function PlayerLeaveVehice( vehicle, ply )
 
 	//Remove them from the list of occupants
 	local parent = vehicle:GetParent()
+
+	//Don't mess with anything else
+	if IsValid( parent ) && parent:GetClass() != "coaster_cart" then return end 
+
+	//Force all the players to leave
 	if IsValid( parent ) && parent:GetClass() == "coaster_cart" && parent.Occupants && #parent.Occupants > 0 then
 
 		for k, v in pairs( parent.Occupants ) do
