@@ -6,6 +6,7 @@ if !TRACK then return end
 TRACK.Name = "Blank Track"
 TRACK.Description = "This track does nothing at all."
 TRACK.PhysWidth = 30 //How wide the physics mesh should be
+TRACK.SupportOverride = true //Don't draw the supports
 
 trackmanager.Register( EnumNames.Tracks[COASTER_TRACK_BLANK], TRACK )
 
