@@ -68,8 +68,6 @@ function TRACK:Generate( Controller )
 	if !IsValid( Controller ) || !Controller:GetIsController() then return end
 
 	local Vertices = {} //Create an array that will hold an array of vertices (This is to split up the model)
-	Meshes = {} //If we hit the maximum for the number of vertices of a model, split it up into several
-	local modelCount = 1 //how many models the mesh has been split into
 
 	self.Cylinder = Cylinder:Create()
 
@@ -122,10 +120,9 @@ function TRACK:Generate( Controller )
 
 		-- Split the model into multiple meshes if it gets large
 		if #self.Cylinder.Vertices > 50000 then
+			self:AddSubmesh( 1, self.Cylinder.Vertices)
 
-			Vertices[modelCount] = self.Cylinder.Vertices
-			modelCount = modelCount + 1
-
+			--Reset our cylinder builder
 			self.Cylinder.Vertices = {}
 			self.Cylinder.TriCount = 1
 		end
@@ -137,28 +134,12 @@ function TRACK:Generate( Controller )
 		self:CoroutineCheck( Controller, 1, nil, i / #Controller.CatmullRom.Spline)
 	end	
 
+	-- Add any extra vertices into their own mesh
 	local verts = self.Cylinder:EndBeam()
-	Vertices[modelCount] = verts
+	self:AddSubmesh( 1, verts)
 
-	//put the struts into the big vertices table
-	if #Vertices > 0 then
-		Vertices[#Vertices + 1] = StrutVerts
-	end
-	//Controller.Verts = verts //Only stored for debugging
-
-	for i=1, #Vertices do
-		if #Vertices[i] > 2 then
-			Meshes[i] = Mesh()
-			Meshes[i]:BuildFromTriangles( Vertices[i] )
-		end
-	end
-
-	//Create a new variable that will hold each section of the mesh
-	local Sections = {}
-	Sections[1] = Meshes
-
-	-- Let's exit the thread, but give them our finalized sections too
-	self:CoroutineCheck( Controller, 2, Sections )
+	-- Finalize our track and end the generation function
+	self:FinalizeTrack( Controller )
 end
 
 function TRACK:Draw( )

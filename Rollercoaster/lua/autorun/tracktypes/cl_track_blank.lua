@@ -12,14 +12,14 @@ trackmanager.Register( EnumNames.Tracks[COASTER_TRACK_BLANK], TRACK )
 
 if !CLIENT then return end
 
-TRACK.Material = Material( "coaster/track_metal_clean")
-
 function TRACK:Generate( Controller )
 	if !IsValid( Controller ) || !Controller:GetIsController() then return end
 
-	local FakeMeshTable = {{ Mesh() }}
+	--Trick it into think we have a mesh
+	self.BuildingTrackMeshes = { { Mesh() } }
+
 	-- Let's exit the thread, but give them our finalized sections too
-	self:CoroutineCheck( Controller, 1, FakeMeshTable )
+	self:FinalizeTrack( Controller )
 end
 
 function TRACK:Draw( )

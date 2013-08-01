@@ -24,9 +24,6 @@ Generate function. Generate the IMeshes.
 ******************************/
 function TRACK:Generate( controller )
 	if !IsValid( controller ) || !controller:GetIsController() then return end
-	local Vertices = {} //Create an array that will hold an array of vertices (This is to split up the model)
-	local Meshes = {} 
-	local modelCount = 1 
 
 	self.Cylinder = Cylinder:Create()
 	-- Cylinder.Start( Radius, PointCount ) //We're starting up making a beam of cylinders
@@ -58,7 +55,6 @@ function TRACK:Generate( controller )
 			AngVec2:Normalize()
 		else
 			AngVec2 = AngVec
-
 		end
 
 
@@ -125,9 +121,7 @@ function TRACK:Generate( controller )
 			self.Cylinder:AddBeam( posR, LastAng, nPosR, NewAng, 4, color)
 
 			if #self.Cylinder.Vertices > 50000 then// some arbitrary limit to split up the verts into seperate meshes
-
-				Vertices[modelCount] = self.Cylinder.Vertices
-				modelCount = modelCount + 1
+				self:AddSubmesh( 1, self.Cylinder.Vertices )
 
 				self.Cylinder.Vertices = {}
 				self.Cylinder.TriCount = 1
@@ -139,7 +133,7 @@ function TRACK:Generate( controller )
 	end	
 
 	local verts = self.Cylinder:EndBeam()
-	Vertices[modelCount] = verts
+	self:AddSubmesh( 1, verts )
 
 	//Stage 2, create the struts in between the coaster rails
 	local CurSegment = 2
@@ -180,27 +174,19 @@ function TRACK:Generate( controller )
 		local verts = CreateStrutsMesh(Position, ang, CurNode:GetActualTrackColor() ) 
 		table.Add( StrutVerts, verts ) //Combine the tables into da big table
 
+		-- Split the model into multiple meshes if it gets large
+		if #StrutVerts > 50000 then
+			self:AddSubmesh( 2, StrutVerts )
+			StrutVerts = {}
+		end
+
 		self:CoroutineCheck( controller, 1, nil, CurSegment / (#controller.CatmullRom.PointsList - 1) )
 	end
 
-	//put the struts into the big vertices table
-	if #Vertices > 0 then
-		Vertices[#Vertices + 1] = StrutVerts
-	end
-	//controller.Verts = verts //Only stored for debugging
+	-- Add any final vertices
+	self:AddSubmesh( 2, StrutVerts )
 
-	for i=1, #Vertices do
-		if #Vertices[i] > 2 then
-			Meshes[i] = Mesh()
-			Meshes[i]:BuildFromTriangles( Vertices[i] )
-		end
-	end
-
-	//Create a new variable that will hold each section of the mesh
-	local Sections = {}
-	Sections[1] = Meshes
-
-	self:CoroutineCheck( controller, 3, Sections)
+	self:FinalizeTrack( controller )
 end
 
 //I can't retrieve the triangles from a compiled model, SO LET'S MAKE OUR OWN
@@ -507,5 +493,6 @@ function TRACK:Draw()
 	render.SetMaterial(self.Material)
 
 	self:DrawSection( 1 )
+	self:DrawSection( 2 ) 
 end
 

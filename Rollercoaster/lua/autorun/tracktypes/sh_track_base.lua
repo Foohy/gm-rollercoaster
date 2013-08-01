@@ -8,12 +8,14 @@ TRACK.PhysWidth = 20 //How wide the physics mesh should be
 TRACK.SupportOverride = false  //Override track supports (we're making our own)
 TRACK.StepsPerCycle = 0
 TRACK.TrackMeshes = {}
+TRACK.BuildingTrackMeshes = {}
 
 function TRACK:Create( class )
 	class = class or {}
 	setmetatable(class, self)
 	self.__index = self
 	class.TrackMeshes = {}
+	class.BuildingTrackMeshes = {}
 	return class
 end
 
@@ -26,10 +28,13 @@ function TRACK:CoroutineCheck( Controller, Stage, Sections, Percent )
 		hook.Call("CoasterBuildProgress", GAMEMODE, Controller:GetCoasterID(), Stage, Percent or 1)
 		coroutine.yield()
 	end
+end
 
+function TRACK:FinalizeTrack( Controller )
 	-- If we were returned a mesh, it's done generating
-	if Sections then
-		self.TrackMeshes = Sections
+	if self.BuildingTrackMeshes then
+		self.TrackMeshes = self.BuildingTrackMeshes
+		self.BuildingTrackMeshes = {} //Reset
 		Controller.BuildingMesh = false
 
 		-- Remove the previous type's mesh now that we're done
@@ -44,7 +49,16 @@ function TRACK:CoroutineCheck( Controller, Stage, Sections, Percent )
 
 		--Tell the track panel to update itself
 		UpdateTrackPanel( controlpanel.Get("coaster_supertool").CoasterList )
-	end
+	else print("TRACK:FinalizeTrack(). Track has invalid BuildingTrackMeshes!") end
+end
+
+-- Add a submesh to a specific section
+function TRACK:AddSubmesh( section, verttable )
+	local m = Mesh()
+	m:BuildFromTriangles( verttable )
+	if !self.BuildingTrackMeshes[section] then self.BuildingTrackMeshes[section] = {} end
+
+	table.insert( self.BuildingTrackMeshes[section], m )
 end
 
 -- Generate the track mesh

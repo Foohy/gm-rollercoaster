@@ -371,12 +371,6 @@ end
 function TRACK:PassRails( Controller )
 	if !IsValid( Controller ) || !Controller:GetIsController() then return end
 
-	local Models = {}
-	local ModelCount = 1
-
-	local Vertices = {} //Create an array that will hold an array of vertices (This is to split up the model)
-	Meshes = {} //If we hit the maximum for the number of vertices of a model, split it up into several
-
 	self.BeginningSegmentAngle = nil
 	self.BeginningSegmentCylinderAngle = nil 
 
@@ -424,9 +418,7 @@ function TRACK:PassRails( Controller )
 
 		-- Split the model into multiple meshes if it gets large
 		if #self.Cylinder.Vertices > 50000 then
-
-			Models[ModelCount] = self.Cylinder.Vertices
-			ModelCount = ModelCount + 1
+			self:AddSubmesh( 1, self.Cylinder.Vertices)
 
 			self.Cylinder.Vertices = {}
 			self.Cylinder.TriCount = 1
@@ -440,18 +432,11 @@ function TRACK:PassRails( Controller )
 	end	
 
 	local verts = self.Cylinder:EndBeam()
-	Models[ModelCount] = verts
-
-	return Models
+	self:AddSubmesh( 1, verts)
 end
 
 function TRACK:PassStruts( Controller )
 	if !IsValid( Controller ) || !Controller:GetIsController() then return end
-	local Models = {}
-	local ModelCount = 1
-
-	local Vertices = {} //Create an array that will hold an array of vertices (This is to split up the model)
-	Meshes = {} //If we hit the maximum for the number of vertices of a model, split it up into several
 
 	local CurSegment = 2
 	local Percent = 0
@@ -495,56 +480,28 @@ function TRACK:PassStruts( Controller )
 
 		-- Split the model into multiple meshes if it gets large
 		if #StrutVerts > 50000 then
-
-			Models[ModelCount] = StrutVerts
-			ModelCount = ModelCount + 1
+			self:AddSubmesh( 2, StrutVerts )
+			StrutVerts = {}
 		end
 
 		self:CoroutineCheck( Controller, 2, nil, CurSegment / (#Controller.CatmullRom.PointsList - 1) )
 	end
 
-	//put the struts into the big vertices table
-	Models[ModelCount] = StrutVerts
-
-	return Models
+	//Add any extra vertices
+	self:AddSubmesh( 2, StrutVerts )
 end
 
 function TRACK:Generate( Controller )
 	if !IsValid( Controller ) || !Controller:GetIsController() then return end
 
-	local Rails = {}
-	local Struts = {}
-	local RailMeshes = {}
-	local StrutsMeshes = {}
-
 	-- Create the cylinder object that will assist in mesh generation
 	self.Cylinder = Cylinder:Create()
 
-	table.Add( Rails, self:PassRails( Controller ) )
-	table.Add( Struts, self:PassStruts(Controller))
+	self:PassRails(Controller)
+	self:PassStruts(Controller)
 
-	for i=1, #Rails do
-		if #Rails[i] > 2 then
-			RailMeshes[i] = Mesh()
-			RailMeshes[i]:BuildFromTriangles( Rails[i] )
-		end
-	end
-
-	for i=1, #Struts do
-		if #Struts[i] > 2 then
-			StrutsMeshes[i] = Mesh()
-			StrutsMeshes[i]:BuildFromTriangles( Struts[i] )
-		end
-	end
-
-	//Create a new variable that will hold each section of the mesh
-	local Sections = {}
-	Sections[1] = RailMeshes
-	Sections[2] = StrutsMeshes
-
-	-- Let's exit the thread, but give them our finalized sections too
-	self:CoroutineCheck( Controller, 3, Sections )
-	-- return Sections
+	-- Let's exit the thread, finalizing the track
+	self:FinalizeTrack( Controller )
 end
 
 function TRACK:Draw()

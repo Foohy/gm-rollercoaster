@@ -81,8 +81,6 @@ local function BuildTraceWhitelist(segment, controller)
 end
 
 function TRACK:PassRails(controller)
-	local Vertices = {} //Create an array that will hold an array of vertices (This is to split up the model)
-
 	self.Cylinder = Cylinder:Create()
 	
 	local LastAng = nil //Last angle so previous cylinder matches with the next cylinder
@@ -170,10 +168,7 @@ function TRACK:PassRails(controller)
 			self.Cylinder:AddBeam( posR, LastAng, nPosR, NewAng, 4, color )
 
 			if #self.Cylinder.Vertices > 50000 then// some arbitrary limit to split up the verts into seperate meshes. It's surprisingly easy to hit that limit
-
-				Vertices[self.ModelCount] = self.Cylinder.Vertices
-				self.ModelCount = self.ModelCount + 1
-				print( self.ModelCount )
+				self:AddSubmesh( 1, self.Cylinder.Vertices )
 
 				self.Cylinder.Vertices = {}
 				self.Cylinder.TriCount = 1
@@ -185,14 +180,11 @@ function TRACK:PassRails(controller)
 	end	
 
 	local verts = self.Cylinder:EndBeam()
-	Vertices[self.ModelCount] = verts //Dump the remaining vertices into its own model
-
-	return Vertices
+	-- Dump the remaining vertices into its own model
+	self:AddSubmesh( 1, verts )
 end
 
 function TRACK:PassWoodRails(controller)
-	local Vertices = {} //Create an array that will hold an array of vertices (This is to split up the model)
-
 	self.Cylinder = Cylinder:Create( self.Cylinder )
 
 	local LastPoints = {} //Last angle so previous cylinder matches with the next cylinder
@@ -303,9 +295,7 @@ function TRACK:PassWoodRails(controller)
 			rightV = self.Cylinder:CreateSquare(LastPoints.RightIn, LastPoints.RightOut, OnposR, nPosR, ang:Up(), color )
 
 			if #self.Cylinder.Vertices > 50000 then// some arbitrary limit to split up the verts into seperate meshes. It's surprisingly easy to hit that limit
-
-				self.Vertices[self.ModelCount] = self.Cylinder.Vertices
-				self.ModelCount = self.ModelCount + 1
+				self:AddSubmesh( 2, self.Cylinder.Vertices )
 
 				self.Cylinder.Vertices = {}
 				self.Cylinder.TriCount = 1
@@ -320,15 +310,10 @@ function TRACK:PassWoodRails(controller)
 	end	
 
 	local verts = self.Cylinder:EndBeam()
-	Vertices[self.ModelCount] = verts //Dump the remaining vertices into its own model
-
-	return Vertices
+	self:AddSubmesh( 2, verts)
 end
 
 function TRACK:PassVerticalSupports( controller )
-	local WoodModels = {}
-	local ModelCount = 1
-
 	self.Cylinder = Cylinder:Create(self.Cylinder )
 	//For every single spline segment 
 	for i = 1, #self.FixedSplines do
@@ -382,21 +367,18 @@ function TRACK:PassVerticalSupports( controller )
 		end
 		
 		if #self.Cylinder.Vertices > 50000 then //some arbitrary limit to split up the verts into seperate meshes. It's surprisingly easy to hit that limit
-
-			WoodModels[ModelCount] = self.Cylinder.Vertices
-			ModelCount = ModelCount + 1
+			self:AddSubmesh( 3, self.Cylinder.Vertices )
 
 			self.Cylinder.Vertices = {}
 			self.Cylinder.TriCount = 1
 		end
 
 		self:CoroutineCheck( controller, 3, nil, i / (#self.FixedSplines ) )
-
-		local verts = self.Cylinder:EndBeam()
-		WoodModels[ModelCount] = verts //Dump the remaining vertices into its own model
 	end
 
-	return WoodModels
+
+	local verts = self.Cylinder:EndBeam()
+	self:AddSubmesh( 3, verts )
 end
 
 function TRACK:GetValidHeight( i, lowestPos )
@@ -419,11 +401,10 @@ end
 function TRACK:PassHorizontalSupports( controller )
 	self.Cylinder = Cylinder:Create( self.Cylinder )
 
-	local Models = {}
-	local ModelCount = 1
 	local lowestPos, heighestPos = GetLowestPosition(self.FixedSplines)
-
+	local PredictedNumLevels = math.abs(heighestPos - lowestPos) / self.VerticalSpacing
 	local level = 1
+	local numRuns = 0
 	while lowestPos < heighestPos do
 		lowestPos = lowestPos + self.VerticalSpacing
 		level = level + 1
@@ -447,22 +428,19 @@ function TRACK:PassHorizontalSupports( controller )
 				end 
 
 				if #self.Cylinder.Vertices > 50000 then //some arbitrary limit to split up the verts into seperate meshes. It's surprisingly easy to hit that limit
-					Models[ModelCount] = self.Cylinder.Vertices
-					ModelCount = ModelCount + 1
+					self:AddSubmesh( 3, self.Cylinder.Vertices )
 
 					self.Cylinder.Vertices = {}
 					self.Cylinder.TriCount = 1
 				end
+
+				self:CoroutineCheck( controller, 4, nil, level / ((heighestPos - lowestPos) / self.VerticalSpacing ) )
 			end
 		end
-
-		self:CoroutineCheck( controller, 4, nil, lowestPos / (heighestPos ) )
 	end
 
 	local verts = self.Cylinder:EndBeam()
-	Models[ModelCount] = verts //Dump the remaining vertices into its own model
-
-	return Models
+	self:AddSubmesh( 3, verts )
 end
 
 function TRACK:CreateFixedPointTable( controller )
@@ -529,60 +507,24 @@ function TRACK:CreateFixedPointTable( controller )
 
 		sub = sub + 1
 	end
-
-	//PrintTable( self.FixedSplines )
 end
 
 function TRACK:Generate( controller )
 	if !IsValid( controller ) || !controller:GetIsController() then return end
-	self.ModelCount = 1
-
-	local Models = {}
-	local WoodModels = {}
-	local WoodRailModels = {}
-	local Meshes = {}
-	local WoodMeshes = {}
-	local WoodRailMeshes = {}
 
 	self:CreateFixedPointTable( controller )
 
-	table.Add( Models, self:PassRails( controller ) )
-	table.Add( WoodRailModels, self:PassWoodRails(controller))
+	-- Build the metal rails the cart actually rides on
+	self:PassRails( controller )
 
-	table.Add( WoodModels, self:PassVerticalSupports( controller ) )
-	table.Add( WoodModels, self:PassHorizontalSupports( controller ) )
+	-- Build the wooden 'walkway' rails
+	self:PassWoodRails(controller)
 
+	-- Build the wooden supports
+	self:PassVerticalSupports( controller )
+	self:PassHorizontalSupports( controller )
 
-
-
-	for i=1, #Models do
-		if #Models[i] > 2 then
-			Meshes[i] = Mesh()
-			Meshes[i]:BuildFromTriangles( Models[i] )
-		end
-	end
-
-	for i=1, #WoodModels do
-		if #WoodModels[i] > 2 then
-			WoodMeshes[i] = Mesh()
-			WoodMeshes[i]:BuildFromTriangles( WoodModels[i] )
-		end
-	end
-
-	for i=1, #WoodRailModels do
-		if #WoodRailModels[i] > 2 then
-			WoodRailMeshes[i] = Mesh()
-			WoodRailMeshes[i]:BuildFromTriangles( WoodRailModels[i] )
-		end
-	end
-
-	//Create a new variable that will hold each section of the mesh
-	local Sections = {}
-	Sections[1] = Meshes //The siderails
-	Sections[2] = WoodMeshes //Anything wooden
-	Sections[3] = WoodRailMeshes //the wooden walky bit of the siderails
-
-	self:CoroutineCheck( controller, 5, Sections )
+	self:FinalizeTrack( controller )
 end
 
 function TRACK:Draw()
@@ -592,11 +534,11 @@ function TRACK:Draw()
 	self:DrawSection( 1 )
 
 	-- Wood beams/supports
-	render.SetMaterial(self.MaterialWood)
+	render.SetMaterial( self.MaterialWoodNocull )
 	self:DrawSection( 2 )
 
 	-- The flat 'walkable' area that is visible from both sides
-	render.SetMaterial( self.MaterialWoodNocull )
+	render.SetMaterial(self.MaterialWood)
 	self:DrawSection( 3 )
 
 end
