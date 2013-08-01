@@ -200,9 +200,12 @@ hook.Add("ShouldCollide","CoasterShouldCartCollide",function(ent1,ent2)
 
 	//These aren't shared because their variables really don't need to be networked
 	if SERVER then
+		local ent1ctrl = ent1:GetController()
+		local ent2ctrl = ent2:GetController()
+
 		//Prevent carts from colliding with the physics mesh of the tracks
-		if ent1:GetClass() == "coaster_cart" and ent2:GetClass() == "coaster_physmesh" && ent1.CoasterID == ent2:GetController():GetCoasterID() then return false end
-		if ent2:GetClass() == "coaster_cart" and ent1:GetClass() == "coaster_physmesh" && ent2.CoasterID == ent1:GetController():GetCoasterID() then return false end
+		if ent1:GetClass() == "coaster_cart" and ent2:GetClass() == "coaster_physmesh" && IsValid(ent2ctrl) && ent2ctrl.GetCoasterID && ent1.CoasterID == ent2ctrl:GetCoasterID() then return false end
+		if ent2:GetClass() == "coaster_cart" and ent1:GetClass() == "coaster_physmesh" && IsValid(ent1ctrl) && ent1ctrl.GetCoasterID && ent2.CoasterID == ent1ctrl:GetCoasterID() then return false end
 
 		//If none of the ents arent a coaster_cart, stop executing here
 		if ent1:GetClass() != "coaster_cart" || ent2:GetClass() != "coaster_cart" then return end

@@ -171,7 +171,7 @@ usermessage.Hook("Coaster_AddNode", function( um )
 
 		//Update the positions of the wheels
 		for num, node in pairs( self.Nodes ) do 
-			if !IsValid( node ) || !node.GetType then continue end
+			if !IsValid( node ) || !node.GetNodeType then continue end
 			if node:GetNodeType() == COASTER_NODE_BRAKES || node:GetNodeType() == COASTER_NODE_SPEEDUP then
 				self:UpdateWheelPositions( num )
 			end
@@ -1115,7 +1115,7 @@ function ENT:Think()
 
 			//Update the positions of the wheels
 			for num, node in pairs( self.Nodes ) do 
-				if IsValid( node ) && node.GetType && (node:GetNodeType() == COASTER_NODE_BRAKES || node:GetNodeType() == COASTER_NODE_SPEEDUP) then
+				if IsValid( node ) && node.GetNodeType && (node:GetNodeType() == COASTER_NODE_BRAKES || node:GetNodeType() == COASTER_NODE_SPEEDUP) then
 					self:UpdateWheelPositions( num )
 				end
 			end

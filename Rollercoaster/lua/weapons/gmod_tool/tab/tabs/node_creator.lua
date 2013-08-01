@@ -249,7 +249,7 @@ function TAB:Think( tool )
 				toolText = toolText .. " (Controller)" 
 				toolText = toolText .. "\nLooped: " .. tostring( Node:GetLooped() )
 			end
-			if Node.GetType && Node.GetRoll then
+			if Node.GetNodeType && Node.GetRoll then
 				toolText = toolText .. "\nType: " .. ( EnumNames.Nodes[ Node:GetNodeType() ] or "Unknown(?)" )
 				toolText = toolText .. "\nRoll: " .. tostring( Node:GetRoll() )
 			end
