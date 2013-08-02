@@ -165,14 +165,48 @@ function TOOL:DrawToolScreen( TEX_SIZE )
 	DrawScrollingText( text, 64, TEX_SIZE )
 end
 
-function toSortedTable( T, member )
+function TOOL:ShouldModifyNode( entity )
+	local Node = self:GetActualNodeEntity( entity )
+	local Controller = IsValid( Node ) and Node:GetController() or nil
+
+	//They can modify it if they're the owner, admin, or a hook overrides access
+	return IsValid(Controller) && ( Controller:GetOwner() == self:GetOwner() || self:GetOwner():IsAdmin() || hook.Call("Coaster_ShouldModifyNode", GAMEMODE, Node, self:GetOwner() ) || game.SinglePlayer() )
+end
+
+//A helper function to return the node whether we are that same node or a physics mesh
+function TOOL:GetActualNodeEntity( entity )
+	if !IsValid( entity ) then return nil end
+
+	if entity:GetClass() == "coaster_node" then 
+		return entity
+	else 
+		if entity.GetController && IsValid( entity:GetController() ) && entity:GetController().GetCoasterID then
+			return entity:GetController().Nodes[ entity.Segment ]
+		end
+	end
+
+	return nil
+end
+
+
+//I dont know what garry's table.Count does, but it returns the wrong answer if all the indices are strings. So I made my own.
+local function Count( tbl )
+	local count = 0
+	for k, v in pairs( tbl ) do
+		count = count + 1
+	end
+	
+	return count
+end
+
+local function toSortedTable( T, member )
 	local max = Count( T )
 	local num = 1
 	local newTbl = {}
 
 	for i=1, 6 do
 		for k, v in pairs( T ) do
-			if v.Position == i then
+			if v[member] == i then
 				newTbl[i] = T[k]
 				break
 			end
@@ -180,16 +214,6 @@ function toSortedTable( T, member )
 	end
 
 	return newTbl
-end
-
-//I dont know what garry's table.Count does, but it returns the wrong answer if all the indices are strings. So I made my own.
-function Count( tbl )
-	local count = 0
-	for k, v in pairs( tbl ) do
-		count = count + 1
-	end
-	
-	return count
 end
 
 function TOOL.BuildCPanel(panel)	
@@ -223,6 +247,17 @@ function TOOL.BuildCPanel(panel)
 	//The little property sheet to hold all of the tracks to build
 	local AllTracks = vgui.Create("DForm", panel )
 	AllTracks:SetName("Specific Track Building")
+	AllTracks.AnimateManual = function(self) 
+		self.animSlide:Start( self:GetAnimTime(), { From = self:GetTall() } )
+		
+		self:InvalidateLayout( true )
+		self:GetParent():InvalidateLayout()
+		self:GetParent():GetParent():InvalidateLayout()
+		
+		local cookie = '1'
+		if ( !self:GetExpanded() ) then cookie = '0' end
+		self:SetCookie( "Open", cookie )
+	end
 
 	local trackList = vgui.Create("DListView", AllTracks )
 	trackList:SetName("Track List")
@@ -232,11 +267,12 @@ function TOOL.BuildCPanel(panel)
 	build:SetWidth(30)
 	id:SetWidth( 5 )
 
-
-	UpdateTrackPanel( trackList )
-
 	trackList:SetSize( 360, 120 )
+	trackList.OwnerForm = AllTracks
 	panel.CoasterList = trackList 
+
+	-- Update the list now
+	UpdateTrackPanel( trackList )
 
 	AllTracks:AddItem(trackList)
 	AllTracks:SetExpanded( false )
@@ -274,7 +310,7 @@ function TOOL.BuildCPanel(panel)
 
 
 	//panel:Button( "Build All Meshes", "coaster_update_mesh")
-	panel:ControlHelp( "Note: Building the mesh is not realtime. Your game WILL freeze when building mesh." )
+	panel:ControlHelp( "Note: Building the mesh is an intensive process. Performance will be affected." )
 	local version = panel:Help( "Rollercoaster version: " .. COASTER_VERSION )
 end
 
@@ -312,6 +348,7 @@ if CLIENT then
 			end
 		end
 
+		local HasUnbuiltCoasters = false
 		for k, v in pairs( found ) do
 			if !IsValid( v ) || !v.GetController || !v:GetController() then continue end
 
@@ -328,11 +365,14 @@ if CLIENT then
 			if IsValid( v ) && IsValid( v:GetController() ) then
 				if v:HasInvalidNodes() then
 					btn:SetColor( Color( 255, 0, 0 ))
+					HasUnbuiltCoasters = true
 				end
 
 				if v.BuildingMesh then
 					btn:SetText("Building...")
 					btn:SetShowProgress( true )
+
+					HasUnbuiltCoasters = true
 				else
 					btn:SetShowProgress( false )
 					btn:SetFraction( 0 )
@@ -347,6 +387,17 @@ if CLIENT then
 			local line = panel:AddLine( name, expld[#expld], btn )
 			line.CoasterID = v:GetCoasterID()
 			line.Button = btn
+		end
+
+		//Change the expansion state if there's a coaster building
+		if HasUnbuiltCoasters then
+			if !panel.OwnerForm:GetExpanded() then
+				panel.OwnerForm:SetExpanded( true )
+				panel.OwnerForm:AnimateManual()
+			end
+		else
+			panel.OwnerForm:SetExpanded( false )
+			panel.OwnerForm:AnimateManual()
 		end
 	end
 
