@@ -8,7 +8,7 @@ TAB.Name = ""
 TAB.Name2 = "Settings" //Name for the non-tab stuff
 TAB.UniqueName = UNIQUENAME
 TAB.Description = "Change track-wide and addon-wide settings"
-TAB.Instructions = "Click on any node of a rollercoaster to update its settings."
+TAB.Instructions = "Click on any node of a rollercoaster to update its settings. Right click to apply it to the entire track."
 TAB.Icon = "coaster/settings"
 TAB.Position = 6
 
@@ -57,6 +57,35 @@ function TAB:LeftClick( trace, tool )
 end
 
 function TAB:RightClick( trace, tool )
+	local ply   = tool:GetOwner()
+
+	local CartNum = GetClientNumber( self, "cart_amount", tool )
+	local Powered = GetClientNumber( self, "powered", tool)
+	local tracktype = GetClientNumber( self, "tracktype", tool)
+	local r = GetClientNumber( self, "r", tool)/255 or 1
+	local g = GetClientNumber( self, "g", tool)/255 or 1
+	local b = GetClientNumber( self, "b", tool)/255 or 1
+
+	local Node = tool:GetActualNodeEntity( trace.Entity )
+	local Controller = IsValid( Node ) && Node:GetController() or nil
+
+	if IsValid( Controller ) && tool:ShouldModifyNode(Controller) then
+		if SERVER then
+			-- Loop through each node in the coaster and set its color
+			for k, v in pairs( Controller.Nodes) do
+				v:SetTrackColor( Vector(r,g,b) )
+			end
+
+			Controller:SetTrackType(tracktype)
+
+			-- The entire track's color was changed, rebuild it all
+			Controller:InvalidateTrack()
+		end
+
+		return true
+	else 
+		return false
+	end
 
 end
 
