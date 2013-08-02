@@ -119,7 +119,7 @@ function TRACK:Generate( Controller )
 
 
 		-- Split the model into multiple meshes if it gets large
-		if #self.Cylinder.Vertices > 50000 then
+		if #self.Cylinder.Vertices > self:GetMaxVertices() then
 			self:AddSubmesh( 1, self.Cylinder.Vertices)
 
 			--Reset our cylinder builder
@@ -142,10 +142,10 @@ function TRACK:Generate( Controller )
 	self:FinalizeTrack( Controller )
 end
 
-function TRACK:Draw( )
+function TRACK:Draw( meshdata )
 
 	render.SetMaterial(self.Material)
-	self:DrawSection( 1 )
+	self:DrawSection( 1, meshdata )
 
 end
 

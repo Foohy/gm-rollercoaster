@@ -301,7 +301,7 @@ function TRACK:PassRails( Controller )
 
 
 		-- Split the model into multiple meshes if it gets large
-		if #self.Cylinder.Vertices > 50000 then
+		if #self.Cylinder.Vertices > self:GetMaxVertices() then
 			self:AddSubmesh( 1, self.Cylinder.Vertices)
 
 			self.Cylinder.Vertices = {}
@@ -363,7 +363,7 @@ function TRACK:PassStruts( Controller )
 		table.Add( StrutVerts, verts )
 
 		-- Split the model into multiple meshes if it gets large
-		if #StrutVerts > 50000 then
+		if #StrutVerts > self:GetMaxVertices() then
 			self:AddSubmesh(2, StrutVerts)
 			StrutVerts = {}
 		end
@@ -394,13 +394,13 @@ function TRACK:Generate( Controller )
 	self:FinalizeTrack( Controller )
 end
 
-function TRACK:Draw()
+function TRACK:Draw(meshdata)
 
 	render.SetMaterial(self.Material)
 	-- Draw the rails (side, center)
-	self:DrawSection( 1 )
+	self:DrawSection( 1, meshdata )
 
 	-- Draw the center struts
-	self:DrawSection( 2 )
+	self:DrawSection( 2, meshdata )
 end
 

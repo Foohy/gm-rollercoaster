@@ -29,7 +29,6 @@ TRACK.HorizontalSpacing = 0.8 //how far apart vertical beams should be spaced
 TRACK.VerticalSpacing = 80 //how far apart horizontal beams should be spaced
 TRACK.InnerStrutsNum = 2 //how densely the inner struts should be placed
 
-TRACK.ModelCount = 1 //Keep track of how many seperate models we've created
 TRACK.FixedSplines = {}
 
 local function GetAngleAtSpline( spline, controller )
@@ -167,7 +166,7 @@ function TRACK:PassRails(controller)
 			self.Cylinder:AddBeam( posL, LastAng, nPosL, NewAng, 4, color)
 			self.Cylinder:AddBeam( posR, LastAng, nPosR, NewAng, 4, color )
 
-			if #self.Cylinder.Vertices > 50000 then// some arbitrary limit to split up the verts into seperate meshes. It's surprisingly easy to hit that limit
+			if #self.Cylinder.Vertices > self:GetMaxVertices() then// some arbitrary limit to split up the verts into seperate meshes. It's surprisingly easy to hit that limit
 				self:AddSubmesh( 1, self.Cylinder.Vertices )
 
 				self.Cylinder.Vertices = {}
@@ -294,7 +293,7 @@ function TRACK:PassWoodRails(controller)
 			self.Cylinder.TotalV = rightV
 			rightV = self.Cylinder:CreateSquare(LastPoints.RightIn, LastPoints.RightOut, OnposR, nPosR, ang:Up(), color )
 
-			if #self.Cylinder.Vertices > 50000 then// some arbitrary limit to split up the verts into seperate meshes. It's surprisingly easy to hit that limit
+			if #self.Cylinder.Vertices > self:GetMaxVertices() then// some arbitrary limit to split up the verts into seperate meshes. It's surprisingly easy to hit that limit
 				self:AddSubmesh( 2, self.Cylinder.Vertices )
 
 				self.Cylinder.Vertices = {}
@@ -366,7 +365,7 @@ function TRACK:PassVerticalSupports( controller )
 			)
 		end
 		
-		if #self.Cylinder.Vertices > 50000 then //some arbitrary limit to split up the verts into seperate meshes. It's surprisingly easy to hit that limit
+		if #self.Cylinder.Vertices > self:GetMaxVertices() then //some arbitrary limit to split up the verts into seperate meshes. It's surprisingly easy to hit that limit
 			self:AddSubmesh( 3, self.Cylinder.Vertices )
 
 			self.Cylinder.Vertices = {}
@@ -427,7 +426,7 @@ function TRACK:PassHorizontalSupports( controller )
 					self.Cylinder:AddBeamSquare( Vector(self.FixedSplines[i].PosRight.x, self.FixedSplines[i].PosRight.y, lowestPos), angBeam, Vector(self.FixedSplines[i+1].PosRight.x, self.FixedSplines[i+1].PosRight.y, lowestPos), angBeam2, self.BeamWidth )
 				end 
 
-				if #self.Cylinder.Vertices > 50000 then //some arbitrary limit to split up the verts into seperate meshes. It's surprisingly easy to hit that limit
+				if #self.Cylinder.Vertices > self:GetMaxVertices() then //some arbitrary limit to split up the verts into seperate meshes. It's surprisingly easy to hit that limit
 					self:AddSubmesh( 3, self.Cylinder.Vertices )
 
 					self.Cylinder.Vertices = {}
@@ -527,19 +526,19 @@ function TRACK:Generate( controller )
 	self:FinalizeTrack( controller )
 end
 
-function TRACK:Draw()
+function TRACK:Draw(meshdata)
 
 	-- Metal siderails
 	render.SetMaterial(self.MaterialMetal)
-	self:DrawSection( 1 )
+	self:DrawSection( 1, meshdata )
 
 	-- Wood beams/supports
 	render.SetMaterial( self.MaterialWoodNocull )
-	self:DrawSection( 2 )
+	self:DrawSection( 2, meshdata )
 
 	-- The flat 'walkable' area that is visible from both sides
 	render.SetMaterial(self.MaterialWood)
-	self:DrawSection( 3 )
+	self:DrawSection( 3, meshdata )
 
 end
 

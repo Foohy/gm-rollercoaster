@@ -910,10 +910,15 @@ end
 
 --Draw the pre-generated rail mesh
 function ENT:DrawRailMesh()
-	if !self.BuildingMesh && self.TrackClass && #self.TrackClass.TrackMeshes > 0 then
-		self.TrackClass:Draw()
+	if !self.BuildingMesh && self.TrackClass then
+		self.TrackClass:Draw(self.TrackClass.TrackMeshes)
 	else
 		if self.PreviousTrackClass then self.PreviousTrackClass:Draw() end
+	end
+
+	//Draw currently-being-built meshes
+	if self.BuildingMesh && self.TrackClass.BuildingTrackMeshes then
+		self.TrackClass:DrawUnfinished(self.TrackClass.BuildingTrackMeshes)
 	end
 	
 end

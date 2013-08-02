@@ -120,7 +120,7 @@ function TRACK:Generate( controller )
 			self.Cylinder:AddBeam( posL, LastAng, nPosL, NewAng, 4, color )
 			self.Cylinder:AddBeam( posR, LastAng, nPosR, NewAng, 4, color)
 
-			if #self.Cylinder.Vertices > 50000 then// some arbitrary limit to split up the verts into seperate meshes
+			if #self.Cylinder.Vertices > self:GetMaxVertices() then// some arbitrary limit to split up the verts into seperate meshes
 				self:AddSubmesh( 1, self.Cylinder.Vertices )
 
 				self.Cylinder.Vertices = {}
@@ -175,7 +175,7 @@ function TRACK:Generate( controller )
 		table.Add( StrutVerts, verts ) //Combine the tables into da big table
 
 		-- Split the model into multiple meshes if it gets large
-		if #StrutVerts > 50000 then
+		if #StrutVerts > self:GetMaxVertices() then
 			self:AddSubmesh( 2, StrutVerts )
 			StrutVerts = {}
 		end
@@ -489,10 +489,10 @@ end
 Draw function. Draw the mesh
 ****************************/
 
-function TRACK:Draw()
+function TRACK:Draw( meshdata )
 	render.SetMaterial(self.Material)
 
-	self:DrawSection( 1 )
-	self:DrawSection( 2 ) 
+	self:DrawSection( 1, meshdata )
+	self:DrawSection( 2, meshdata ) 
 end
 

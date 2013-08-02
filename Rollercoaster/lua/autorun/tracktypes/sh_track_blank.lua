@@ -16,7 +16,7 @@ function TRACK:Generate( Controller )
 	if !IsValid( Controller ) || !Controller:GetIsController() then return end
 
 	--Trick it into think we have a mesh
-	self.BuildingTrackMeshes = { { Mesh() } }
+	self.BuildingTrackMeshes = {}
 
 	-- Let's exit the thread, but give them our finalized sections too
 	self:FinalizeTrack( Controller )

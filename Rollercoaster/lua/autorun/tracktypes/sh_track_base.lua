@@ -52,6 +52,11 @@ function TRACK:FinalizeTrack( Controller )
 	else print("TRACK:FinalizeTrack(). Track has invalid BuildingTrackMeshes!") end
 end
 
+-- Get the maximum number of vertices allowed per mesh. Make this dynamic eventually?
+function TRACK:GetMaxVertices()
+	return 50000
+end
+
 -- Add a submesh to a specific section
 function TRACK:AddSubmesh( section, verttable )
 	local m = Mesh()
@@ -84,18 +89,24 @@ function TRACK:Remove()
 	end
 end
 
-function TRACK:Draw()
+function TRACK:Draw( meshdata )
 	return
+end
+
+-- Called when the track is still generating
+-- Override if you want to do something special!
+function TRACK:DrawUnfinished( meshdata )
+	self:Draw( meshdata )
 end
 
 /****************************
 Utility function for drawing all of the sections within a section
 ****************************/
-function TRACK:DrawSection( num )
-	if !self.TrackMeshes then return end
-	if !istable( self.TrackMeshes[num]) then return end
+function TRACK:DrawSection( num, table )
+	if !table then return end
+	if !istable( table[num]) then return end
 
-	for _, v in pairs( self.TrackMeshes[num] ) do
+	for _, v in pairs( table[num] ) do
 		if v then v:Draw() end
 	end
 end
