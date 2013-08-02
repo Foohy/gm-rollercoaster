@@ -128,8 +128,8 @@ usermessage.Hook("Coaster_invalidateall", function( um )
 
 	end
 
-	if self.BuildingMesh || GetConVarNumber("coaster_autobuild") == 1 && self.SoftUpdateMesh then
-		self:SoftUpdateMesh()
+	if self.BuildingMesh || GetConVarNumber("coaster_autobuild") == 1 && self.ResetUpdateMesh then
+		self:ResetUpdateMesh()
 	end
 end )
 
@@ -179,8 +179,8 @@ usermessage.Hook("Coaster_AddNode", function( um )
 
 		self:SupportFullUpdate()
 
-		if self.BuildingMesh || GetConVarNumber("coaster_autobuild") == 1 && self.SoftUpdateMesh then
-			self:SoftUpdateMesh()
+		if self.BuildingMesh || GetConVarNumber("coaster_autobuild") == 1 && self.ResetUpdateMesh then
+			self:ResetUpdateMesh()
 		end
 	end
 end )
@@ -196,8 +196,8 @@ usermessage.Hook("Coaster_nodeinvalidate", function( um )
 		self:UpdateClientsidePhysics()
 
 		
-		if self.BuildingMesh || GetConVarNumber("coaster_autobuild") == 1 && self.SoftUpdateMesh then
-			self:SoftUpdateMesh()
+		if self.BuildingMesh || GetConVarNumber("coaster_autobuild") == 1 && self.ResetUpdateMesh then
+			self:ResetUpdateMesh()
 		end
 	end
 end )
@@ -324,11 +324,6 @@ function ENT:RefreshClientSpline()
 	--Empty all current splines and nodes
 	self.CatmullRom:Reset()
 	table.Empty( self.Nodes )
-
-	-- If we were in the middle of building the track, tell it to queue the build again
-	if self.BuildingMesh then
-		self:SoftUpdateMesh()
-	end
 	
 	--Set ourselves as the first node as we're used to calculate the track's spline
 	self.CatmullRom:AddPointAngle( 1, self:GetPos(), self:GetAngles(), 1.0 ) 
@@ -437,7 +432,18 @@ end
 
 -- Create a 'queue' that the mesh needs to be built, and wait a second before actually starting to build it
 -- Makes it so there isn't a noticable freeze when spawning nodes with coaster_autobuild 1
+-- Will not reset the time if it is called before time is up
 function ENT:SoftUpdateMesh()
+	if self.BuildQueued then return end
+
+	self.GeneratorThread = nil -- Remove all progress if we were currently generating
+	self.BuildQueued = true 
+	self.BuildingMesh = false
+	self.BuildAt = CurTime() + 1 -- TODO: Make this time customizable
+end
+
+-- Reset the timer counting down to when to start building the mesh
+function ENT:ResetUpdateMesh()
 	self.GeneratorThread = nil -- Remove all progress if we were currently generating
 	self.BuildQueued = true 
 	self.BuildingMesh = false
@@ -1137,8 +1143,8 @@ function ENT:Think()
 			end
 
 			-- If we were in the middle the build process, it's probably all bunked up
-			if self.BuildQueued || GetConVarNumber("coaster_autobuild") == 1 && self.SoftUpdateMesh then
-				self:SoftUpdateMesh()
+			if self.BuildQueued || GetConVarNumber("coaster_autobuild") == 1 && self.ResetUpdateMesh then
+				self:ResetUpdateMesh()
 			end
 
 			break //We really only need to do this once, not on a per segment basis.
