@@ -35,12 +35,9 @@ function TAB:LeftClick( trace, tool )
 			local controller = Ent:GetController()
 			if !IsValid( controller ) then return end
 
-			local node = nil
+			local node = tool:GetActualNodeEntity( Ent )
 
-			if Ent:GetClass() == "coaster_node" then node = Ent 
-			else node = controller.Nodes[ Ent.Segment ] end
-
-			if IsValid( node ) then
+			if IsValid( node ) && tool:ShouldModifyNode(node) then
 				node:SetTrackColor( Vector(r,g,b) )
 				controller:SetTrackColor( Vector(r,g,b))
 

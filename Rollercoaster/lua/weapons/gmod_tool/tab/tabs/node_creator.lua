@@ -37,8 +37,13 @@ function TAB:LeftClick( trace, tool )
 	local newAng = Angle(0, plyAng.y, 0) + Angle( 0, 0, 0 )
 	
 	if SERVER then
-		local Node = GetActualNodeEntity( trace.Entity )
+		local Node = tool:GetActualNodeEntity( trace.Entity )
+
 		if IsValid( Node ) && Node:GetClass() == "coaster_node" then //Update an existing node's settings
+			
+			//Check if we have permissions to actually modify the node
+			if !tool:ShouldModifyNode( Node ) then return false end
+			
 			local ShouldInvalidate = Node:GetRoll() != Bank
 			Node:SetNodeType( Type )
 			Node:SetRoll( Bank )
@@ -134,7 +139,7 @@ function TAB:RightClick( trace, tool )
 	local plyAng	= ply:GetAngles()
 
 	if SERVER then
-		local Node = GetActualNodeEntity( trace.Entity )
+		local Node = tool:GetActualNodeEntity( trace.Entity )
 		if IsValid( Node ) && Node:GetClass() == "coaster_node" then //Update an existing node's settings
 			local Cur_ID = Node:GetCoasterID()
 			local Controller = Rollercoasters[ Cur_ID ]
@@ -175,7 +180,7 @@ end
 //TODO: Make this get the facing node's settings
 function TAB:Reload( trace, tool )
 	local ply   = tool:GetOwner()
-	local Node = GetActualNodeEntity( trace.Entity )
+	local Node 	= tool:GetActualNodeEntity( trace.Entity )
 	if IsValid( Node ) && Node:GetClass() == "coaster_node" then //Update an existing node's settings
 		local expldID = string.Explode("_", Node:GetCoasterID() )
 		//Info gathering time
@@ -234,7 +239,7 @@ function TAB:Think( tool )
 		if IsValid( trace.Entity ) && ( ( trace.Entity:GetClass() == "coaster_node") || trace.Entity:GetClass() == "coaster_physmesh") && CurTime() > self.WaitTime then
 
 			//Get the node, depending on if we are the physics mesh or the controller
-			local Node = GetActualNodeEntity( trace.Entity )
+			local Node = tool:GetActualNodeEntity( trace.Entity )
 
 			if !IsValid( Node ) then return end
 
@@ -266,21 +271,6 @@ function TAB:Think( tool )
 	end
 
 	self:UpdateGhostNode( tool )
-end
-
-
-//A helper function to return the node whether we are that same node or a physics mesh
-function GetActualNodeEntity( entity )
-	local Node = nil
-	if entity:GetClass() == "coaster_node" then 
-		Node = entity
-	else 
-		if entity.GetController && IsValid( entity:GetController() ) && entity:GetController().GetCoasterID then
-			Node = entity:GetController().Nodes[ entity.Segment ]
-		end
-	end
-
-	return Node
 end
 
 //TODO: include in rollercoaster table
