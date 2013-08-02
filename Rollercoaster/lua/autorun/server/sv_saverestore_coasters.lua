@@ -90,7 +90,6 @@ local function ReconstructCoaster(coasterID, owner, Controller )
 			constraint.NoCollide( node, Rollercoasters[id], 0, 0 )
 		end
 
-
 		Controller:AddNodeSimple( node, owner )
 	end
 
@@ -116,6 +115,11 @@ local function ReconstructCoaster(coasterID, owner, Controller )
 end
 
 duplicator.RegisterEntityClass("coaster_node", function( ply, data )
+	-- We need to modify some things to make them backwards compatible
+	-- SetNodeType used to be called SetType, so if SetType exists in old saves and its a valid number, give it a shot
+	if (data.DT && type(data.DT.Type) == "number" && data.DT.Type <= #EnumNames.Nodes) then
+		data.DT.NodeType = data.DT.Type
+	end
 
 	local node = duplicator.GenericDuplicatorFunction( ply, data )
 	local ID = node:GetCoasterID()
