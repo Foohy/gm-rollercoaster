@@ -398,8 +398,27 @@ if CLIENT then
 			panel:CheckBox("Draw motion blur", "coaster_motionblur")
 
 		end )
-	end )
+	end ) 
 
+	hook.Add( "PopulateMenuBar", "Rollercoaster_MenuBar", function( menubar )
+
+		local m = menubar:AddOrGetMenu( "Rollercoasters" )
+
+		m:AddCVar( "Draw track supports", "coaster_supports", "1", "0" )
+		m:AddCVar( "Draw motion blur", "coaster_motionblur", "1", "0" )
+		
+		m:AddSpacer()	
+		
+		m:AddCVar( "Draw track previews", "coaster_mesh_previews", "1", "0" )
+		m:AddCVar( "Draw outdated rollercoaster meshes", "coaster_mesh_drawoutdatedmesh", "1", "0" )
+		m:AddCVar( "Draw meshes currently being built", "coaster_mesh_drawunfinishedmesh", "1", "0" )
+		
+		m:AddSpacer()
+			
+		m:AddCVar( "Automatically build coaster", "coaster_mesh_autobuild", "1", "0" )	
+		//m:AddSlider( "Steps per frame", "coaster_mesh_stepspercycle", "4", 0, 100, 0 ) //I want this to be a thing
+		
+	end )
 
 end
 
