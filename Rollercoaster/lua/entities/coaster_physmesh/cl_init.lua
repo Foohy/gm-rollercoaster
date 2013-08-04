@@ -19,8 +19,10 @@ function ENT:BuildMesh()
 	if !IsValid( Controller ) then return end
 
 	self.Segment = self:GetSegment()
+
 	//Make sure our segment has actual information
 	if self.Segment < 2 or self.Segment >= #Controller.Nodes - 1 then return end
+	self.Resolution = math.Clamp(self.GetMeshResolution && self:GetMeshResolution() or 10, 1, 1000 )
 
 	//change width according to the track type
 	local track = trackmanager.GetStatic(EnumNames.Tracks[Controller:GetTrackType()])

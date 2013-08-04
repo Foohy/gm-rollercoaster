@@ -22,7 +22,15 @@ function ENT:Initialize()
 
 	self:SetAngles( Angle( 0, 0, 0 ) )
 
+	//Network which segment we are
 	self:SetSegment( self.Segment )
+
+	//Figure out the resolution we should build our mesh at
+	local convar = GetConVar("coaster_physmesh_resolution")
+	local num = convar && convar:GetInt() or 10
+	self:SetMeshResolution( num )
+
+	//shh
 	self:SetNoDraw( true )
 
 	self:GetPhysicsObject():SetMass(500)
@@ -52,6 +60,7 @@ function ENT:BuildMesh()
 
 	//Make sure the client knows it's shit
 	self:SetSegment( self.Segment )
+	self.Resolution = math.Clamp(self.GetMeshResolution && self:GetMeshResolution() or 10, 1, 1000)
 
 	//Make sure our segment has actual information
 	if self.Segment < 2 or self.Segment >= #Controller.Nodes - 1 then return end
@@ -108,6 +117,19 @@ function ENT:BuildMesh()
 	self:SetCustomCollisionCheck(true)
 
 end
+
+//Set the networkvar when the cvar changes
+cvars.AddChangeCallback( "coaster_physmesh_resolution", function()
+	local convar = GetConVar("coaster_physmesh_resolution")
+	local num = convar && convar:GetInt() or 10
+
+	//Go through all of the nodes and tell them to update their shit
+	for k, v in pairs( ents.FindByClass("coaster_physmesh") ) do
+		if IsValid( v ) then
+			v:SetMeshResolution(num)
+		end
+	end
+end )
 
 function ENT:OnRemove()
 

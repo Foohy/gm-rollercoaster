@@ -15,6 +15,7 @@ ENT.Resolution 		= 10
 
 function ENT:SetupDataTables()
 	self:NetworkVar("Int", 0, "Segment")
+	self:NetworkVar("Int", 1, "MeshResolution")
 	self:NetworkVar("Entity", 0, "Controller")
 end
 

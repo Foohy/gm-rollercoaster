@@ -21,15 +21,6 @@ local mat_chain = Material("sunabouzu/old_chain") //sunabouzu/old_chain
 local mat_debug = Material("foohy/warning")
 
 
-//Function to get if we are being driven with garry's new drive system
-function ENT:IsBeingDriven()
-	for _, v in pairs( player.GetAll() ) do
-		if v:GetViewEntity() == self then return true end
-	end
-
-	return false
-end
-
 local function AddNotify( text, type, time )
 	if GAMEMODE && GAMEMODE.AddNotify then
 		GAMEMODE:AddNotify( text, type, time )
@@ -39,6 +30,177 @@ local function AddNotify( text, type, time )
 end
 
 
+//Move these variables out to prevent excess garbage collection
+local node = -1
+local Dist = 0
+local AngVec = Vector(0,0,0)
+local ang = Angle( 0, 0, 0 )
+local Roll = 0
+local NextSegment = nil
+local ThisSegment = nil
+
+//Draw the dynamic side beams along a specified segment
+local function DrawSideRail( self, segment, offset)
+	if not (segment > 1 && (#self.CatmullRom.PointsList > segment )) then return end
+	if self.CatmullRom.Spline == nil or #self.CatmullRom.Spline < 1 then return end
+
+	NextSegment = self.Nodes[ segment + 1 ]
+	ThisSegment = self.Nodes[ segment ]
+
+	if !IsValid( NextSegment ) || !IsValid( ThisSegment ) then return end
+	if !NextSegment.GetRoll || !ThisSegment.GetRoll then return end
+
+	//Set up some variables (these are declared outside this function)
+	node = (segment - 2) * self.CatmullRom.STEPS
+	Dist = CurTime() * 20
+	Roll = 0
+
+	//Very first beam position
+	AngVec = self.CatmullRom.Spline[node + 1] - self.CatmullRom.PointsList[segment] 
+	AngVec:Normalize()
+	ang = AngVec:Angle()
+
+	ang:RotateAroundAxis( AngVec, math.NormalizeAngle( ThisSegment:GetRoll() ) )
+
+	//Draw the main Rail
+	render.StartBeam( self.CatmullRom.STEPS + 1 )
+	render.AddBeam(self.CatmullRom.PointsList[segment] + ( ang:Right() * offset ), 10, Dist*0.05, color_white) 
+
+	for i = 1, (self.CatmullRom.STEPS) do
+		if i==1 then
+			Dist = Dist - self.CatmullRom.Spline[node + 1]:Distance( self.CatmullRom.PointsList[segment] ) 
+			AngVec = self.CatmullRom.Spline[node + 1] - self.CatmullRom.PointsList[segment] 
+		else
+			AngVec = self.CatmullRom.Spline[node + i] - self.CatmullRom.Spline[node + i - 1]
+
+			Dist = Dist - self.CatmullRom.Spline[node + i]:Distance( self.CatmullRom.Spline[node + i - 1] ) 
+		end
+		AngVec:Normalize()
+		ang = AngVec:Angle()
+		Roll = Lerp( i / self.CatmullRom.STEPS, math.NormalizeAngle( ThisSegment:GetRoll() ),NextSegment:GetRoll())
+
+		ang:RotateAroundAxis( AngVec, Roll )
+
+		render.AddBeam( self.CatmullRom.Spline[node + i] + ( ang:Right() * offset ) ,10, Dist*0.05, color_white)
+	end
+
+	AngVec = self.CatmullRom.PointsList[segment + 1] - self.CatmullRom.Spline[ node + self.CatmullRom.STEPS ]
+	AngVec:Normalize()
+	ang = AngVec:Angle()
+
+	ang:RotateAroundAxis( AngVec,  NextSegment:GetRoll()  )
+
+	Dist = Dist - self.CatmullRom.PointsList[segment + 1]:Distance( self.CatmullRom.Spline[ node + self.CatmullRom.STEPS ] )
+	render.AddBeam(self.CatmullRom.PointsList[segment + 1] + (ang:Right() * offset ), 10, Dist*0.05, color_white)
+	render.EndBeam()
+end
+
+usermessage.Hook("Coaster_RefreshTrack", function( um )
+	self = um:ReadEntity()
+	if !IsValid( self ) || !self.GetIsController then return end
+
+	if self:GetIsController() then
+		self:RefreshClientSpline()
+		self:SupportFullUpdate()
+
+		//Update the positions of the wheels
+		for num, node in pairs( self.Nodes ) do 
+			if node:GetNodeType() == COASTER_NODE_BRAKES || node:GetNodeType() == COASTER_NODE_SPEEDUP then
+				self:UpdateWheelPositions( num )
+			end
+		end
+	end	
+
+end )
+
+usermessage.Hook("Coaster_invalidateall", function( um )
+	local self = um:ReadEntity()
+	if !IsValid( self ) || !self.GetIsController || !self:GetIsController() then return end
+
+
+	self:RefreshClientSpline()
+	self:SupportFullUpdate()
+	self:UpdateClientsidePhysics()
+
+	for k, v in pairs( self.Nodes ) do
+		v.Invalidated = true
+		self:InvalidatePhysmesh(k)
+
+	end
+
+	if self.BuildingMesh || GetConVarNumber("coaster_mesh_autobuild") == 1 && self.ResetUpdateMesh then
+		self:ResetUpdateMesh()
+	end
+end )
+
+usermessage.Hook("Coaster_CartFailed", function( um )
+	local needed = um:ReadChar() or 0
+	AddNotify("Need " .. needed .. " more nodes to create track!", NOTIFY_ERROR, 3 )
+end )
+
+usermessage.Hook("Coaster_AddNode", function( um )
+	local self = Entity(um:ReadShort())
+
+	if !IsValid( self ) || !self.GetIsController then return end //Shared functions don't exist yet.
+
+	if (self:GetIsController()) then
+		
+		self:RefreshClientSpline()
+
+		//Invalidate nearby nodes
+		if self.Nodes != nil then
+			last = #self.Nodes
+
+			if IsValid( self.Nodes[ last ] ) then
+				self.Nodes[ last ].Invalidated = true
+				self:InvalidatePhysmesh(last)
+			end
+			if IsValid( self.Nodes[ last - 1 ] ) then
+				self.Nodes[ last - 1 ].Invalidated = true
+				self:InvalidatePhysmesh(last-1)
+			end
+			if IsValid( self.Nodes[ last - 2 ] ) then
+				self.Nodes[ last - 2 ].Invalidated = true
+				self:InvalidatePhysmesh(last-2)
+			end
+			if IsValid( self.Nodes[ last - 3 ] ) then
+				self.Nodes[ last - 3 ].Invalidated = true
+				self:InvalidatePhysmesh(last-3)
+			end
+		end
+
+		//Update the positions of the wheels
+		for num, node in pairs( self.Nodes ) do 
+			if !IsValid( node ) || !node.GetNodeType then continue end
+			if node:GetNodeType() == COASTER_NODE_BRAKES || node:GetNodeType() == COASTER_NODE_SPEEDUP then
+				self:UpdateWheelPositions( num )
+			end
+		end
+
+		self:SupportFullUpdate()
+
+		if self.BuildingMesh || GetConVarNumber("coaster_mesh_autobuild") == 1 && self.ResetUpdateMesh then
+			self:ResetUpdateMesh()
+		end
+	end
+end )
+
+//Invalidates nearby nodes, either due to roll changing or position changing. Means clientside mesh is out of date and needs to be rebuilt
+usermessage.Hook("Coaster_nodeinvalidate", function( um )
+	local self = um:ReadEntity()
+	local node	 = um:ReadEntity()
+	local inval_minimal = um:ReadBool() //Should we only invalidate the node before this one?
+
+	if IsValid( node ) && node.Invalidate && IsValid( self ) then
+		node:Invalidate( self, inval_minimal )
+		self:UpdateClientsidePhysics()
+
+		
+		if self.BuildingMesh || GetConVarNumber("coaster_mesh_autobuild") == 1 && self.ResetUpdateMesh then
+			self:ResetUpdateMesh()
+		end
+	end
+end )
 
 
 function ENT:Initialize()
@@ -93,114 +255,28 @@ function ENT:Initialize()
 
 	//Create a list of invalid physmeshes
 	self.InvalidNodes = {}
+
+	//Cache some user preferences
+	local convar = GetConVar("coaster_mesh_drawoutdatedmesh")
+	local bool = convar && convar:GetBool()
+
+	self.ShouldDrawOutdatedMesh = bool
+
+	convar = GetConVar("coaster_mesh_drawunfinishedmesh")
+	bool = convar && convar:GetBool()
+
+	self.ShouldDrawUnfinishedMesh = bool
+
 end
 
-usermessage.Hook("Coaster_RefreshTrack", function( um )
-	self = um:ReadEntity()
-	if !IsValid( self ) || !self.GetIsController then return end
-
-	if self:GetIsController() then
-		self:RefreshClientSpline()
-		self:SupportFullUpdate()
-
-		//Update the positions of the wheels
-		for num, node in pairs( self.Nodes ) do 
-			if node:GetNodeType() == COASTER_NODE_BRAKES || node:GetNodeType() == COASTER_NODE_SPEEDUP then
-				self:UpdateWheelPositions( num )
-			end
-		end
-	end	
-
-end )
-
-usermessage.Hook("Coaster_invalidateall", function( um )
-	local self = um:ReadEntity()
-	if !IsValid( self ) || !self.GetIsController || !self:GetIsController() then return end
-
-
-	self:RefreshClientSpline()
-	self:SupportFullUpdate()
-	self:UpdateClientsidePhysics()
-
-	for k, v in pairs( self.Nodes ) do
-		v.Invalidated = true
-		self:InvalidatePhysmesh(k)
-
+//Function to get if we are being driven with garry's new drive system
+function ENT:IsBeingDriven()
+	for _, v in pairs( player.GetAll() ) do
+		if v:GetViewEntity() == self then return true end
 	end
 
-	if self.BuildingMesh || GetConVarNumber("coaster_autobuild") == 1 && self.ResetUpdateMesh then
-		self:ResetUpdateMesh()
-	end
-end )
-
-usermessage.Hook("Coaster_CartFailed", function( um )
-	local needed = um:ReadChar() or 0
-	AddNotify("Need " .. needed .. " more nodes to create track!", NOTIFY_ERROR, 3 )
-end )
-
-usermessage.Hook("Coaster_AddNode", function( um )
-	local self = Entity(um:ReadShort())
-
-	if !IsValid( self ) || !self.GetIsController then return end //Shared functions don't exist yet.
-
-	if (self:GetIsController()) then
-		
-		self:RefreshClientSpline()
-
-		//Invalidate nearby nodes
-		if self.Nodes != nil then
-			last = #self.Nodes
-
-			if IsValid( self.Nodes[ last ] ) then
-				self.Nodes[ last ].Invalidated = true
-				self:InvalidatePhysmesh(last)
-			end
-			if IsValid( self.Nodes[ last - 1 ] ) then
-				self.Nodes[ last - 1 ].Invalidated = true
-				self:InvalidatePhysmesh(last-1)
-			end
-			if IsValid( self.Nodes[ last - 2 ] ) then
-				self.Nodes[ last - 2 ].Invalidated = true
-				self:InvalidatePhysmesh(last-2)
-			end
-			if IsValid( self.Nodes[ last - 3 ] ) then
-				self.Nodes[ last - 3 ].Invalidated = true
-				self:InvalidatePhysmesh(last-3)
-			end
-		end
-
-		//Update the positions of the wheels
-		for num, node in pairs( self.Nodes ) do 
-			if !IsValid( node ) || !node.GetNodeType then continue end
-			if node:GetNodeType() == COASTER_NODE_BRAKES || node:GetNodeType() == COASTER_NODE_SPEEDUP then
-				self:UpdateWheelPositions( num )
-			end
-		end
-
-		self:SupportFullUpdate()
-
-		if self.BuildingMesh || GetConVarNumber("coaster_autobuild") == 1 && self.ResetUpdateMesh then
-			self:ResetUpdateMesh()
-		end
-	end
-end )
-
-//Invalidates nearby nodes, either due to roll changing or position changing. Means clientside mesh is out of date and needs to be rebuilt
-usermessage.Hook("Coaster_nodeinvalidate", function( um )
-	local self = um:ReadEntity()
-	local node	 = um:ReadEntity()
-	local inval_minimal = um:ReadBool() //Should we only invalidate the node before this one?
-
-	if IsValid( node ) && node.Invalidate && IsValid( self ) then
-		node:Invalidate( self, inval_minimal )
-		self:UpdateClientsidePhysics()
-
-		
-		if self.BuildingMesh || GetConVarNumber("coaster_autobuild") == 1 && self.ResetUpdateMesh then
-			self:ResetUpdateMesh()
-		end
-	end
-end )
+	return false
+end
 
 function ENT:UpdateClientsidePhysics( )
 	for k, v in pairs( ents.FindByClass("coaster_physmesh") ) do
@@ -401,25 +477,6 @@ function ENT:UpdateClientSpline( point ) //The point is the node that is moving
 
 end
 
-//Build all coaster's clientside mesh
-concommand.Add("coaster_update_mesh", function()
-	for _, v in pairs( ents.FindByClass("coaster_node") ) do
-		if IsValid( v ) && v:GetIsController() then 
-			v:UpdateClientMesh()
-		end
-	end
-	AddNotify( "Updated rollercoaster meshes", NOTIFY_GENERIC, 4 )
-end )
-
-//Make doubly sure our client is up to date
-concommand.Add("coaster_update_nodes", function() 
-	for _, v in pairs( ents.FindByClass("coaster_node") ) do
-		if IsValid( v ) && v:GetIsController() then 
-			v:RefreshClientSpline()
-		end
-	end
-end)
-
 //Given spline index, return percent of a node
 //Util function
 function ENT:PercAlongNode(spline, qf)
@@ -431,14 +488,13 @@ function ENT:PercAlongNode(spline, qf)
 end
 
 -- Create a 'queue' that the mesh needs to be built, and wait a second before actually starting to build it
--- Makes it so there isn't a noticable freeze when spawning nodes with coaster_autobuild 1
+-- Makes it so there isn't a noticable freeze when spawning nodes with coaster_mesh_autobuild 1
 -- Will not reset the time if it is called before time is up
 function ENT:SoftUpdateMesh()
 	if self.BuildQueued then return end
 
 	self.GeneratorThread = nil -- Remove all progress if we were currently generating
 	self.BuildQueued = true 
-	self.BuildingMesh = false
 	self.BuildAt = CurTime() + 1 -- TODO: Make this time customizable
 end
 
@@ -446,7 +502,6 @@ end
 function ENT:ResetUpdateMesh()
 	self.GeneratorThread = nil -- Remove all progress if we were currently generating
 	self.BuildQueued = true 
-	self.BuildingMesh = false
 	self.BuildAt = CurTime() + 1 -- TODO: Make this time customizable
 end
 
@@ -581,9 +636,8 @@ end
 
 //Draw invalid nodes, otherwise known as track preview
 function ENT:DrawInvalidNodes()
-
 	if self.InvalidNodes == nil then return end
-	if LocalPlayer():GetInfoNum("coaster_previews", 0) == 0 then return end
+	if LocalPlayer():GetInfoNum("coaster_mesh_previews", 0) == 0 then return end
 
 	for k, v in pairs( self.InvalidNodes ) do
 		if IsValid( v ) && v.TrackMesh then v.TrackMesh:Draw() end
@@ -591,8 +645,8 @@ function ENT:DrawInvalidNodes()
 	
 	for k, v in pairs( self.Nodes ) do
 		if v.Invalidated && k + 1 < #self.Nodes && v.WasBeingHeld then //Don't draw the last node
-			self:DrawSideRail( k, -15 )
-			self:DrawSideRail( k, 15 )
+			DrawSideRail( self, k, -15 )
+			DrawSideRail( self, k, 15 )
 		end
 	end
 	
@@ -777,70 +831,6 @@ function ENT:DrawBreakModels( segment )
 
 end
 
-//Move these variables out to prevent excess garbage collection
-local node = -1
-local Dist = 0
-local AngVec = Vector(0,0,0)
-local ang = Angle( 0, 0, 0 )
-local Roll = 0
-local NextSegment = nil
-local ThisSegment = nil
-
-function ENT:DrawSideRail( segment, offset )
-	if not (segment > 1 && (#self.CatmullRom.PointsList > segment )) then return end
-	if self.CatmullRom.Spline == nil or #self.CatmullRom.Spline < 1 then return end
-
-	NextSegment = self.Nodes[ segment + 1 ]
-	ThisSegment = self.Nodes[ segment ]
-
-	if !IsValid( NextSegment ) || !IsValid( ThisSegment ) then return end
-	if !NextSegment.GetRoll || !ThisSegment.GetRoll then return end
-
-	//Set up some variables (these are declared outside this function)
-	node = (segment - 2) * self.CatmullRom.STEPS
-	Dist = CurTime() * 20
-	Roll = 0
-
-	//Very first beam position
-	AngVec = self.CatmullRom.Spline[node + 1] - self.CatmullRom.PointsList[segment] 
-	AngVec:Normalize()
-	ang = AngVec:Angle()
-
-	ang:RotateAroundAxis( AngVec, math.NormalizeAngle( ThisSegment:GetRoll() ) )
-
-	//Draw the main Rail
-	render.StartBeam( self.CatmullRom.STEPS + 1 )
-	render.AddBeam(self.CatmullRom.PointsList[segment] + ( ang:Right() * offset ), 10, Dist*0.05, color_white) 
-
-	for i = 1, (self.CatmullRom.STEPS) do
-		if i==1 then
-			Dist = Dist - self.CatmullRom.Spline[node + 1]:Distance( self.CatmullRom.PointsList[segment] ) 
-			AngVec = self.CatmullRom.Spline[node + 1] - self.CatmullRom.PointsList[segment] 
-		else
-			AngVec = self.CatmullRom.Spline[node + i] - self.CatmullRom.Spline[node + i - 1]
-
-			Dist = Dist - self.CatmullRom.Spline[node + i]:Distance( self.CatmullRom.Spline[node + i - 1] ) 
-		end
-		AngVec:Normalize()
-		ang = AngVec:Angle()
-		Roll = Lerp( i / self.CatmullRom.STEPS, math.NormalizeAngle( ThisSegment:GetRoll() ),NextSegment:GetRoll())
-
-		ang:RotateAroundAxis( AngVec, Roll )
-
-		render.AddBeam( self.CatmullRom.Spline[node + i] + ( ang:Right() * offset ) ,10, Dist*0.05, color_white)
-	end
-
-	AngVec = self.CatmullRom.PointsList[segment + 1] - self.CatmullRom.Spline[ node + self.CatmullRom.STEPS ]
-	AngVec:Normalize()
-	ang = AngVec:Angle()
-
-	ang:RotateAroundAxis( AngVec,  NextSegment:GetRoll()  )
-
-	Dist = Dist - self.CatmullRom.PointsList[segment + 1]:Distance( self.CatmullRom.Spline[ node + self.CatmullRom.STEPS ] )
-	render.AddBeam(self.CatmullRom.PointsList[segment + 1] + (ang:Right() * offset ), 10, Dist*0.05, color_white)
-	render.EndBeam()
-end
-
 //Though easier to understand, this was more laggy than the above function, so it isn't used.
 function ENT:DrawSideRail2( segment, offset )
 	if not (segment > 1 && (#self.CatmullRom.PointsList > segment )) then return end
@@ -910,14 +900,15 @@ end
 
 --Draw the pre-generated rail mesh
 function ENT:DrawRailMesh()
+
 	if !self.BuildingMesh && self.TrackClass then
 		self.TrackClass:Draw(self.TrackClass.TrackMeshes)
 	else
-		if self.PreviousTrackClass then self.PreviousTrackClass:Draw() end
+		if (self.ShouldDrawOutdatedMesh && self.PreviousTrackClass) then self.PreviousTrackClass:Draw(self.PreviousTrackClass.TrackMeshes) end
 	end
 
 	//Draw currently-being-built meshes
-	if self.BuildingMesh && self.TrackClass.BuildingTrackMeshes then
+	if self.ShouldDrawUnfinishedMesh && self.BuildingMesh && self.TrackClass.BuildingTrackMeshes then
 		self.TrackClass:DrawUnfinished(self.TrackClass.BuildingTrackMeshes)
 	end
 	
@@ -1148,7 +1139,7 @@ function ENT:Think()
 			end
 
 			-- If we were in the middle the build process, it's probably all bunked up
-			if self.BuildQueued || GetConVarNumber("coaster_autobuild") == 1 && self.ResetUpdateMesh then
+			if self.BuildQueued || GetConVarNumber("coaster_mesh_autobuild") == 1 && self.ResetUpdateMesh then
 				self:ResetUpdateMesh()
 			end
 
@@ -1211,6 +1202,44 @@ function ENT:OnRemove()
 	end
 end
 
+
+//Change callbacks
+cvars.AddChangeCallback( "coaster_supports", function()
+	//Go through all of the nodes and tell them to update their shit
+	for k, v in pairs( ents.FindByClass("coaster_node") ) do
+		if IsValid( v ) && v:GetIsController() then
+			v:SupportFullUpdate()
+		end
+	end
+end )
+
+//Cache the data so it's not retreiving each frame
+cvars.AddChangeCallback( "coaster_mesh_drawoutdatedmesh", function()
+	local convar = GetConVar("coaster_mesh_drawoutdatedmesh")
+	local bool = convar && convar:GetBool()
+
+	//Go through all of the nodes and tell them to update their shit
+	for k, v in pairs( ents.FindByClass("coaster_node") ) do
+		if IsValid( v ) && v:GetIsController() then
+			v.ShouldDrawOutdatedMesh = bool
+		end
+	end
+end )
+
+//Cache the data so it's not retreiving each frame
+cvars.AddChangeCallback( "coaster_mesh_drawunfinishedmesh", function()
+	local convar = GetConVar("coaster_mesh_drawunfinishedmesh")
+	local bool = convar && convar:GetBool()
+
+	//Go through all of the nodes and tell them to update their shit
+	for k, v in pairs( ents.FindByClass("coaster_node") ) do
+		if IsValid( v ) && v:GetIsController() then
+			v.ShouldDrawUnfinishedMesh = bool
+		end
+	end
+end )
+
+//Refresh the drawbounds of the support models
 concommand.Add("coaster_refresh_drawbounds", function()
 	for k, v in pairs( CoasterTracks ) do
 		if IsValid( v ) then
@@ -1219,6 +1248,26 @@ concommand.Add("coaster_refresh_drawbounds", function()
 	end
 
 end )
+
+//Build all coaster's clientside mesh
+concommand.Add("coaster_update_mesh", function()
+	for _, v in pairs( ents.FindByClass("coaster_node") ) do
+		if IsValid( v ) && v:GetIsController() then 
+			v:UpdateClientMesh()
+		end
+	end
+	AddNotify( "Updated rollercoaster meshes", NOTIFY_GENERIC, 4 )
+end )
+
+//Make doubly sure our client is up to date
+concommand.Add("coaster_update_nodes", function() 
+	for _, v in pairs( ents.FindByClass("coaster_node") ) do
+		if IsValid( v ) && v:GetIsController() then 
+			v:RefreshClientSpline()
+		end
+	end
+end)
+
 
 
 

@@ -186,6 +186,7 @@ if SERVER then
 	CreateConVar("coaster_maxnodes", "70", FCVAR_NOTIFY) //Maximum numbr of nodes per person
 	CreateConVar("coaster_cart_explosive_damage", "1", FCVAR_NOTIFY, "Should the cart deal explosive damage and remove itself after going Off Da Railz?") //Should the cart do explosive damage?
 	CreateConVar("coaster_cart_cooldown", "1", FCVAR_NOTIFY, "Have a cooldown for screaming and vomiting")
+	CreateConVar("coaster_physmesh_resolution", "10", FCVAR_NOTIFY, "The track resolution of the physics mesh. Higher is more precise, but more time to generate.")
 end
 
 //Don't let the physics mesh be picked up.
@@ -267,25 +268,18 @@ if CLIENT then
 
 	//Perfomance settings
 	CreateClientConVar("coaster_supports", 1, false, false )
-	CreateClientConVar("coaster_previews", 1, false, false )
+	CreateClientConVar("coaster_mesh_previews", 1, true, false )
 	CreateClientConVar("coaster_motionblur", 1, false, false )
-	CreateClientConVar("coaster_autobuild", 1, true, false )
+	CreateClientConVar("coaster_mesh_autobuild", 1, true, false )
 	CreateClientConVar("coaster_maxwheels", 15, false, false )
-	CreateClientConVar("coaster_resolution", 15, false, false )
-	CreateClientConVar("coaster_stepspercycle", 4, true, false )
+	CreateClientConVar("coaster_mesh_resolution", 15, false, false )
+	CreateClientConVar("coaster_mesh_stepspercycle", 4, true, false )
+	CreateClientConVar("coaster_mesh_maxvertices", 50000, true, false)
+	CreateClientConVar("coaster_mesh_drawoutdatedmesh", 1, true, false ) 
+	CreateClientConVar("coaster_mesh_drawunfinishedmesh", 0, true, false)
 
 	//Misc Settings
 	CreateClientConVar("coaster_cart_spin_override", 0, false, true) //Override cart spawning to make it spin like the carousel
-
-	//Change callbacks
-	cvars.AddChangeCallback( "coaster_supports", function()
-		//Go through all of the nodes and tell them to update their shit
-		for k, v in pairs( ents.FindByClass("coaster_node") ) do
-			if IsValid( v ) && v:GetIsController() then
-				v:SupportFullUpdate()
-			end
-		end
-	end )
 
 	//Motion blur
 	local function GetMotionBlurValues( x, y, fwd, spin )
@@ -385,7 +379,7 @@ if CLIENT then
 		spawnmenu.AddToolMenuOption("Options", "Rollercoaster", "Performance Settings", "Performance Settings", "", "", function( panel )
 			panel:NumSlider("Max wheels per segment: ", "coaster_maxwheels", 0, 100, 0 )
 
-			local TrackResolutionSlider = panel:NumSlider("Track Resolution: ", "coaster_resolution", 1, 100, 0 )
+			local TrackResolutionSlider = panel:NumSlider("Track Resolution: ", "coaster_mesh_resolution", 1, 100, 0 )
 			TrackResolutionSlider.OnValueChanged = function() //See the effects in realtime
 				for _, v in pairs( ents.FindByClass("coaster_node") ) do
 					if IsValid( v ) && !v.IsSpawning && v.GetIsController && v:GetIsController() then 
@@ -394,9 +388,12 @@ if CLIENT then
 				end
 			end
 
-			panel:NumSlider("Steps per Frame: ", "coaster_stepspercycle", 1, 100, 0 )
-			panel:CheckBox("Automatically build coaster", "coaster_autobuild")
-			panel:CheckBox("Draw track previews", "coaster_previews")
+			panel:NumSlider("Steps per Frame: ", "coaster_mesh_stepspercycle", 1, 100, 0 )
+			panel:NumSlider("Max Vertices per Mesh: ", "coaster_mesh_maxvertices", 1, 60000, 0 )
+			panel:CheckBox("Automatically build coaster", "coaster_mesh_autobuild")
+			panel:CheckBox("Draw track previews", "coaster_mesh_previews")
+			panel:CheckBox("Draw outdated rollercoaster meshes", "coaster_mesh_drawoutdatedmesh")
+			panel:CheckBox("Draw meshes currently being built", "coaster_mesh_drawunfinishedmesh")
 			panel:CheckBox("Draw track supports", "coaster_supports")
 			panel:CheckBox("Draw motion blur", "coaster_motionblur")
 

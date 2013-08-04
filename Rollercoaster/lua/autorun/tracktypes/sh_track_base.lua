@@ -23,7 +23,7 @@ end
 function TRACK:CoroutineCheck( Controller, Stage, Sections, Percent )
 	self.StepsPerCycle = self.StepsPerCycle + 1
 
-	if self.StepsPerCycle >= GetConVar("coaster_stepspercycle"):GetInt() && !Sections then
+	if self.StepsPerCycle >= GetConVar("coaster_mesh_stepspercycle"):GetInt() && !Sections then
 		self.StepsPerCycle = 0
 		hook.Call("CoasterBuildProgress", GAMEMODE, Controller:GetCoasterID(), Stage, Percent or 1)
 		coroutine.yield()
@@ -54,7 +54,8 @@ end
 
 -- Get the maximum number of vertices allowed per mesh. Make this dynamic eventually?
 function TRACK:GetMaxVertices()
-	return 50000
+	local convar = GetConVar("coaster_mesh_maxvertices")
+	return convar && convar:GetInt() or 50000
 end
 
 -- Add a submesh to a specific section
