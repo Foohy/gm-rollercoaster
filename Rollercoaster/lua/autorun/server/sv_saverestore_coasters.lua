@@ -1,4 +1,5 @@
 local UnconstructedCoasters = {}
+local CoasterIDConversions = {}
 
 local function NumUnconstructedNodes( coasterID )
 	local num = 0
@@ -46,11 +47,36 @@ local function AllNodesAreValid( nodelist )
 	return valid
 end
 
+local function NextCoasterID( curCoasterID )
+	local expld = string.Explode("_", curCoasterID )
+	local num = tonumber(expld[#expld]) or RealTime() //If it's required that this uses RealTime() for the number, the coasterID is probably terribly malformed for some reason
+
+	//Go up!
+	num = num + 1
+	expld[#expld] = tostring( num )
+
+	//re assemble the string
+	return table.concat(expld, "_" ) 
+end
+
+local function GetOpenCoasterID( curID )
+	for _, v in pairs( ents.FindByClass("coaster_node")) do
+		if IsValid( v ) && v:GetCoasterID() == curID then
+			return GetOpenCoasterID(NextCoasterID( curID ))
+		end
+	end
+
+	return curID
+end
+
 local function ReconstructCoaster(coasterID, owner, Controller )
 	local unsortedNodes = GetNodesByID( coasterID )
 
 	if !IsValid( Controller ) || !unsortedNodes || #unsortedNodes < 4 then return end -- Awww you suck
 	
+	//Clear the controller's node table
+	Controller.Nodes = {}
+
 	if game.SinglePlayer() then
 		local ply = #player.GetAll() > 0 && player.GetAll()[1] or Entity(1)
 		Controller:SetOwner( ply ) -- If it's singleplayer, the player owns this save
@@ -68,7 +94,8 @@ local function ReconstructCoaster(coasterID, owner, Controller )
 			COASTERERRORTABLE = UnconstructedCoasters[coasterID] 
 			continue 
 		end
-
+		//If this node had a physicsmesh, FAHGETABOUTIT
+		node.PhysMesh = nil
 		node:SetController( Controller )
 
 		-- Fix colors from older saves
@@ -87,16 +114,28 @@ local function ReconstructCoaster(coasterID, owner, Controller )
 			hook.Call("Coaster_NewCoaster", GAMEMODE, node )
 		else
 			//Nocollide the node with the main node so that the remover gun removes all nodes
-			constraint.NoCollide( node, Rollercoasters[id], 0, 0 )
+			//constraint.NoCollide( node, Rollercoasters[id], 0, 0 )
 		end
 
 		Controller:AddNodeSimple( node, owner )
 	end
 
+	//Create a constraint with all the nodes so the duplicator picks them all up
+	for k, v in pairs( Controller.Nodes ) do
+		constraint.NoCollide( v, Controller, 0, 0 )
+	end
+
 	Controller.Nodes[ #Controller.Nodes ]:SetModel( "models/props_junk/PopCan01a.mdl" )
 
-
 	Controller:UpdateServerSpline()
+
+	//Add it to the user's undo list
+	undo.Create("Saved Rollercoaster")
+		undo.AddEntity( Controller )
+		undo.SetPlayer( Controller:GetOwner() )
+		undo.SetCustomUndoText("Undone Rollercoaster")
+	undo.Finish()
+
 	timer.Simple( 0.65, function()
 
 		umsg.Start("Coaster_AddNode")
@@ -141,9 +180,23 @@ duplicator.RegisterEntityClass("coaster_node", function( ply, data )
 
 	-- A controller has been spawned, and we have the same number nodes spawned as when we were saved
 	if IsValid( Controller ) && NumUnconstructedNodes( ID ) == Controller:GetNumCoasterNodes() && AllNodesAreValid(UnconstructedCoasters[ ID ]) then
-		print("Beginning coaster rebuilding")
-		ReconstructCoaster( ID, ply, Controller  )
+
+		//Retrieve a new unique ID
+		local newID = GetOpenCoasterID( Controller:GetCoasterID() )
+
+		for _, v in pairs( UnconstructedCoasters[ID] ) do
+			v:SetCoasterID( newID )
+		end
+
+		CoasterIDConversions[ID] = newID
+
+		//Move them over into a section with the new id
+		UnconstructedCoasters[newID] = UnconstructedCoasters[ID]
 		UnconstructedCoasters[ID] = nil
+
+		print("Beginning coaster rebuilding")
+		ReconstructCoaster( newID, ply, Controller  )
+		UnconstructedCoasters[newID] = nil
 	end
 end, "Data" )
 
@@ -206,7 +259,6 @@ local function ReconstructTrain( traintbl )
 
 	for k, v in pairs( traintbl ) do
 		if !IsValid( v ) then continue end 
-
 		v.Controller = Controller
 		v.CartTable = CartTable
 		v.Spawning = false
@@ -218,11 +270,12 @@ local function ReconstructTrain( traintbl )
 end
 
 local function DelayedSpawn()
-	print("Beginning train reconstruction")
+	//note that the id is NOT the coasterID, it's a unique identifier for the train
 	for id, tbl in pairs( UnconstructedTrains ) do
 		ReconstructTrain( tbl )
 	end
 	UnconstructedTrains = {}
+	CoasterIDConversions = {}
 end
 
 //Register some modifiers so we can save the carts to the track
@@ -235,6 +288,9 @@ duplicator.RegisterEntityModifier("cart_coaster_data", function(ply, ent, data)
 		if !UnconstructedTrains[ data.TrainID ] then
 			UnconstructedTrains[ data.TrainID ] = {}
 		end
+
+		//Overwrite the coasterid in the data
+		data.CoasterID = CoasterIDConversions[data.CoasterID] or data.CoasterID 
 
 		ent:GetPhysicsObject():EnableMotion( false )
 		ent.CurSegment = data.Node

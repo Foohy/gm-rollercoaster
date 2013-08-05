@@ -698,11 +698,18 @@ if SERVER then
 
 			controllernode:UpdateServerSpline()
 			controllernode.IsSpawning = false
+
 			timer.Simple( 0.2 , function() //Final delay in case any nodes were missed
 				umsg.Start("Coaster_invalidateall")
 					umsg.Entity( controllernode )
 				umsg.End()
 				ply.SpawningCoaster = false
+				
+				//Create a constraint with all the nodes so the duplicator picks them all up
+				for k, v in pairs( controllernode.Nodes ) do
+					constraint.NoCollide( v, controllernode, 0, 0 )
+				end
+
 			end )
 
 			undo.Create("Saved Rollercoaster")
