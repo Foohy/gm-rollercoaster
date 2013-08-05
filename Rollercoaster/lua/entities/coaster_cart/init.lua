@@ -652,7 +652,7 @@ function ENT:SpeedupThink(dt)
 	if self.CartTable[1] == self then
 		for k, v in pairs(self.CartTable) do
 			if k > 1 || #self.CartTable == 1 then
-				local node = v:GetCurrentNode()
+				local node = IsValid(v) && v:GetCurrentNode() or nil
 				if IsValid( node ) && node.GetNodeType && node:GetNodeType() == COASTER_NODE_SPEEDUP then
 					OnSpeedup = true
 					SpeedupForce = node.SpeedupForce
@@ -686,7 +686,7 @@ function ENT:BreakThink(dt)
 	if self.CartTable[1] == self then
 		for k, v in pairs(self.CartTable) do
 			if k > 1 || #self.CartTable == 1 then
-				local node = v:GetCurrentNode()
+				local node = IsValid(v) && v:GetCurrentNode() or nil
 				if IsValid( node ) && node.GetNodeType && node:GetNodeType() == COASTER_NODE_BRAKES then
 					OnBreaks = true
 					BreakForce = node.BreakForce
@@ -758,7 +758,7 @@ function ENT:HomeStationThink(dt)
 	if self.CartTable[1] == self then
 		for k, v in pairs(self.CartTable) do
 
-			local node = v:GetCurrentNode()
+			local node = IsValid(v) && v:GetCurrentNode() or nil
 			if IsValid( node ) && node.GetNodeType && node:GetNodeType() == COASTER_NODE_HOME then
 				OnHome = true
 				HomeWaitTime = node.StopTime
@@ -768,7 +768,7 @@ function ENT:HomeStationThink(dt)
 	end
 
 
-	if OnHome then
+	if OnHome && self.HomeStage != nil then
 
 		if self.HomeStage == 0 then //Moving to center
 			if self.CartTable[#self.CartTable].Percent < 0.9 then //The head car is actually the very last car
@@ -1066,7 +1066,8 @@ function ENT:OnRemove()
 	if self.CartTable != nil then
 		if self.IsDummy then
 			if self.CartTable != nil then
-				for z, x in pairs(self.CartTable) do
+				for _, x in pairs(self.CartTable) do
+					if !IsValid( x ) then continue end
 					x:OffDaRailz(true)
 				end
 			end
