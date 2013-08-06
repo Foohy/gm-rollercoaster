@@ -675,9 +675,11 @@ if SERVER then
 		end
 
 
-		local node = CoasterManager.CreateNodeSimple(id, pos, ang )
-		node:SetRoll( nodeinfo.roll )
+		local node = CoasterManager.CreateNodeSimple(id, pos, ang, ply )
 
+		if !IsValid( node ) then return end
+
+		node:SetRoll( nodeinfo.roll )
 		node:SetNodeType( nodeinfo.type )
 		node:SetColor( color  )
 		if nodeinfo.trackcolor then //backwards compatibility 
@@ -704,7 +706,7 @@ if SERVER then
 					umsg.Entity( controllernode )
 				umsg.End()
 				ply.SpawningCoaster = false
-				
+
 				//Create a constraint with all the nodes so the duplicator picks them all up
 				for k, v in pairs( controllernode.Nodes ) do
 					constraint.NoCollide( v, controllernode, 0, 0 )
@@ -792,6 +794,12 @@ if SERVER then
 			//Load the file
 			local contents = file.Read( directory .. filename )
 			local tbl = util.KeyValuesToTable( contents )
+
+			-- Check if anyone has any objections
+			local res = hook.Run("Coaster_ShouldCreateNode", id, ply )
+			if res != nil && res==false then 
+				return
+			end
 
 			if tbl then
 				print("Spawning coaster " .. filename )

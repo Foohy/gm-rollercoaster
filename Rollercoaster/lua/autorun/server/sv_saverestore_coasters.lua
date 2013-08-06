@@ -163,6 +163,13 @@ duplicator.RegisterEntityClass("coaster_node", function( ply, data )
 	local node = duplicator.GenericDuplicatorFunction( ply, data )
 	local ID = node:GetCoasterID()
 
+	-- Check if anyone has any objections
+	local res = hook.Run("Coaster_ShouldCreateNode", ID, ply )
+	if res != nil && res==false then 
+		if IsValid( node ) then node:Remove() end
+		return
+	end
+
 	-- Make completely sure this list is empty before we start storing stuff in it
 	-- Kinda hacky but there isn't really a nice hook to clear it elsewhere
 	if CurTime() != UnconstructedCoasters.BuildTime then

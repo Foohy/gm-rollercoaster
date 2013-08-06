@@ -10,7 +10,11 @@ cleanup.Register("Rollercoaster")
 if SERVER then
 
 	//For use with spawning coasters from a file. Less automagic bs, but you have to know what you're doing
-	function CoasterManager.CreateNodeSimple( id, pos, ang ) //For use with spawning coasters from a file. Less automagic bs
+	function CoasterManager.CreateNodeSimple( id, pos, ang, ply )
+		//Does anyone have any objections?
+		local res = hook.Run("Coaster_ShouldCreateNode", id, ply )
+		if res != nil && res==false then return nil end
+
 		local node = ents.Create("coaster_node")		
 		node:SetCoasterID( id )
 		node:SetTrackType( COASTER_TRACK_METAL )
@@ -53,6 +57,10 @@ if SERVER then
 			ply:LimitHit("persist")
 			return nil
 		end
+
+		//Does anyone have any objections?
+		local res = hook.Run("Coaster_ShouldCreateNode", id, ply )
+		if res != nil && res==false then return nil end
 
 		local node = ents.Create("coaster_node")		
 		node:SetCoasterID( id )
