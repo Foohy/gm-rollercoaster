@@ -635,7 +635,7 @@ function ENT:TrainOnType( ENUM_TYPE )
 	for k, v in pairs(self.CartTable) do
 		local node = v.GetCurrentNode && v:GetCurrentNode() or nil
 		if IsValid( node ) then 
-			if node.GetNodeType && node:GetNodeType() or -1 == ENUM_TYPE then return true end
+			if (node.GetNodeType && node:GetNodeType() or -1) == ENUM_TYPE then return true end
 		end
 	end
 
