@@ -3,7 +3,7 @@ AddCSLuaFile()
 //I should probably make this a package and combine these two global tables into one.
 Rollercoasters = Rollercoasters or {} //Holds all the rollercoasters
 CoasterManager = CoasterManager or {} //Holds all the methods and variables for rollercoasters
-COASTER_VERSION = 21
+COASTER_VERSION = 22
 
 cleanup.Register("Rollercoaster")
 
@@ -279,7 +279,7 @@ if CLIENT then
 	CreateClientConVar("coaster_mesh_previews", 1, true, false )
 	CreateClientConVar("coaster_motionblur", 1, false, false )
 	CreateClientConVar("coaster_mesh_autobuild", 1, true, false )
-	CreateClientConVar("coaster_maxwheels", 15, false, false )
+	CreateClientConVar("coaster_maxwheels", 30, false, false )
 	CreateClientConVar("coaster_mesh_resolution", 15, false, false )
 	CreateClientConVar("coaster_mesh_stepspercycle", 4, true, false )
 	CreateClientConVar("coaster_mesh_maxvertices", 50000, true, false)
