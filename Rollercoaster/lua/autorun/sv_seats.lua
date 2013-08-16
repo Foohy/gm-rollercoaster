@@ -169,26 +169,19 @@ function CreateSeatAtPos(pos, angle)
 	return ent
 end
 
-hook.Add("KeyRelease", "EnterSeat", function(ply, key)
-	if CLIENT then return end
-	if key != IN_USE || ply:InVehicle() || (ply.ExitTime && CurTime() < ply.ExitTime + 1) then return end
+function ForceEnterGivenCart( cart, ply, hitpos  )
+	if !IsValid( cart ) || !IsValid( ply ) then return end
 
-	local eye = ply:EyePos()
-	local trace = util.TraceLine({start=eye, endpos=eye+ply:GetAimVector()*100, filter=ply})
-
-	if !IsValid(trace.Entity) then return end
-	if trace.Entity:GetClass() != "coaster_cart" then return end //Don't mess with anyone else's shit
-
-	local model = trace.Entity:GetModel()
+	local model = cart:GetModel()
 
 	local offsets = ChairOffsets[string.lower(model)]
 	if !offsets then return end
 
-	local usetable = trace.Entity.UseTable or {}
+	local usetable = cart.UseTable or {}
 	local pos = -1
 
 	if #offsets > 1 then
-		local localpos = trace.Entity:WorldToLocal(trace.HitPos)
+		local localpos = cart:WorldToLocal(hitpos)
 		local bestpos, bestdist = -1
 
 		for k,v in pairs(offsets) do
@@ -207,32 +200,45 @@ hook.Add("KeyRelease", "EnterSeat", function(ply, key)
 	end
 
 	//Store a list of occupants on the cart
-	if !trace.Entity.Occupants then
-		trace.Entity.Occupants = {}
+	if !cart.Occupants then
+		cart.Occupants = {}
 	end
-	table.insert( trace.Entity.Occupants, ply )
+	table.insert( cart.Occupants, ply )
 
 	usetable[pos] = true
-	trace.Entity.UseTable = usetable
+	cart.UseTable = usetable
 
 
 	ply.EntryPoint = ply:GetPos()
 	ply.EntryAngles = ply:EyeAngles()
-	ply.SeatEnt = trace.Entity
+	ply.SeatEnt = cart
 	ply.SeatPos = pos
 
-	local ang = trace.Entity:GetAngles()
+	local ang = cart:GetAngles()
 	if NotRight[model] then
-		ang:RotateAroundAxis(trace.Entity:GetUp(), NotRight[model])
+		ang:RotateAroundAxis(cart:GetUp(), NotRight[model])
 	else
-		ang:RotateAroundAxis(trace.Entity:GetUp(), -90)
+		ang:RotateAroundAxis(cart:GetUp(), -90)
 	end
 
-	local s = CreateSeatAtPos(trace.Entity:LocalToWorld(offsets[pos]), ang)
-	s:SetParent(trace.Entity)
-	s:SetOwner(ply)
+	local s = CreateSeatAtPos(cart:LocalToWorld(offsets[pos]), ang)
+	s:SetParent(cart)
 
 	ply:EnterVehicle(s)
+end
+
+hook.Add("KeyRelease", "EnterSeat", function(ply, key)
+	if CLIENT then return end
+
+	if key != IN_USE || ply:InVehicle() || (ply.ExitTime && CurTime() < ply.ExitTime + 1) then return end
+	local eye = ply:EyePos()
+	local trace = util.TraceLine({start=eye, endpos=eye+ply:GetAimVector()*100, filter=ply})
+
+	if !IsValid(trace.Entity) then return end
+	if trace.Entity:GetClass() != "coaster_cart" then return end //Don't mess with anyone else's shit
+
+	ForceEnterGivenCart( trace.Entity, ply, trace.HitPos )
+
 end)
 
 hook.Add("CanPlayerEnterVehicle", "EnterSeat", function(ply, vehicle)
@@ -266,8 +272,6 @@ function TryPlayerExit(ply, ent)
 			trydist = trydist + 8
 		end
 	end
-
-	print("player", ply, "couldn't get out")
 end
 
 local function PlayerLeaveVehice( vehicle, ply )
@@ -277,10 +281,10 @@ local function PlayerLeaveVehice( vehicle, ply )
 	local parent = vehicle:GetParent()
 
 	//Don't mess with anything else
-	if IsValid( parent ) && parent:GetClass() != "coaster_cart" then return end 
+	if !IsValid( parent ) || parent:GetClass() != "coaster_cart" then return end 
 
 	//Force all the players to leave
-	if IsValid( parent ) && parent:GetClass() == "coaster_cart" && parent.Occupants && #parent.Occupants > 0 then
+	if parent:GetClass() == "coaster_cart" && parent.Occupants && #parent.Occupants > 0 then
 
 		for k, v in pairs( parent.Occupants ) do
 			if v == ply then table.remove( parent.Occupants, k ) end
@@ -318,7 +322,7 @@ local function PlayerLeaveVehice( vehicle, ply )
 
 end
 
-hook.Add("RollercoasterCanExitVehicle", "Leave", PlayerLeaveVehice)
+hook.Add("CanExitVehicle", "RollercoasterLeaveCart", PlayerLeaveVehice)
 
 function PlayerExitLeft( ply )
 	local Vehicle = ply:GetVehicle()

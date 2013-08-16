@@ -10,6 +10,7 @@ function ENT:Initialize()
 	self:SetModel("models/props_junk/PopCan01a.mdl")
 	self.Model = "models/props_junk/PopCan01a.mdl"
 
+	self:SetUseType( SIMPLE_USE )
 
 	self:PhysicsInit(SOLID_CUSTOM)
 	self:GetPhysicsObject():EnableMotion( false )
@@ -116,6 +117,27 @@ function ENT:BuildMesh()
 
 	self:SetCustomCollisionCheck(true)
 
+end
+
+function ENT:Use(activator, caller)
+	if IsValid(activator) then
+		-- Find the closest cart, if one exists
+		local closestDist = math.huge 
+		local closestCart = nil
+		for _, v in pairs( ents.FindByClass("coaster_cart") ) do
+			local dist = IsValid( v) && v.CoasterID == self:GetCoasterID() && activator:GetPos():Distance( v:GetPos() ) or math.huge
+			if dist < closestDist then
+				closestDist = dist
+				closestCart = v
+			end
+		end
+
+		-- Check if we got a valid cart
+		if IsValid( closestCart ) then
+			-- Tell the seats module we want to enter the cart
+			ForceEnterGivenCart( closestCart, activator, activator:GetPos() )
+		end
+	end
 end
 
 //Set the networkvar when the cvar changes
