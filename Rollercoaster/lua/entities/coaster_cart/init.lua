@@ -771,7 +771,8 @@ function ENT:HomeStationThink(dt)
 	if OnHome && self.HomeStage != nil then
 
 		if self.HomeStage == 0 then //Moving to center
-			if self.CartTable[#self.CartTable].Percent < 0.9 then //The head car is actually the very last car
+			local NextNode = self.Controller.Nodes[ self.CartTable[#self.CartTable].CurSegment + 1] //Get the next node of the last cart
+			if self.CartTable[#self.CartTable].Percent < 0.9 || (IsValid( NextNode ) && NextNode.GetNodeType && NextNode:GetNodeType() == COASTER_NODE_HOME) then //The head car is actually the very last car
 				for k, v in pairs(self.CartTable) do
 					v.Velocity = 4
 				end
