@@ -416,7 +416,7 @@ if CLIENT then
 	hook.Add("EntityRemoved", "Coaster_UpdateList", function( ent )
 		local panel = controlpanel.Get("coaster_supertool")
 
-		if IsValid( ent ) && ent:GetClass() == "coaster_node" && panel && panel.CoasterList then
+		if isentity( ent ) && IsValid( ent ) && ent:GetClass() == "coaster_node" && panel && panel.CoasterList then
 			timer.Simple(0, function() 
 				UpdateTrackPanel(panel.CoasterList)
 			end )

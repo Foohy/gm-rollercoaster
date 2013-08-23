@@ -163,9 +163,9 @@ end
 
 local function UCT(ctable,x)
 	//this supplements the working of RollercoasterUpdateCartTable()
-	//print("checking for lead")
+
 	for k, v in pairs(ctable) do
-		if !IsValid( v ) then continue end
+		if !IsValid( v ) || !IsValid( x) || !v.CurSegment || !x.CurSegment then continue end
 
 		if x != v then
 			if v.Velocity >= 0 then

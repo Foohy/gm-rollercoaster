@@ -793,6 +793,8 @@ if SERVER then
 
 			//Load the file
 			local contents = file.Read( directory .. filename )
+			if !isstring( contents ) || #contents <= 0 then return end //GIT OUTTA HERE
+
 			local tbl = util.KeyValuesToTable( contents )
 
 			-- Check if anyone has any objections

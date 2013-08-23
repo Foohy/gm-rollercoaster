@@ -49,6 +49,8 @@ function meta:NumCoasterNodes()
 end
 
 function meta:Puke()
+	if !IsValid( self ) then return end 
+
 	self:ViewPunch( Angle( -5, 0, 0 ) )
 	
 	local edata = EffectData()
@@ -59,6 +61,8 @@ function meta:Puke()
 end
 
 function meta:Scream()
+	if !IsValid( self ) then return end 
+	
 	local Screams = {
 		"vo/npc/male01/help01.wav",
 		"vo/npc/male01/no02.wav",
