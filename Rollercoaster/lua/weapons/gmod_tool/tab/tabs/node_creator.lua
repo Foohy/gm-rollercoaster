@@ -20,7 +20,7 @@ TAB.ClientConVar["tracktype"] = "1"
 TAB.ClientConVar["prev_nodeheight"] = "0"
 TAB.ClientConVar["trackchains"] = "0"
 
-TAB.GhostModel = Model("models/Combine_Helicopter/helicopter_bomb01.mdl")
+TAB.GhostModel = Model("models/hunter/misc/sphere075x075.mdl")
 TAB.WaitTime	= 0 //Time to wait to make sure the dtvars are updated
 
 function TAB:LeftClick( trace, tool )
