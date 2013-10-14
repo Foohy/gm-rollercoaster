@@ -214,7 +214,7 @@ local function UpdateWheelPositions( self, segment, type, forceRefresh )
 				self.Wheels[segment][i] = nil
 			end
 		end
-	ebd
+	end
 
 end
 
