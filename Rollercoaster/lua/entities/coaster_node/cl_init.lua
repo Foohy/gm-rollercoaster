@@ -207,12 +207,14 @@ local function UpdateWheelPositions( self, segment, type, forceRefresh )
 	end
 
 	-- If there's any extra wheels, tell em to frick off
-	for i=currentWheel, #self.Wheels[segment] do
-		if IsValid( self.Wheels[segment][i] ) then
-			self.Wheels[segment][i]:Remove()
-			self.Wheels[segment][i] = nil
+	if self.Wheels != nil then
+		for i=currentWheel, #self.Wheels[segment] do
+			if IsValid( self.Wheels[segment][i] ) then
+				self.Wheels[segment][i]:Remove()
+				self.Wheels[segment][i] = nil
+			end
 		end
-	end
+	ebd
 
 end
 
