@@ -3,7 +3,7 @@ AddCSLuaFile()
 //I should probably make this a package and combine these two global tables into one.
 Rollercoasters = Rollercoasters or {} //Holds all the rollercoasters
 CoasterManager = CoasterManager or {} //Holds all the methods and variables for rollercoasters
-COASTER_VERSION = 22
+COASTER_VERSION = 23
 
 cleanup.Register("Rollercoaster")
 
@@ -195,6 +195,7 @@ if SERVER then
 	CreateConVar("coaster_cart_explosive_damage", "1", FCVAR_NOTIFY, "Should the cart deal explosive damage and remove itself after going Off Da Railz?") //Should the cart do explosive damage?
 	CreateConVar("coaster_cart_cooldown", "1", FCVAR_NOTIFY, "Have a cooldown for screaming and vomiting")
 	CreateConVar("coaster_physmesh_resolution", "10", FCVAR_NOTIFY, "The track resolution of the physics mesh. Higher is more precise, but more time to generate.")
+	CreateConVar("coaster_physmesh_enabled", "1", FCVAR_NOTIFY, "Whether to build the physics mesh for the rollercoaster tracks. Physics meshes are apparently unstable sometimes, just btdubs.")
 end
 
 //Don't let the physics mesh be picked up.

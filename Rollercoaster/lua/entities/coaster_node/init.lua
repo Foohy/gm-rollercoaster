@@ -267,6 +267,8 @@ function ENT:BuildSegmentMesh()
 		return //get the fuck out
 	end
 
+	self.Segment = Segment //there could be a better place for this but oh well
+
 	if Segment < 2 or Segment >= #controller.Nodes - 1 then 
 		if IsValid( self.PhysMesh ) then
 			self.PhysMesh:Remove()
@@ -278,7 +280,7 @@ function ENT:BuildSegmentMesh()
 		//Make sure it's information is up to date
 		self.PhysMesh.Segment = Segment
 		self.PhysMesh:SetController( controller )
-	else
+	elseif (GetConVarNumber("coaster_physmesh_enabled", 1) == 1) then
 		//Create the physics mesh entity
 		local physmesh = ents.Create("coaster_physmesh")
 		physmesh:SetPos( self:GetPos() )
@@ -296,7 +298,9 @@ function ENT:BuildSegmentMesh()
 	end
 
 	//Build meshhhhhhhhes
-	self.PhysMesh:BuildMesh()
+	if (IsValid( self.PhysMesh ) ) then
+		self.PhysMesh:BuildMesh()
+	end
 end
 
 
