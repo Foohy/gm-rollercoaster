@@ -22,6 +22,7 @@ Serverside/admin commands and convars.
 * coaster_cart_explosive_damage 1/0 Toggle whether the cart should explode in a massive fireball.
 * coaster_cart_cooldown 1/0 Toggle the cooldown of vomitting and screaming in carts.
 * coaster_physmesh_resolution (default: 10) The resolution of the serverside physics mesh of the tracks. Higher resolution is more precise, but laggier.
+* coaster_downloadtoclients 1/0 Define if the clients should download the resources for rollercoaster.
 
 All of the following settings can be changed in the 'Settings' tab of the SuperTool.
 * coaster_supports 1/0 Toggle the drawing of support beams
