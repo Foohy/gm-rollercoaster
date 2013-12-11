@@ -323,7 +323,6 @@ if CLIENT then
 	CoasterTracks = {}
 
 	//Perfomance settings
-	CreateClientConVar("cl_thisisatest",2,true,false)
 	
 	CreateClientConVar("coaster_supports", 1, false, false )
 	CreateClientConVar("coaster_mesh_previews", 1, true, false )
