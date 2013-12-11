@@ -5,6 +5,27 @@ Rollercoasters = Rollercoasters or {} //Holds all the rollercoasters
 CoasterManager = CoasterManager or {} //Holds all the methods and variables for rollercoasters
 COASTER_VERSION = 23
 
+COASTER_CHANGELOG={
+	"+Added Launch Track",
+	"*Fixed node roll setting applying to the next node placed rather than the one currently being made."
+}
+
+--[[
+edits by miterdoo:
+
++added launch segment
+	any launch segment will be assigned a launch key that the user can set in
+	the tool, right below the node roll value. when the segment is not launching,
+	or is in "idle mode," then it acts as a home station, but carts cannot move
+	once they've stopped. when the segment is launching, when the player taps/
+	presses the launch key for the segment, the segment acts as a speedup track
+	but with a acceleration specified by the player that placed the segment.
+	these tracks cannot be placed if a launch key is not set yet.
+*FIXED node roll being assigned to the next node placed rather than the one
+	currently being placed.
+
+]]
+
 cleanup.Register("Rollercoaster")
 
 if SERVER then
@@ -45,7 +66,7 @@ if SERVER then
 	end
 
 	//Spawn a new rollercoaster the simple way
-	function CoasterManager.CreateNode( id, pos, ang, type, ply )
+	function CoasterManager.CreateNode( id, pos, ang, type, ply, roll, key, launchspeed,keystr)
 		//Make sure we're allowed to spawn one
 		if !game.SinglePlayer() && IsValid( ply ) && ply:NumCoasterNodes() >= GetConVarNumber("coaster_maxnodes") then
 			ply:LimitHit("maxnodes")
@@ -62,17 +83,19 @@ if SERVER then
 		local res = hook.Run("Coaster_ShouldCreateNode", id, ply )
 		if res != nil && res==false then return nil end
 
-		local node = ents.Create("coaster_node")		
+		local node = ents.Create("coaster_node")
 		node:SetCoasterID( id )
 		node:SetNodeType( type )
 		node:SetTrackType( COASTER_TRACK_METAL )
 
 		node:SetController( Rollercoasters[id] or node )
+
 		
 		node:SetPos( pos )
 		node:SetAngles( ang )
 		node:Spawn()
 		node:Activate()
+		--print("server",launchspeed)
 
 		if !IsValid( Rollercoasters[id] ) then //The ID isn't an existing rollercoaster, so lets create one
 			Msg("Creating a new rollercoaster with ID: "..tostring(id).."\n" )
@@ -89,13 +112,38 @@ if SERVER then
 		else //The ID IS an actual rollercoaster, so let's append to it
 			//Nocollide the node with the main node so that the remover gun removes all nodes
 			constraint.NoCollide( node, Rollercoasters[id], 0, 0 )
-
 			Rollercoasters[id]:AddTrackNode( node, ply )
 			//Msg("Creating a new node: "..tostring(Rollercoasters[id]:GetNumNodes()).." for coaster ID: "..tostring(id).."\n")
 		end
 
 		//Call the hook telling a new node was created
 		hook.Call("Coaster_NewNode", GAMEMODE, node )
+		if launchspeed then
+			node:SetLaunchSpeed(launchspeed)
+		end
+		if WireAddon!=nil and type==COASTER_NODE_LAUNCH then
+			--node.Inputs=Wire_CreateInputs(node,{"Launch!"})
+		elseif WireAddon!=nil then
+			node.Inputs=nil
+			node.Outputs=Wire_CreateOutputs(node,{"Cart On Track"})
+		end
+		node.launching=false
+		if keystr!=nil then
+			node:SetLaunchKeyString(keystr)
+		end
+		if key!=nil then
+			node:SetLaunchKey(key)
+			numpad.OnDown(ply,key,"CoasterLaunch",node,true)
+			numpad.OnUp(ply,key,"CoasterLaunch",node,false)
+			numpad.Register("CoasterLaunch",function(pl,nd,toggle)
+				if !IsValid(nd) then return end
+				if toggle==false and #nd.CartsOnMe==0 then
+					nd.launching=false
+				elseif toggle==true then
+					nd.launching=true
+				end
+			end)
+		end
 		
 		return node
 
@@ -195,7 +243,6 @@ if SERVER then
 	CreateConVar("coaster_cart_explosive_damage", "1", FCVAR_NOTIFY, "Should the cart deal explosive damage and remove itself after going Off Da Railz?") //Should the cart do explosive damage?
 	CreateConVar("coaster_cart_cooldown", "1", FCVAR_NOTIFY, "Have a cooldown for screaming and vomiting")
 	CreateConVar("coaster_physmesh_resolution", "10", FCVAR_NOTIFY, "The track resolution of the physics mesh. Higher is more precise, but more time to generate.")
-	CreateConVar("coaster_physmesh_enabled", "1", FCVAR_NOTIFY, "Whether to build the physics mesh for the rollercoaster tracks. Physics meshes are apparently unstable sometimes, just btdubs.")
 end
 
 //Don't let the physics mesh be picked up.
@@ -276,6 +323,8 @@ if CLIENT then
 	CoasterTracks = {}
 
 	//Perfomance settings
+	CreateClientConVar("cl_thisisatest",2,true,false)
+	
 	CreateClientConVar("coaster_supports", 1, false, false )
 	CreateClientConVar("coaster_mesh_previews", 1, true, false )
 	CreateClientConVar("coaster_motionblur", 1, false, false )
@@ -286,6 +335,11 @@ if CLIENT then
 	CreateClientConVar("coaster_mesh_maxvertices", 50000, true, false)
 	CreateClientConVar("coaster_mesh_drawoutdatedmesh", 1, true, false ) 
 	CreateClientConVar("coaster_mesh_drawunfinishedmesh", 0, true, false)
+	
+	//Launch settings
+	--[[CreateClientConVar("coaster_supertool_tab_node_creator_launchkey", 0, true, false)
+	CreateClientConVar("coaster_supertool_tab_node_creator_launchkeystring", "", true, false)
+	CreateClientConVar("coaster_supertool_tab_node_creator_launchspeed", 200, true, false)]]
 
 	//Misc Settings
 	CreateClientConVar("coaster_cart_spin_override", 0, false, true) //Override cart spawning to make it spin like the carousel

@@ -2,6 +2,21 @@ AddCSLuaFile( "cl_init.lua" )
 AddCSLuaFile( "shared.lua" )
 include( "shared.lua" )
 
+--[[
+edits by miterdoo:
+
++added launch segment
+	any launch segment will be assigned a launch key that the user can set in
+	the tool, right below the node roll value. when the segment is not launching,
+	or is in "idle mode," then it acts as a home station, but carts cannot move
+	once they've stopped. when the segment is launching, when the player taps/
+	presses the launch key for the segment, the segment acts as a speedup track
+	but with a acceleration specified by the player that placed the segment.
+	these tracks cannot be placed if a launch key is not set yet.
+*FIXED node roll being assigned to the next node placed rather than the one
+	currently being placed.
+
+]]
 -- General Cart Stuff
 ENT.CoasterID 	= -1 //Unique ID of the coaster this cart is attached to
 ENT.NumCarts 	= 1 //Length of the train of carts
@@ -291,6 +306,7 @@ function ENT:PhysicsSimulate(phys, deltatime)
 	if self.Spawning then return SIM_NOTHING end
 
 	local CurPos  = self:GetPos()
+	local PrevNode = self.Controller.Nodes[self.CurSegment-1]
 	local CurNode = self.Controller.Nodes[self.CurSegment]
 	local NextNode = self.Controller.Nodes[ self.CurSegment + 1]
 	if !IsValid( CurNode ) || !IsValid( NextNode ) then return SIM_NOTHING end
@@ -322,8 +338,25 @@ function ENT:PhysicsSimulate(phys, deltatime)
 			end
 		end
 	end
-
-
+	
+	local scantable=function (tab,query)
+		for k,v in pairs(tab)do
+			if v==query then return true end
+		end
+		return false
+	end
+	// i added a system that the launch system or wire outputs can use to know how many carts are on a node
+	if scantable(CurNode.CartsOnMe,self)==false then
+		table.insert(CurNode.CartsOnMe,self)
+	end
+	if IsValid(PrevNode) then
+		for k,v in pairs(PrevNode.CartsOnMe)do
+			if v==self then
+				table.remove(PrevNode.CartsOnMe,k)
+			end
+		end
+	end
+	
 	self:MinSpeedThink()
 	self:HomeStationThink(deltatime)
 
@@ -653,9 +686,12 @@ function ENT:SpeedupThink(dt)
 		for k, v in pairs(self.CartTable) do
 			if k > 1 || #self.CartTable == 1 then
 				local node = IsValid(v) && v:GetCurrentNode() or nil
-				if IsValid( node ) && node.GetNodeType && node:GetNodeType() == COASTER_NODE_SPEEDUP then
+				if IsValid( node ) && node.GetNodeType && (node:GetNodeType() == COASTER_NODE_SPEEDUP or (node:GetNodeType() == COASTER_NODE_LAUNCH and node.launching))then
 					OnSpeedup = true
 					SpeedupForce = node.SpeedupForce
+					if node:GetNodeType()==COASTER_NODE_LAUNCH then
+						SpeedupForce=node:GetLaunchSpeed()*14
+					end
 					MaxSpeed = node.MaxSpeed
 					NumOnSpeedup = NumOnSpeedup + 1
 					TotalCarts = TotalCarts + 1
@@ -754,13 +790,17 @@ end
 function ENT:HomeStationThink(dt)
 	local OnHome = false
 	local HomeWaitTime = 0
+	local OnLaunch=false
 
 	if self.CartTable[1] == self then
 		for k, v in pairs(self.CartTable) do
 
 			local node = IsValid(v) && v:GetCurrentNode() or nil
-			if IsValid( node ) && node.GetNodeType && node:GetNodeType() == COASTER_NODE_HOME then
+			if IsValid( node ) && node.GetNodeType && (node:GetNodeType() == COASTER_NODE_HOME or (node:GetNodeType()==COASTER_NODE_LAUNCH and !node.launching)) then
 				OnHome = true
+				if node:GetNodeType()==COASTER_NODE_LAUNCH and !node.launching then
+					OnLaunch=true
+				end
 				HomeWaitTime = node.StopTime
 				break
 			end
@@ -786,12 +826,13 @@ function ENT:HomeStationThink(dt)
 				v.Velocity = 0
 			end
 
-			if self.TimeToStart && self.TimeToStart < CurTime() then 
+			if self.TimeToStart && self.TimeToStart < CurTime() and not OnLaunch then 
 				self.HomeStage = 2 
 			end
 		else //Moving to next node
+			local NextNode = self.Controller.Nodes[ self.CartTable[#self.CartTable].CurSegment + 1] //Get the next node of the last cart
 
-			if self.Velocity < 5 then
+			if self.Velocity < 5 and not OnLaunch then
 				for k, v in pairs(self.CartTable) do
 					v.Velocity = 5
 				end
