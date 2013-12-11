@@ -313,9 +313,9 @@ function TOOL.BuildCPanel(panel)
 	//panel:Button( "Build All Meshes", "coaster_update_mesh")
 	panel:ControlHelp( "Note: Building the mesh is an intensive process. Performance will be affected." )
 	local version = panel:Help( "Rollercoaster version: " .. COASTER_VERSION )
-	local clog=vgui.Create("DForm",panel)
-	clog:SetName("Changelog")
-	clog:Help(table.concat(COASTER_CHANGELOG,"\n"))
+	--local clog=vgui.Create("DForm",panel)
+	--clog:SetName("Changelog")
+	--clog:Help(table.concat(COASTER_CHANGELOG,"\n"))
 	panel:AddItem(clog)
 end
 
