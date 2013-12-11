@@ -135,6 +135,11 @@ function CreateTrackTable( controller )
 		coaster_saver_ClipboardTrack[k].Roll = v:GetRoll()
 		coaster_saver_ClipboardTrack[k].Color = v:GetColor()
 		coaster_saver_ClipboardTrack[k].TrackColor = v:GetActualTrackColor()
+		if v:GetNodeType()==COASTER_NODE_LAUNCH then
+			coaster_saver_ClipboardTrack[k].LaunchSpeed=v:GetLaunchSpeed()
+			coaster_saver_ClipboardTrack[k].LaunchKeyString=v:GetLaunchKeyString()
+			coaster_saver_ClipboardTrack[k].LaunchKey=v:GetLaunchKey()
+		end
 	end
 
 	coaster_saver_ClipboardTrack.numnodes = #controller.Nodes
@@ -685,6 +690,22 @@ if SERVER then
 		if nodeinfo.trackcolor then //backwards compatibility 
 			node:SetTrackColor( Vector(nodeinfo.trackcolor.r/255, nodeinfo.trackcolor.g/255, nodeinfo.trackcolor.b/255)  )
 		end
+		if nodeinfo.type==COASTER_NODE_LAUNCH then
+			local key=nodeinfo.launchkey
+			node:SetLaunchKey(key)
+			node:SetLaunchKeyString(nodeinfo.launchkeystring)
+			node:SetLaunchSpeed(nodeinfo.launchspeed)
+			numpad.OnDown(ply,key,"CoasterLaunch",node,true)
+			numpad.OnUp(ply,key,"CoasterLaunch",node,false)
+			numpad.Register("CoasterLaunch",function(pl,nd,toggle)
+				if !IsValid(nd) then return end
+				if toggle==false and #nd.CartsOnMe==0 then
+					nd.launching=false
+				elseif toggle==true then
+					nd.launching=true
+				end
+			end)
+		end
 
 		node.Filename = filename //Prevent duplicates of the coaster to be spawned
 
@@ -868,6 +889,11 @@ if SERVER then
 				trackTable[k].Roll = v:GetRoll()
 				trackTable[k].Color = v:GetColor()
 				trackTable[k].TrackColor = v:GetActualTrackColor()
+				if v:GetNodeType()==COASTER_NODE_LAUNCH then
+					trackTable[k].LaunchKey=v:GetLaunchKey()
+					trackTable[k].LaunchKeyString=v:GetLaunchKeyString()
+					trackTable[k].LaunchSpeed=v:GetLaunchSpeed()
+				end
 			end
 
 			trackTable.numnodes = #controller.Nodes

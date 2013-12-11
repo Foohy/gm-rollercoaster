@@ -20,8 +20,28 @@ TAB.ClientConVar["tracktype"] = "1"
 TAB.ClientConVar["prev_nodeheight"] = "0"
 TAB.ClientConVar["trackchains"] = "0"
 
+TAB.ClientConVar["launchkey"]="0"
+TAB.ClientConVar["launchkeystring"]=""
+TAB.ClientConVar["launchspeed"]="100"
+
 TAB.GhostModel = Model("models/hunter/misc/sphere075x075.mdl")
 TAB.WaitTime	= 0 //Time to wait to make sure the dtvars are updated
+
+--[[
+edits by miterdoo:
+
++added launch segment
+	any launch segment will be assigned a launch key that the user can set in
+	the tool, right below the node roll value. when the segment is not launching,
+	or is in "idle mode," then it acts as a home station, but carts cannot move
+	once they've stopped. when the segment is launching, when the player taps/
+	presses the launch key for the segment, the segment acts as a speedup track
+	but with a acceleration specified by the player that placed the segment.
+	these tracks cannot be placed if a launch key is not set yet.
+*FIXED node roll being assigned to the next node placed rather than the one
+	currently being placed.
+
+]]
 
 function TAB:LeftClick( trace, tool )
 	local ply   = tool:GetOwner()
@@ -32,22 +52,43 @@ function TAB:LeftClick( trace, tool )
 	local Type 		= GetClientNumber( self, "tracktype", tool )
 	local matchZ 	= GetClientNumber( self, "prev_nodeheight", tool ) == 1
 	local plyAng	= ply:GetAngles()
+	local key		= GetClientNumber( self, "launchkey", tool )
+	local keystr	= GetClientInfo( self, "launchkeystring", tool )
+	
+	local launchspeed=GetClientNumber( self, "launchspeed", tool )
 			
 	local newPos = trace.HitPos + Vector( 0, 0, math.Clamp( Elevation, 0, 10000000 ) )
 	local newAng = Angle(0, plyAng.y, 0) + Angle( 0, 0, 0 )
-	
 	if SERVER then
 		local Node = tool:GetActualNodeEntity( trace.Entity )
-
 		if IsValid( Node ) && Node:GetClass() == "coaster_node" then //Update an existing node's settings
-			
 			//Check if we have permissions to actually modify the node
 			if !tool:ShouldModifyNode( Node ) then return false end
+			
+			if Type==COASTER_NODE_LAUNCH and key==0 then // we don't have a launch key for the launch track!
+				if ply.SendLua then
+					ply:SendLua("notification.AddLegacy('You must provide a launch key in order to make a launch segment!',1,5); surface.PlaySound('buttons/button10.wav')")
+				end
+				return
+			end
+			--[[print("UPDATING",Node:GetNodeType(),Type,WireLib)
+			if Node:GetNodeType()!=COASTER_NODE_LAUNCH and Type==COASTER_NODE_LAUNCH and WireLib!=nil then
+				print("LAUNCH")
+				Node.Inputs=Wire_CreateInputs(Node,{"Launch!"})
+			elseif Node:GetNodeType()==COASTER_NODE_LAUNCH and Type!=COASTER_NODE_LAUNCH and WireLib!=nil then
+				print("SETTING TO NIL")
+				Node.Inputs=nil
+				print(Node.Inputs)
+			end]]
 			
 			local ShouldInvalidate = Node:GetRoll() != Bank
 			Node:SetNodeType( Type )
 			Node:SetRoll( Bank )
-
+			
+			Node:SetLaunchSpeed(launchspeed) -- edits from mitterdoo
+			Node:SetLaunchKey(key)
+			Node:SetLaunchKeyString(keystr)
+			
 			if ShouldInvalidate then
 				Node:Invalidate( true )
 			end
@@ -74,7 +115,6 @@ function TAB:LeftClick( trace, tool )
 		else //If we didn't click on an existing node, create a new one		
 			//If the coaster is looped, unloop it
 			local controller = Rollercoasters[ID]
-			
 			if IsValid( controller ) && controller:GetLooped() then
 				local LastNode = controller.Nodes[ #controller.Nodes - 1 ]
 				local VeryLastNode = controller.Nodes[ #controller.Nodes ]
@@ -99,10 +139,26 @@ function TAB:LeftClick( trace, tool )
 						newPos.z = VeryLastNode:GetPos().z + Elevation
 					end
 				end
-				local node = CoasterManager.CreateNode( ID, newPos, newAng, Type, ply )
+				if Type==COASTER_NODE_LAUNCH and key==0 then // no launch key!
+					if ply.SendLua then
+						ply:SendLua("notification.AddLegacy('You must provide a launch key in order to make a launch segment!',1,5); surface.PlaySound('buttons/button10.wav')")
+					end
+					return
+				end
+				local node = CoasterManager.CreateNode( ID, newPos, newAng, Type, ply, Bank, key, launchspeed,keystr)
 				if !IsValid( node ) then return end
 
 				node:SetRoll( Bank )
+				if key!=nil then
+					node:SetLaunchKey(key)
+					node:SetLaunchKeyString(keystr)
+					node:SetLaunchSpeed(launchspeed)
+				end
+				--[[if Type==COASTER_NODE_LAUNCH and WireLib!=nil then
+					node.Inputs=Wire_CreateInputs(node,{"Launch!"})
+				else
+					node.Inputs=nil
+				end]]
 
 				//Set the previous node to use the current values, to make things have more sense
 				local controller = Rollercoasters[ID]
@@ -112,6 +168,17 @@ function TAB:LeftClick( trace, tool )
 						LastNode:SetPos( newPos )
 						LastNode:SetAngles( newAng )
 						LastNode:SetNodeType( Type )
+						LastNode:SetRoll(Bank)
+						if key!=nil then
+							LastNode:SetLaunchKey(key)
+							LastNode:SetLaunchKeyString(keystr)
+							LastNode:SetLaunchSpeed(launchspeed)
+						end
+						--[[if Type==COASTER_NODE_LAUNCH and WireLib!=nil then
+							LastNode.Inputs=Wire_CreateInputs(LastNode,{"Launch!"})
+						else
+							LastNode.Inputs=nil
+						end]]
 					end
 				end
 				
@@ -147,7 +214,7 @@ function TAB:RightClick( trace, tool )
 			local SecondToLast = Controller.Nodes[ #Controller.Nodes - 1 ]
 			
 			if IsValid( Controller ) && IsValid( FirstNode ) && !Controller:GetLooped() then
-				local newNode = CoasterManager.CreateNode( Cur_ID, FirstNode:GetPos(), FirstNode:GetAngles(), COASTER_NODE_NORMAL, ply )
+				local newNode = CoasterManager.CreateNode( Cur_ID, FirstNode:GetPos(), FirstNode:GetAngles(), COASTER_NODE_NORMAL, ply, Bank)
 				local lastNode = Controller.Nodes[ #Controller.Nodes ]
 				local SecondNode = FirstNode:GetNextNode()
 				if !IsValid( newNode ) || !IsValid( lastNode ) || !IsValid(SecondNode) || !IsValid(SecondToLast) then return end
@@ -234,6 +301,14 @@ function TAB:Think( tool )
 		local newPos = trace.HitPos + Vector( 0, 0, Elevation )
 		local newAng = Angle(0, plyAng.y, 0) + Angle( Slope, 0, 0 )
 		
+		if IsValid(self.launchbutton)then
+			if self.launchbutton:GetValue()!=self.lastlaunchkey and self.launchbutton:GetValue()!=0 then
+				self.lastlaunchkey=self.launchbutton:GetValue()
+				RunConsoleCommand("coaster_supertool_tab_node_creator_launchkey",self.lastlaunchkey)
+				RunConsoleCommand("coaster_supertool_tab_node_creator_launchkeystring",self.launchbutton:GetText())
+			end
+		end
+		
 		//Make the tooltip
 
 		if IsValid( trace.Entity ) && ( ( trace.Entity:GetClass() == "coaster_node") || trace.Entity:GetClass() == "coaster_physmesh") && CurTime() > self.WaitTime then
@@ -258,7 +333,12 @@ function TAB:Think( tool )
 				toolText = toolText .. "\nType: " .. ( EnumNames.Nodes[ Node:GetNodeType() ] or "Unknown(?)" )
 				toolText = toolText .. "\nRoll: " .. tostring( Node:GetRoll() )
 			end
-
+			if Node.GetLaunchKeyString then
+				if Node:GetNodeType()==COASTER_NODE_LAUNCH then
+					toolText=toolText.."\nLaunch Key: "..tostring(Node:GetLaunchKeyString())
+					toolText=toolText.."\nLaunch Speed: "..tostring(Node:GetLaunchSpeed())
+				end
+			end
 			//toolText = toolText .. "\nNext Node: " .. tostring( trace.Entity:GetNextNode() )
 			AddWorldTip( Node:EntIndex(), ( toolText ), 0.5, Node:GetPos(), Node )
 		else 
@@ -280,7 +360,6 @@ function GetControllerFromID( id )
 	end
 
 end
-
 
 function TAB:UpdateGhostNode( tool )
 	if (self.GhostEntity == nil) then return end
@@ -340,10 +419,10 @@ local function NumScratch( panel, strLabel, strConVar, numMin, numMax, numDecima
 			num:Dock( RIGHT )
 	
 	panel:AddItem( left, right )
-	return left
+	return left,right
 end
 
-function TAB:BuildPanel( )
+function TAB:BuildPanel( panel2 )
 	local panel = vgui.Create("DForm")
 	panel:SetName("Node Spawner")
 
@@ -376,9 +455,9 @@ function TAB:BuildPanel( )
 
 	panel:AddItem( ComboBox )
 
-	local Seperator = vgui.Create("DLabel", panel)
-	Seperator:SetText("______________________________________________")
-	panel:AddItem( Seperator )
+	local Separator = vgui.Create("DLabel", panel)
+	Separator:SetText("______________________________________________")
+	panel:AddItem( Separator )
 
 	//The elevation slider
 	NumScratch( panel, "Node Elevation: ","coaster_supertool_tab_node_creator_elevation", -2000, 2000, 3)
@@ -392,9 +471,9 @@ function TAB:BuildPanel( )
 	//Set to the height of the previous node?
 	panel:CheckBox( "Relative to previous node's elevation", "coaster_supertool_tab_node_creator_prev_nodeheight" )
 
-	local Seperator = vgui.Create("DLabel", panel)
-	Seperator:SetText("______________________________________________")
-	panel:AddItem( Seperator )
+	local Separator = vgui.Create("DLabel", panel)
+	Separator:SetText("______________________________________________")
+	panel:AddItem( Separator )
 
 	NumScratch( panel, "Node Roll: ","coaster_supertool_tab_node_creator_bank", -180.01, 180, 2)
 	RunConsoleCommand("coaster_supertool_tab_node_creator_bank", 0 ) //Default to 0
@@ -404,6 +483,25 @@ function TAB:BuildPanel( )
 	easyroll.Offset = 45
 
 	panel:AddItem( easyroll )
+	
+	local Separator = vgui.Create("DLabel", panel)
+	Separator:SetText("______________________________________________")
+	panel:AddItem( Separator )
+	
+	local launchdesc=vgui.Create("DLabel",panel)
+	launchdesc:SetText("Launch Key (press to trigger launch segment(s))")
+	launchdesc:SetTextColor(Color(0,0,0))
+	panel:AddItem(launchdesc)
+	local launchkey=vgui.Create("DBinder",panel)
+	if GetConVarNumber("coaster_supertool_tab_node_creator_launchkey")then
+		launchkey:SetValue(GetConVarNumber("coaster_supertool_tab_node_creator_launchkey"))
+	end
+	if GetConVarString("coaster_supertool_tab_node_creator_launchkeystring")then
+		launchkey:SetText(GetConVarString("coaster_supertool_tab_node_creator_launchkeystring"))
+	end
+	self.launchbutton=launchkey
+	panel:AddItem(launchkey)
+	NumScratch(panel,"Launch Speed: ","coaster_supertool_tab_node_creator_launchspeed",100,4000,2)
 
 	return panel
 end

@@ -10,6 +10,21 @@ ENT.AdminSpawnable	= false
 ENT.Editable 		= true
 
 ENT.Material 		= "hunter/myplastic"
+--[[
+edits by miterdoo:
+
++added launch segment
+	any launch segment will be assigned a launch key that the user can set in
+	the tool, right below the node roll value. when the segment is not launching,
+	or is in "idle mode," then it acts as a home station, but carts cannot move
+	once they've stopped. when the segment is launching, when the player taps/
+	presses the launch key for the segment, the segment acts as a speedup track
+	but with a acceleration specified by the player that placed the segment.
+	these tracks cannot be placed if a launch key is not set yet.
+*FIXED node roll being assigned to the next node placed rather than the one
+	currently being placed.
+
+]]
 
 function ENT:SetupDataTables()
 	self:NetworkVar("Bool", 0, "IsController")
@@ -18,7 +33,10 @@ function ENT:SetupDataTables()
 	self:NetworkVar("Entity", 1, "Controller")
 	self:NetworkVar("Int", 0, "NodeType", { KeyName = "type", Edit = { type = "Enum", enums = EnumNames.Nodes, min = 1, max = 4, order = 2 } } )
 	self:NetworkVar("Int", 1, "TrackType", { KeyName = "tracktype", Edit = { type = "Enum", enums = EnumNames.Tracks, min = 1, max = 4, order = 3 } })
+	self:NetworkVar("Int", 2, "LaunchKey")
+	self:NetworkVar("String",1,"LaunchKeyString")
 	self:NetworkVar("Float", 0, "Roll")
+	self:NetworkVar("Float",1,"LaunchSpeed")
 	self:NetworkVar("Vector", 0, "TrackColor", { KeyName = "trackcolor", Edit = { type = "VectorColor", order = 4 } } )
 	self:NetworkVar("String", 0, "CoasterID") --The string is STEAMID_ID (ex: STEAM_0:1:18712009_3 )
 

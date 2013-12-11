@@ -11,6 +11,7 @@ COASTER_NODE_CHAINS		= 2
 COASTER_NODE_SPEEDUP	= 3
 COASTER_NODE_HOME		= 4
 COASTER_NODE_BRAKES		= 5
+COASTER_NODE_LAUNCH		= 6
 
 //Track types
 COASTER_TRACK_METAL		= 1
@@ -25,9 +26,10 @@ COASTER_TRACK_BLANK		= 6
 EnumNames.Nodes = {}
 EnumNames.Nodes[COASTER_NODE_NORMAL]	= "Normal Track"
 EnumNames.Nodes[COASTER_NODE_CHAINS]	= "Chained Track"
-EnumNames.Nodes[COASTER_NODE_SPEEDUP]	= "Speedup/Maglev"
+EnumNames.Nodes[COASTER_NODE_SPEEDUP]	= "Speedup Track" -- sorry to be a smartass but i think maglev is in train stuff, not rollercoasters
 EnumNames.Nodes[COASTER_NODE_HOME]		= "Home Station"
 EnumNames.Nodes[COASTER_NODE_BRAKES]	= "Brakes Track"
+EnumNames.Nodes[COASTER_NODE_LAUNCH]	= "Launch Track"
 
 EnumNames.Tracks = {}
 EnumNames.Tracks[COASTER_TRACK_METAL]	= "Metal Track"

@@ -3,6 +3,7 @@ AddCSLuaFile( "weapons/gmod_tool/tab/tabmanager.lua")
 include("weapons/gmod_tool/tab/tabmanager.lua")
 include("weapons/gmod_tool/tab/tab_utils.lua")
 
+
 TOOL.Category   = "Rollercoaster"
 TOOL.Name       = "Rollercoaster SuperTool"
 TOOL.Command    = nil
@@ -216,7 +217,7 @@ local function toSortedTable( T, member )
 	return newTbl
 end
 
-function TOOL.BuildCPanel(panel)	
+function TOOL.BuildCPanel(panel)
 	panel.Header:SetSize( 0, 0 )
 	panel.Header:SetAlpha( 0 )
 	panel:SetPadding( 0 )
@@ -229,7 +230,7 @@ function TOOL.BuildCPanel(panel)
 	local FixedTable = toSortedTable( coastertabmanager.List, "Position")
 
 	for k, v in pairs(FixedTable) do
-		local panel = v:BuildPanel()
+		local panel = v:BuildPanel(panel)
 		panel:SetPadding( 0, 0, 0, 0)
 		RegisterTabPanel( panel, v.UniqueName )
 		
@@ -312,6 +313,10 @@ function TOOL.BuildCPanel(panel)
 	//panel:Button( "Build All Meshes", "coaster_update_mesh")
 	panel:ControlHelp( "Note: Building the mesh is an intensive process. Performance will be affected." )
 	local version = panel:Help( "Rollercoaster version: " .. COASTER_VERSION )
+	local clog=vgui.Create("DForm",panel)
+	clog:SetName("Changelog")
+	clog:Help(table.concat(COASTER_CHANGELOG,"\n"))
+	panel:AddItem(clog)
 end
 
 

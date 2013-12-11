@@ -25,7 +25,21 @@ ENT.BreakSpeed = 3 //The minimum speed of the car when in break zone
 
 ENT.NodeModel			= Model( "models/hunter/misc/sphere075x075.mdl" )
 
+--[[
+edits by miterdoo:
 
++added launch segment
+	any launch segment will be assigned a launch key that the user can set in
+	the tool, right below the node roll value. when the segment is not launching,
+	or is in "idle mode," then it acts as a home station, but carts cannot move
+	once they've stopped. when the segment is launching, when the player taps/
+	presses the launch key for the segment, the segment acts as a speedup track
+	but with a acceleration specified by the player that placed the segment.
+	these tracks cannot be placed if a launch key is not set yet.
+*FIXED node roll being assigned to the next node placed rather than the one
+	currently being placed.
+
+]]
 
 duplicator.RegisterEntityModifier("rollercoaster_node_order", function( ply, ent, data )
 	duplicator.StoreEntityModifier( ent, "rollercoaster_node_order", data )
@@ -48,6 +62,7 @@ function ENT:Initialize()
 	self:SetCollisionGroup( COLLISION_GROUP_WORLD)
 
 	self:DrawShadow( false )
+	self.CartsOnMe={}
 
 	local phys = self:GetPhysicsObject()
 
@@ -68,6 +83,16 @@ function ENT:Initialize()
 
 	self:NetworkVarNotify("TrackType", self.OnTrackTypeChanged )
 
+end
+
+function ENT:TriggerInput(n,v)
+	if n=="Launch!" then
+		if v==0 and #self.CartsOnMe==0 then
+			self.launching=false
+		else
+			self.launching=true
+		end
+	end
 end
 
 function ENT:OnTrackTypeChanged(varname, oldvalue, newvalue)
@@ -168,7 +193,7 @@ function ENT:AddTrackNode( ent, ply )
 		
 		//Create the second node if we are the very first created node(controller)
 		if ( !IsValid( FirstNode ) || FirstNode:EntIndex() == 1 ) && ent:GetIsController() then
-			local node = CoasterManager.CreateNode( ent:GetCoasterID(), ent:GetPos(), ent:GetAngles(), ent:GetNodeType(), ply )
+			local node = CoasterManager.CreateNode( ent:GetCoasterID(), ent:GetPos(), ent:GetAngles(), ent:GetNodeType(), ply, ent:GetRoll())
 
 			undo.Create("Rollercoaster")
 				undo.AddEntity( ent )
@@ -181,7 +206,7 @@ function ENT:AddTrackNode( ent, ply )
 		
 		//Create the 4th node if we are the 3rd node created (2nd click)
 		if IsValid( FirstNode ) && FirstNode:EntIndex() != 1 && FirstNode:GetNextNode() == ent then
-			local node = CoasterManager.CreateNode( ent:GetCoasterID(), ent:GetPos(), ent:GetAngles(), ent:GetNodeType(), ply )
+			local node = CoasterManager.CreateNode( ent:GetCoasterID(), ent:GetPos(), ent:GetAngles(), ent:GetNodeType(), ply, ent:GetRoll() )
 			
 			undo.Create("Coaster Node")
 				undo.AddEntity( ent )
@@ -252,6 +277,21 @@ concommand.Add("update_physmesh", function()
 	end
 end )
 
+function ENT:Think()
+	for k,v in pairs(self.CartsOnMe)do
+		if !IsValid(v)then
+			table.remove(self.CartsOnMe,k)
+		end
+	end
+	if #self.CartsOnMe==0 then
+		self.launching=false
+	end
+	if #self.CartsOnMe!=self.LastCartsOnMe then
+		self.LastCartsOnMe=#self.CartsOnMe
+		Wire_TriggerOutput(self,"Cart On Track",math.min(#self.CartsOnMe,1))
+	end
+end
+
 //Build the mesh for the specific segment
 //This function is NOT controller only, call it on the segment you want to update the mesh on
 function ENT:BuildSegmentMesh()
@@ -267,8 +307,6 @@ function ENT:BuildSegmentMesh()
 		return //get the fuck out
 	end
 
-	self.Segment = Segment //there could be a better place for this but oh well
-
 	if Segment < 2 or Segment >= #controller.Nodes - 1 then 
 		if IsValid( self.PhysMesh ) then
 			self.PhysMesh:Remove()
@@ -280,7 +318,7 @@ function ENT:BuildSegmentMesh()
 		//Make sure it's information is up to date
 		self.PhysMesh.Segment = Segment
 		self.PhysMesh:SetController( controller )
-	elseif (GetConVarNumber("coaster_physmesh_enabled", 1) == 1) then
+	else
 		//Create the physics mesh entity
 		local physmesh = ents.Create("coaster_physmesh")
 		physmesh:SetPos( self:GetPos() )
@@ -298,9 +336,7 @@ function ENT:BuildSegmentMesh()
 	end
 
 	//Build meshhhhhhhhes
-	if (IsValid( self.PhysMesh ) ) then
-		self.PhysMesh:BuildMesh()
-	end
+	self.PhysMesh:BuildMesh()
 end
 
 
