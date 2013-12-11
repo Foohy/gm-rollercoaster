@@ -5,11 +5,11 @@ Rollercoasters = Rollercoasters or {} //Holds all the rollercoasters
 CoasterManager = CoasterManager or {} //Holds all the methods and variables for rollercoasters
 COASTER_VERSION = 23
 
-COASTER_CHANGELOG={
+--[[COASTER_CHANGELOG={
 	"+Added Launch Track",
 	"+Added Wiremod output for each node. It will tell if a cart is on the node's track or not.",
 	"*Fixed node roll setting applying to the next node placed rather than the one currently being made."
-}
+}]]
 
 --[[
 edits by miterdoo:
