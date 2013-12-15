@@ -288,7 +288,7 @@ function ENT:Think()
 	end
 	if #self.CartsOnMe!=self.LastCartsOnMe then
 		self.LastCartsOnMe=#self.CartsOnMe
-		Wire_TriggerOutput(self,"Cart On Track",math.min(#self.CartsOnMe,1))
+		if WireLib then Wire_TriggerOutput(self,"Cart On Track",math.min(#self.CartsOnMe,1)) end
 	end
 end
 

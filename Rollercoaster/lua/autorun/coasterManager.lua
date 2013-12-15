@@ -32,6 +32,15 @@ cleanup.Register("Rollercoaster")
 if SERVER then
 
 	//For use with spawning coasters from a file. Less automagic bs, but you have to know what you're doing
+	numpad.Register("CoasterLaunch",function(pl,nd,toggle)
+		if !IsValid(nd) then return end
+		if nd:GetNodeType()!=COASTER_NODE_LAUNCH then return end
+		if toggle==false and #nd.CartsOnMe==0 then
+			nd.launching=false
+		elseif toggle==true and #nd.CartsOnMe!=0 then
+			nd.launching=true
+		end
+	end)
 	function CoasterManager.CreateNodeSimple( id, pos, ang, ply )
 		//Does anyone have any objections?
 		local res = hook.Run("Coaster_ShouldCreateNode", id, ply )
@@ -136,14 +145,6 @@ if SERVER then
 			node:SetLaunchKey(key)
 			numpad.OnDown(ply,key,"CoasterLaunch",node,true)
 			numpad.OnUp(ply,key,"CoasterLaunch",node,false)
-			numpad.Register("CoasterLaunch",function(pl,nd,toggle)
-				if !IsValid(nd) then return end
-				if toggle==false and #nd.CartsOnMe==0 then
-					nd.launching=false
-				elseif toggle==true then
-					nd.launching=true
-				end
-			end)
 		end
 		
 		return node
