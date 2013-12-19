@@ -70,6 +70,9 @@ function TAB:LeftClick( trace, tool )
 					ply:SendLua("notification.AddLegacy('You must provide a launch key in order to make a launch segment!',1,5); surface.PlaySound('buttons/button10.wav')")
 				end
 				return
+			elseif Type==COASTER_NODE_LAUNCH and key>0 then
+				numpad.OnDown(ply,key,"CoasterLaunch",Node,true)
+				numpad.OnUp(ply,key,"CoasterLaunch",Node,false)
 			end
 			--[[print("UPDATING",Node:GetNodeType(),Type,WireLib)
 			if Node:GetNodeType()!=COASTER_NODE_LAUNCH and Type==COASTER_NODE_LAUNCH and WireLib!=nil then

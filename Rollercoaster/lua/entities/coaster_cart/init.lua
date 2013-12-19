@@ -331,6 +331,7 @@ function ENT:PhysicsSimulate(phys, deltatime)
 			self:ChainThink()
 			self:SpeedupThink(deltatime)
 			self:BreakThink(deltatime)
+			self:LaunchThink(deltatime)
 		else
 			for k, v in pairs(self.CartTable) do
 				if !IsValid( v ) then continue end
@@ -384,7 +385,7 @@ function ENT:PhysicsSimulate(phys, deltatime)
 	end
 
 	//Do some fancy effects
-	if self:GetCurrentNode():GetNodeType() == COASTER_NODE_SPEEDUP then
+	if self:GetCurrentNode():GetNodeType() == COASTER_NODE_SPEEDUP or (self:GetCurrentNode():GetNodeType()==COASTER_NODE_LAUNCH and self:GetCurrentNode().launching) then
 		if self.LastSpark && self.LastSpark < CurTime() then
 			self.LastSpark = CurTime() + 0.08
 
@@ -686,12 +687,12 @@ function ENT:SpeedupThink(dt)
 		for k, v in pairs(self.CartTable) do
 			if k > 1 || #self.CartTable == 1 then
 				local node = IsValid(v) && v:GetCurrentNode() or nil
-				if IsValid( node ) && node.GetNodeType && (node:GetNodeType() == COASTER_NODE_SPEEDUP or (node:GetNodeType() == COASTER_NODE_LAUNCH and node.launching))then
+				if IsValid( node ) && node.GetNodeType && node:GetNodeType() == COASTER_NODE_SPEEDUP then
 					OnSpeedup = true
 					SpeedupForce = node.SpeedupForce
-					if node:GetNodeType()==COASTER_NODE_LAUNCH then
+					--[[if node:GetNodeType()==COASTER_NODE_LAUNCH then
 						SpeedupForce=node:GetLaunchSpeed()*14
-					end
+					end]]
 					MaxSpeed = node.MaxSpeed
 					NumOnSpeedup = NumOnSpeedup + 1
 					TotalCarts = TotalCarts + 1
@@ -791,29 +792,30 @@ function ENT:HomeStationThink(dt)
 	local OnHome = false
 	local HomeWaitTime = 0
 	local OnLaunch=false
-
 	if self.CartTable[1] == self then
+		for k,v in pairs(self.CartTable)do
+			if v.OnLaunch then
+				OnLaunch=true
+			end
+		end
 		for k, v in pairs(self.CartTable) do
-
 			local node = IsValid(v) && v:GetCurrentNode() or nil
-			if IsValid( node ) && node.GetNodeType && (node:GetNodeType() == COASTER_NODE_HOME or (node:GetNodeType()==COASTER_NODE_LAUNCH and !node.launching)) then
+			if IsValid( node ) && node.GetNodeType && node:GetNodeType() == COASTER_NODE_HOME then
 				OnHome = true
-				if node:GetNodeType()==COASTER_NODE_LAUNCH and !node.launching then
-					OnLaunch=true
-				end
 				HomeWaitTime = node.StopTime
 				break
+			else
+				self.OnHome=false
 			end
 		end
 	end
 
-
-	if OnHome && self.HomeStage != nil then
-
+	if OnHome && self.HomeStage != nil and !OnLaunch then
 		if self.HomeStage == 0 then //Moving to center
-			local NextNode = self.Controller.Nodes[ self.CartTable[#self.CartTable].CurSegment + 1] //Get the next node of the last cart
+			local NextNode = self.Controller.Nodes[ self.CartTable[#self.CartTable].CurSegment + 1] //Get the next node of the last cart 
 			if self.CartTable[#self.CartTable].Percent < 0.9 || (IsValid( NextNode ) && NextNode.GetNodeType && NextNode:GetNodeType() == COASTER_NODE_HOME) then //The head car is actually the very last car
 				for k, v in pairs(self.CartTable) do
+					self.OnHome=true
 					v.Velocity = 4
 				end
 			else
@@ -826,13 +828,13 @@ function ENT:HomeStationThink(dt)
 				v.Velocity = 0
 			end
 
-			if self.TimeToStart && self.TimeToStart < CurTime() and not OnLaunch then 
+			if self.TimeToStart && self.TimeToStart < CurTime() then 
 				self.HomeStage = 2 
 			end
 		else //Moving to next node
 			local NextNode = self.Controller.Nodes[ self.CartTable[#self.CartTable].CurSegment + 1] //Get the next node of the last cart
 
-			if self.Velocity < 5 and not OnLaunch then
+			if self.Velocity < 5 then
 				for k, v in pairs(self.CartTable) do
 					v.Velocity = 5
 				end
@@ -841,6 +843,79 @@ function ENT:HomeStationThink(dt)
 
 	else
 		self.HomeStage = 0
+	end
+end
+function ENT:LaunchThink(dt)
+	local OnLaunch=false
+	local Launching=false
+	local LaunchSpeed=0
+	local LaunchConst=false -- constant velocity on launch 
+	
+	local NumOnLaunch=0
+	local TotalCarts=0
+	if self.CartTable[1]==self then
+		for k,v in pairs(self.CartTable)do
+			local node=IsValid(v) and v:GetCurrentNode() or nil
+			if IsValid(node) and node.GetNodeType and node:GetNodeType()==COASTER_NODE_LAUNCH then
+				Launching=node.launching
+			end
+		end
+		for k,v in pairs(self.CartTable)do
+			local node=IsValid(v) and v:GetCurrentNode() or nil
+			if IsValid(node) and node.GetNodeType and node:GetNodeType()==COASTER_NODE_LAUNCH then
+				OnLaunch=true
+				self.OnLaunch=true
+				Launching=node.launching
+				LaunchSpeed=node:GetLaunchSpeed()
+				break
+			else
+				self.OnLaunch=false
+			end
+		end
+		for k,v in pairs(self.CartTable)do
+			local node=IsValid(v) and v:GetCurrentNode()or nil
+			if IsValid(node) and node.GetNodeType and node:GetNodeType()==COASTER_NODE_LAUNCH then
+				NumOnLaunch=NumOnLaunch+1
+				TotalCarts=TotalCarts+1
+			end
+		end
+	end
+	if OnLaunch and self.LaunchStage!=nil then
+		if self.LaunchStage==0 then
+			if Launching then self.LaunchStage=2 end
+			local NextNode = self.Controller.Nodes[ self.CartTable[#self.CartTable].CurSegment + 1] //Get the next node of the last cart
+			if self.CartTable[#self.CartTable].Percent < 0.9 || (IsValid( NextNode ) && NextNode.GetNodeType && NextNode:GetNodeType() == COASTER_NODE_LAUNCH) then //The head car is actually the very last car
+				for k, v in pairs(self.CartTable) do
+					self.OnLaunch=true
+					--if v.Velocity<0 then -- i failed at making this also happen for reverse
+					--	v.Velocity = -4
+					--else
+						v.Velocity=4
+					--end
+				end
+			else
+				self.LaunchStage = 1
+			end
+		elseif self.LaunchStage==1 then
+			for k,v in pairs(self.CartTable)do
+				v.Velocity=0
+			end
+			if Launching then
+				self.LaunchStage=2
+			end
+		else
+			if self.Velocity < 3600 and not LaunchConst then //We can get away with using our velocity because all the carts are going the same speed anyway
+				local Acceleration = ( LaunchSpeed*14 / self:GetPhysicsObject():GetMass() ) * (NumOnLaunch / (TotalCarts) ) //F = MA. thus, (F / M) = A
+				local Velocity = Acceleration * dt //A = VelocityChange / TimeChange. thus, V = AT
+				local newVelocity = (self.Velocity + Velocity )
+				
+				for k, v in pairs(self.CartTable) do
+					v.Velocity = newVelocity
+				end
+			end
+		end
+	else
+		self.LaunchStage=0
 	end
 end
 
