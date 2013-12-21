@@ -2,21 +2,6 @@ AddCSLuaFile( "cl_init.lua" )
 AddCSLuaFile( "shared.lua" )
 include( "shared.lua" )
 
---[[
-edits by miterdoo:
-
-+added launch segment
-	any launch segment will be assigned a launch key that the user can set in
-	the tool, right below the node roll value. when the segment is not launching,
-	or is in "idle mode," then it acts as a home station, but carts cannot move
-	once they've stopped. when the segment is launching, when the player taps/
-	presses the launch key for the segment, the segment acts as a speedup track
-	but with a acceleration specified by the player that placed the segment.
-	these tracks cannot be placed if a launch key is not set yet.
-*FIXED node roll being assigned to the next node placed rather than the one
-	currently being placed.
-
-]]
 -- General Cart Stuff
 ENT.CoasterID 	= -1 //Unique ID of the coaster this cart is attached to
 ENT.NumCarts 	= 1 //Length of the train of carts
@@ -385,7 +370,7 @@ function ENT:PhysicsSimulate(phys, deltatime)
 	end
 
 	//Do some fancy effects
-	if self:GetCurrentNode():GetNodeType() == COASTER_NODE_SPEEDUP or (self:GetCurrentNode():GetNodeType()==COASTER_NODE_LAUNCH and self:GetCurrentNode().launching) then
+	if self:GetCurrentNode():GetNodeType() == COASTER_NODE_SPEEDUP or (self:GetCurrentNode():GetNodeType()==COASTER_NODE_LAUNCH and self:GetCurrentNode().Launching) then
 		if self.LastSpark && self.LastSpark < CurTime() then
 			self.LastSpark = CurTime() + 0.08
 
@@ -690,9 +675,6 @@ function ENT:SpeedupThink(dt)
 				if IsValid( node ) && node.GetNodeType && node:GetNodeType() == COASTER_NODE_SPEEDUP then
 					OnSpeedup = true
 					SpeedupForce = node.SpeedupForce
-					--[[if node:GetNodeType()==COASTER_NODE_LAUNCH then
-						SpeedupForce=node:GetLaunchSpeed()*14
-					end]]
 					MaxSpeed = node.MaxSpeed
 					NumOnSpeedup = NumOnSpeedup + 1
 					TotalCarts = TotalCarts + 1
@@ -710,7 +692,6 @@ function ENT:SpeedupThink(dt)
 			v.Velocity = newVelocity
 		end
 	end
-
 end
 
 function ENT:BreakThink(dt)
@@ -752,18 +733,6 @@ function ENT:BreakThink(dt)
 
 end
 
-/*
-//Basically the exact opposite of speedup
-function ENT:BreakThink(dt)
-	if self:GetCurrentNode():GetNodeType() == COASTER_NODE_BRAKES && self.Velocity > self.BreakSpeed then
-		local Acceleration = self.BreakForce / self:GetPhysicsObject():GetMass() //F = MA. thus, (F / M) = A
-		local Velocity = Acceleration * dt //A = VelocityChange / TimeChange. thus, V = AT
-
-		self.Velocity = self.Velocity - Velocity
-	end
-end
-*/
-
 function ENT:ChainThink()
 	local OnChain = false
 	local ChainSpeed = 0
@@ -792,24 +761,28 @@ function ENT:HomeStationThink(dt)
 	local OnHome = false
 	local HomeWaitTime = 0
 	local OnLaunch=false
+
+	-- Only perform this if we're the dummy cart
 	if self.CartTable[1] == self then
-		for k,v in pairs(self.CartTable)do
-			if v.OnLaunch then
-				OnLaunch=true
-			end
-		end
+		-- Go through each cart on the train
 		for k, v in pairs(self.CartTable) do
+
+			-- If there's a cart on a launch node, we gotta skidaddle
+			if (v.OnLaunch) then 
+				OnLaunch = true
+				break 
+			end
+
+			-- If we're not on a launch node, determine if we're on a home node
 			local node = IsValid(v) && v:GetCurrentNode() or nil
-			if IsValid( node ) && node.GetNodeType && node:GetNodeType() == COASTER_NODE_HOME then
+			if !OnHome && IsValid( node ) && node.GetNodeType && node:GetNodeType() == COASTER_NODE_HOME then
 				OnHome = true
 				HomeWaitTime = node.StopTime
-				break
-			else
-				self.OnHome=false
 			end
 		end
 	end
 
+	-- If we're on a home station and NOT on a launch station, do our stuff
 	if OnHome && self.HomeStage != nil and !OnLaunch then
 		if self.HomeStage == 0 then //Moving to center
 			local NextNode = self.Controller.Nodes[ self.CartTable[#self.CartTable].CurSegment + 1] //Get the next node of the last cart 
@@ -845,6 +818,8 @@ function ENT:HomeStationThink(dt)
 		self.HomeStage = 0
 	end
 end
+
+
 function ENT:LaunchThink(dt)
 	local OnLaunch=false
 	local Launching=false
@@ -852,34 +827,34 @@ function ENT:LaunchThink(dt)
 	local LaunchConst=false -- constant velocity on launch 
 	
 	local NumOnLaunch=0
-	local TotalCarts=0
+	local TotalCarts = self.IsDummy and #self.CartTable - 1 or 1
+
 	if self.CartTable[1]==self then
-		for k,v in pairs(self.CartTable)do
+		for k,v in pairs(self.CartTable) do
+			-- Figure if we're on a launch segment
 			local node=IsValid(v) and v:GetCurrentNode() or nil
-			if IsValid(node) and node.GetNodeType and node:GetNodeType()==COASTER_NODE_LAUNCH then
-				Launching=node.launching
+			local IsOnLaunchNode = IsValid(node) and node.GetNodeType and node:GetNodeType()==COASTER_NODE_LAUNCH
+
+			-- Count how many are on the launch node
+			if IsOnLaunchNode then
+				NumOnLaunch = NumOnLaunch + 1
 			end
-		end
-		for k,v in pairs(self.CartTable)do
-			local node=IsValid(v) and v:GetCurrentNode() or nil
-			if IsValid(node) and node.GetNodeType and node:GetNodeType()==COASTER_NODE_LAUNCH then
-				OnLaunch=true
-				self.OnLaunch=true
-				Launching=node.launching
-				LaunchSpeed=node:GetLaunchSpeed()
-				break
-			else
-				self.OnLaunch=false
-			end
-		end
-		for k,v in pairs(self.CartTable)do
-			local node=IsValid(v) and v:GetCurrentNode()or nil
-			if IsValid(node) and node.GetNodeType and node:GetNodeType()==COASTER_NODE_LAUNCH then
-				NumOnLaunch=NumOnLaunch+1
-				TotalCarts=TotalCarts+1
+
+			-- Only run this if we haven't figured out if we're on the launch node yet
+			if !OnLaunch then
+				if IsOnLaunchNode then
+					OnLaunch=true
+					self.OnLaunch=true
+					Launching=node.Launching
+					LaunchSpeed=node:GetLaunchSpeed()
+				else
+					self.OnLaunch=false
+				end
 			end
 		end
 	end
+
+	-- If it's lunch time, let's get something to eat
 	if OnLaunch and self.LaunchStage!=nil then
 		if self.LaunchStage==0 then
 			if Launching then self.LaunchStage=2 end

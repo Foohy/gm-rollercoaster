@@ -698,12 +698,9 @@ if SERVER then
 			numpad.OnDown(ply,key,"CoasterLaunch",node,true)
 			numpad.OnUp(ply,key,"CoasterLaunch",node,false)
 			numpad.Register("CoasterLaunch",function(pl,nd,toggle)
-				if !IsValid(nd) then return end
-				if toggle==false and #nd.CartsOnMe==0 then
-					nd.launching=false
-				elseif toggle==true then
-					nd.launching=true
-				end
+				if !IsValid( nd ) then return end
+
+				nd.Launching = toggle and #nd.CartsOnMe > 0
 			end)
 		end
 

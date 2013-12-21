@@ -27,22 +27,6 @@ TAB.ClientConVar["launchspeed"]="100"
 TAB.GhostModel = Model("models/hunter/misc/sphere075x075.mdl")
 TAB.WaitTime	= 0 //Time to wait to make sure the dtvars are updated
 
---[[
-edits by miterdoo:
-
-+added launch segment
-	any launch segment will be assigned a launch key that the user can set in
-	the tool, right below the node roll value. when the segment is not launching,
-	or is in "idle mode," then it acts as a home station, but carts cannot move
-	once they've stopped. when the segment is launching, when the player taps/
-	presses the launch key for the segment, the segment acts as a speedup track
-	but with a acceleration specified by the player that placed the segment.
-	these tracks cannot be placed if a launch key is not set yet.
-*FIXED node roll being assigned to the next node placed rather than the one
-	currently being placed.
-
-]]
-
 function TAB:LeftClick( trace, tool )
 	local ply   = tool:GetOwner()
 	
@@ -88,7 +72,7 @@ function TAB:LeftClick( trace, tool )
 			Node:SetNodeType( Type )
 			Node:SetRoll( Bank )
 			
-			Node:SetLaunchSpeed(launchspeed) -- edits from mitterdoo
+			Node:SetLaunchSpeed(launchspeed)
 			Node:SetLaunchKey(key)
 			Node:SetLaunchKeyString(keystr)
 			

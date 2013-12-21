@@ -3,44 +3,13 @@ AddCSLuaFile()
 //I should probably make this a package and combine these two global tables into one.
 Rollercoasters = Rollercoasters or {} //Holds all the rollercoasters
 CoasterManager = CoasterManager or {} //Holds all the methods and variables for rollercoasters
-COASTER_VERSION = 23
-
---[[COASTER_CHANGELOG={
-	"+Added Launch Track",
-	"+Added Wiremod output for each node. It will tell if a cart is on the node's track or not.",
-	"*Fixed node roll setting applying to the next node placed rather than the one currently being made."
-}]]
-
---[[
-edits by miterdoo:
-
-+added launch segment
-	any launch segment will be assigned a launch key that the user can set in
-	the tool, right below the node roll value. when the segment is not launching,
-	or is in "idle mode," then it acts as a home station, but carts cannot move
-	once they've stopped. when the segment is launching, when the player taps/
-	presses the launch key for the segment, the segment acts as a speedup track
-	but with a acceleration specified by the player that placed the segment.
-	these tracks cannot be placed if a launch key is not set yet.
-*FIXED node roll being assigned to the next node placed rather than the one
-	currently being placed.
-
-]]
+COASTER_VERSION = 24
 
 cleanup.Register("Rollercoaster")
 
 if SERVER then
 
 	//For use with spawning coasters from a file. Less automagic bs, but you have to know what you're doing
-	numpad.Register("CoasterLaunch",function(pl,nd,toggle)
-		if !IsValid(nd) then return end
-		if nd:GetNodeType()!=COASTER_NODE_LAUNCH then return end
-		if toggle==false and #nd.CartsOnMe==0 then
-			nd.launching=false
-		elseif toggle==true and #nd.CartsOnMe!=0 then
-			nd.launching=true
-		end
-	end)
 	function CoasterManager.CreateNodeSimple( id, pos, ang, ply )
 		//Does anyone have any objections?
 		local res = hook.Run("Coaster_ShouldCreateNode", id, ply )
@@ -105,7 +74,6 @@ if SERVER then
 		node:SetAngles( ang )
 		node:Spawn()
 		node:Activate()
-		--print("server",launchspeed)
 
 		if !IsValid( Rollercoasters[id] ) then //The ID isn't an existing rollercoaster, so lets create one
 			Msg("Creating a new rollercoaster with ID: "..tostring(id).."\n" )
@@ -131,16 +99,23 @@ if SERVER then
 		if launchspeed then
 			node:SetLaunchSpeed(launchspeed)
 		end
-		if WireAddon!=nil and type==COASTER_NODE_LAUNCH then
-			--node.Inputs=Wire_CreateInputs(node,{"Launch!"})
-		elseif WireAddon!=nil then
+
+		-- If we've got wire installed, add some outputs
+		if WireAddon then
+
+			if type==COASTER_NODE_LAUNCH then
+				-- I assume this doesn't work yet?
+				--node.Inputs=Wire_CreateInputs(node,{"Launch!"})
+			end
+
 			node.Inputs=nil
 			node.Outputs=Wire_CreateOutputs(node,{"Cart On Track"})
 		end
-		node.launching=false
+
 		if keystr!=nil then
 			node:SetLaunchKeyString(keystr)
 		end
+		
 		if key!=nil then
 			node:SetLaunchKey(key)
 			numpad.OnDown(ply,key,"CoasterLaunch",node,true)
@@ -237,6 +212,13 @@ if SERVER then
 			end
 		end
 	end )
+
+	-- Handle people pressing buttons to launch the rollercoaster
+	numpad.Register("CoasterLaunch",function(ply,node,toggle)
+		if !IsValid( node ) || node:GetNodeType() != COASTER_NODE_LAUNCH then return end
+
+		node.Launching = toggle and #node.CartsOnMe > 0
+	end)
 
 
 	//Admin settings (Remember to add clientside language if creating more if it's a numerical limit)
@@ -336,11 +318,6 @@ if CLIENT then
 	CreateClientConVar("coaster_mesh_maxvertices", 50000, true, false)
 	CreateClientConVar("coaster_mesh_drawoutdatedmesh", 1, true, false ) 
 	CreateClientConVar("coaster_mesh_drawunfinishedmesh", 0, true, false)
-	
-	//Launch settings
-	--[[CreateClientConVar("coaster_supertool_tab_node_creator_launchkey", 0, true, false)
-	CreateClientConVar("coaster_supertool_tab_node_creator_launchkeystring", "", true, false)
-	CreateClientConVar("coaster_supertool_tab_node_creator_launchspeed", 200, true, false)]]
 
 	//Misc Settings
 	CreateClientConVar("coaster_cart_spin_override", 0, false, true) //Override cart spawning to make it spin like the carousel

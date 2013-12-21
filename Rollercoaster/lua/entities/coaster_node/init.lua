@@ -23,23 +23,10 @@ ENT.StopTime = 5 //Time to stop and wait for people to leave/board
 ENT.BreakForce = 1400 //Force of which to deccelerate the car
 ENT.BreakSpeed = 3 //The minimum speed of the car when in break zone
 
+-- If we're currently launching some carts forward
+ENT.Launching = false 
+
 ENT.NodeModel			= Model( "models/hunter/misc/sphere075x075.mdl" )
-
---[[
-edits by miterdoo:
-
-+added launch segment
-	any launch segment will be assigned a launch key that the user can set in
-	the tool, right below the node roll value. when the segment is not launching,
-	or is in "idle mode," then it acts as a home station, but carts cannot move
-	once they've stopped. when the segment is launching, when the player taps/
-	presses the launch key for the segment, the segment acts as a speedup track
-	but with a acceleration specified by the player that placed the segment.
-	these tracks cannot be placed if a launch key is not set yet.
-*FIXED node roll being assigned to the next node placed rather than the one
-	currently being placed.
-
-]]
 
 duplicator.RegisterEntityModifier("rollercoaster_node_order", function( ply, ent, data )
 	duplicator.StoreEntityModifier( ent, "rollercoaster_node_order", data )
@@ -87,11 +74,7 @@ end
 
 function ENT:TriggerInput(n,v)
 	if n=="Launch!" then
-		if v==0 and #self.CartsOnMe==0 then
-			self.launching=false
-		else
-			self.launching=true
-		end
+		self.Launching = v != 0 and #self.CartsOnMe > 0
 	end
 end
 
@@ -283,11 +266,11 @@ function ENT:Think()
 			table.remove(self.CartsOnMe,k)
 		end
 	end
-	if #self.CartsOnMe==0 then
-		self.launching=false
+	if #self.CartsOnMe == 0 then
+		self.Launching = false
 	end
-	if #self.CartsOnMe!=self.LastCartsOnMe then
-		self.LastCartsOnMe=#self.CartsOnMe
+	if #self.CartsOnMe != self.LastCartsOnMe then
+		self.LastCartsOnMe = #self.CartsOnMe
 		if WireLib then Wire_TriggerOutput(self,"Cart On Track",math.min(#self.CartsOnMe,1)) end
 	end
 end
