@@ -1,9 +1,25 @@
 include( "shared.lua" )
 include( "autorun/mesh_beams.lua")
 
+-- Enumeration for outdate settings
+OUTDATE_ALL 	= 1
+OUTDATE_LARGE 	= 2
+OUTDATE_SMALL 	= 3
+OUTDATE_ONE 	= 4
+
 ENT.PoleHeight = 512 //How tall, in source units, the coaster support poles are
 ENT.BaseHeight = 38 //How tall, in source units, the coaster base is
 ENT.BuildingMesh = false //Are we currently building a mesh? if so, don't draw them
+ENT.NWVarNotifyFuncs = -- Get notified whenever any of these functions changes value.
+{ 
+	"GetLooped", 
+	"GetNextNode", 
+	"GetTrackType", 
+	"GetRoll", 
+	"GetTrackColor",
+	"GetColor",
+}
+
 ENT.TrackMeshes = {} //Store generated track meshes to render
 ENT.Wheels = {} //Store the positions of where break and speedup wheels will be placed
 
@@ -12,6 +28,7 @@ ENT.SupportModelStart 	= nil
 ENT.SupportModelBase 	= nil
 
 ENT.LastGenTime = 0
+ENT.CachedPosition = nil
 
 ENT.Nodes = {}
 ENT.CatmullRom = {}
@@ -32,7 +49,7 @@ end
 local function ClearSegmentWheels( self, segment )
 	if IsValid( self ) && self.Wheels && self.Wheels[segment] then
 		for _, v in pairs( self.Wheels[segment]) do
-			v:Remove()
+			if IsValid(v) then v:Remove() end
 		end
 		self.Wheels[segment] = nil
 	end
@@ -134,7 +151,9 @@ local function UpdateWheelPositions( self, segment, type, forceRefresh )
 	if not self.CatmullRom || !self.CatmullRom.Spline then return end
 
 	-- Make sure this is valid
-	type = self.TypeToWheelProp[type] and type or COASTER_NODE_SPEEDUP
+	type = self.TypeToWheelProp[type] and type
+
+	if not type then return end
 
 	ThisSegment = self.Nodes[ segment ]
 	NextSegment = self.Nodes[ segment + 1 ]
@@ -239,6 +258,7 @@ end )
 
 usermessage.Hook("Coaster_invalidateall", function( um )
 	local self = um:ReadEntity()
+
 	if !IsValid( self ) || !self.GetIsController || !self:GetIsController() then return end
 
 
@@ -246,11 +266,7 @@ usermessage.Hook("Coaster_invalidateall", function( um )
 	self:SupportFullUpdate()
 	self:UpdateClientsidePhysics()
 
-	for k, v in pairs( self.Nodes ) do
-		v.Invalidated = true
-		self:InvalidatePhysmesh(k)
-
-	end
+	self:SetOutdated( OUTDATE_ALL )
 
 	if self.BuildingMesh || GetConVarNumber("coaster_mesh_autobuild") == 1 && self.ResetUpdateMesh then
 		self:ResetUpdateMesh()
@@ -262,86 +278,13 @@ usermessage.Hook("Coaster_CartFailed", function( um )
 	AddNotify("Need " .. needed .. " more nodes to create track!", NOTIFY_ERROR, 3 )
 end )
 
-usermessage.Hook("Coaster_AddNode", function( um )
-	local self = Entity(um:ReadShort())
-
-	if !IsValid( self ) || !self.GetIsController then return end //Shared functions don't exist yet.
-
-	if (self:GetIsController()) then
-		
-		self:RefreshClientSpline()
-
-		//Invalidate nearby nodes
-		if self.Nodes != nil then
-			last = #self.Nodes
-
-			if IsValid( self.Nodes[ last ] ) then
-				self.Nodes[ last ].Invalidated = true
-				self:InvalidatePhysmesh(last)
-			end
-			if IsValid( self.Nodes[ last - 1 ] ) then
-				self.Nodes[ last - 1 ].Invalidated = true
-				self:InvalidatePhysmesh(last-1)
-			end
-			if IsValid( self.Nodes[ last - 2 ] ) then
-				self.Nodes[ last - 2 ].Invalidated = true
-				self:InvalidatePhysmesh(last-2)
-			end
-			if IsValid( self.Nodes[ last - 3 ] ) then
-				self.Nodes[ last - 3 ].Invalidated = true
-				self:InvalidatePhysmesh(last-3)
-			end
-		end
-
-		//Update the positions of the wheels
-		for num, node in pairs( self.Nodes ) do 
-			if !IsValid( node ) || !node.GetNodeType then continue end
-			local nodeType = node:GetNodeType()
-			if self.TypeToWheelProp[nodeType] then
-				UpdateWheelPositions( self, num, nodeType, true )
-			end
-		end
-
-		self:SupportFullUpdate()
-
-		if self.BuildingMesh || GetConVarNumber("coaster_mesh_autobuild") == 1 && self.ResetUpdateMesh then
-			self:ResetUpdateMesh()
-		end
-	end
-end )
-
-//Invalidates nearby nodes, either due to roll changing or position changing. Means clientside mesh is out of date and needs to be rebuilt
-usermessage.Hook("Coaster_nodeinvalidate", function( um )
-	local self = um:ReadEntity()
-	local node	 = um:ReadEntity()
-	local inval_minimal = um:ReadBool() //Should we only invalidate the node before this one?
-
-	if IsValid( node ) && node.Invalidate && IsValid( self ) then
-		node:Invalidate( self, inval_minimal )
-		self:UpdateClientsidePhysics()
-
-		
-		if self.BuildingMesh || GetConVarNumber("coaster_mesh_autobuild") == 1 && self.ResetUpdateMesh then
-			self:ResetUpdateMesh()
-		end
-	end
-end )
-
-
 function ENT:Initialize()
 
-	//Default to being invalidated
-	self.Invalidated = true
- 
- 	//Support models
-	self.SupportModel 		= ClientsideModel( "models/sunabouzu/coaster_pole.mdl" )
-	self.SupportModelStart 	= ClientsideModel( "models/sunabouzu/coaster_pole_start.mdl" )
-	self.SupportModelBase 	= ClientsideModel( "models/sunabouzu/coaster_base.mdl" )
+ 	-- Default to node being outdated and needing to be rebuilt
+	self.IsOutdated = true
 
-	//hide them (shh)
-	self.SupportModel:SetNoDraw( true )
-	self.SupportModelStart:SetNoDraw( true )
-	self.SupportModelBase:SetNoDraw( true )
+ 	//Support models
+	self:CreateSupportBase()
 
 	//Make sure we draw the support model even though we stretched it to hell and back
 	self:UpdateSupportDrawBounds()
@@ -362,16 +305,9 @@ function ENT:Initialize()
 	if !self:GetIsController() then return end //Don't continue executing -- the rest of this stuff is for only the controller
 	CoasterUpdateTrackTime = 0 //Tell the thingy that it's time to update its cache of coasters
 
-	//The controller handles the drawing of the track mesh -- so we always want it to draw.
-	self:SetRenderBoundsWS(Vector(-1000000,-1000000,-1000000), Vector( 1000000, 1000000, 1000000 ) ) //There must be a better way to do this
-
-	//Other misc. clientside models that are only used by the controller
-	//self.WheelModel	= ClientsideModel( "models/props_vehicles/carparts_wheel01a.mdl")
-	//self.WheelModel:SetPos( Vector( 100000, 100000, -100000 ) )
-	//SetModelScale(self.WheelModel,  Vector( 1.6, 1.6, 1.6))
-
 	//Initialize the clientside list of nodes
 	self.Nodes = {}
+	self.Wheels = {}
 
 	//And create the clientside spline controller to govern drawing the spline
 	self.CatmullRom = {}
@@ -444,11 +380,65 @@ function ENT:InvalidatePhysmesh( segment )
 	table.insert( self.InvalidNodes, node )
 end
 
+local function IsWithinLoopedRegion( Controller, pivot, index, leftSpread, rightSpread)
+	-- Right spread
+	if (pivot - #Controller.Nodes + 2 + rightSpread) >= index then return true end 
+
+	-- Left spread
+	if (#Controller.Nodes - 2 - leftSpread + pivot <= index ) then return true end
+
+	return false 
+end
+
+function ENT:SetOutdated( outdate_type )
+	local Controller = self:GetController()
+	if not IsValid( Controller ) or not self.NodeIndex then return end
+	if self.NodeIndex > #Controller.Nodes or self.NodeIndex < 1 then return end  
+
+	-- If they only want to update this single node, don't bother looping through
+	if outdate_type == OUTDATE_ONE then
+		self.IsOutdated = true 
+		Controller:InvalidatePhysmesh(self.NodeIndex)
+	else
+		for k, v in pairs( Controller.Nodes ) do
+			-- Store the displacement of the index from the calling node
+			local indexDiff = self.NodeIndex - k
+
+			if outdate_type == OUTDATE_ALL then
+				v.IsOutdated = true 
+				Controller:InvalidatePhysmesh(k)
+			elseif outdate_type == OUTDATE_LARGE then
+				if indexDiff < 3 and indexDiff > -2 or 
+				(Controller:GetLooped() and IsWithinLoopedRegion(Controller, self.NodeIndex, k, 3, 2)) then
+					v.IsOutdated = true 
+					Controller:InvalidatePhysmesh(k)
+				end
+			elseif outdate_type == OUTDATE_SMALL then
+				if indexDiff < 2 and indexDiff > -1 or
+					(Controller:GetLooped() and IsWithinLoopedRegion(Controller, self.NodeIndex, k, 2, 1)) then
+					v.IsOutdated = true 
+					Controller:InvalidatePhysmesh(k)
+				end
+			end
+		end
+	end
+
+	if Controller.BuildingMesh || GetConVarNumber("coaster_mesh_autobuild", 1) == 1 && Controller.ResetUpdateMesh then
+		Controller:ResetUpdateMesh()
+	end
+
+	-- Refresh the clientside physics object for prediction
+	Controller:UpdateClientsidePhysics()
+
+	-- Tell the track panel to update itself
+	UpdateTrackPanel( controlpanel.Get("coaster_supertool").CoasterList )
+end
+
 //Invalid ourselves and nearby affected node
 function ENT:Invalidate( controller, minimal_invalidation )
 	if !IsValid( controller ) then return end
 	if #controller.Nodes < 1 then return end
-
+	print("invalidated something at " .. CurTime())
 	for k, v in pairs( controller.Nodes ) do
 		if v == self then
 			if minimal_invalidation then
@@ -536,6 +526,40 @@ function ENT:HasInvalidNodes()
 	return false
 end
 
+-- Return whether the track has any outdated/unbuilt nodes
+function ENT:HasOutdatedNodes()
+	local Controller = self:GetController()
+	if not IsValid( Controller ) then return false end
+
+	-- Find any outdated nodes
+	for _, v in pairs( Controller.Nodes ) do if v.IsOutdated then return true end end
+
+	-- Didn't find any, we're clean!
+	return false 
+end
+
+-- Create or recreate the support models
+function ENT:CreateSupportBase()
+	if IsValid( self.SupportModel ) then self.SupportModel:Remove() end 
+	if IsValid( self.SupportModelStart ) then self.SupportModelStart:Remove() end 
+	if IsValid( self.SupportModelBase ) then self.SupportModelBase:Remove() end 
+
+	 	//Support models
+	self.SupportModel 		= ClientsideModel( "models/sunabouzu/coaster_pole.mdl" )
+	self.SupportModelStart 	= ClientsideModel( "models/sunabouzu/coaster_pole_start.mdl" )
+	self.SupportModelBase 	= ClientsideModel( "models/sunabouzu/coaster_base.mdl" )
+
+	//hide them (shh)
+	self.SupportModel:SetNoDraw( true )
+	self.SupportModelStart:SetNoDraw( true )
+	self.SupportModelBase:SetNoDraw( true )
+end
+
+-- Return if we have for real support models on us
+function ENT:HasValidSupportModels()
+	return IsValid( self.SupportModel ) and IsValid( self.SupportModelStart ) and IsValid( self.SupportModelBase )
+end
+
 //Refresh the client spline for track previews and mesh generation
 function ENT:RefreshClientSpline()
 
@@ -546,6 +570,7 @@ function ENT:RefreshClientSpline()
 	--Set ourselves as the first node as we're used to calculate the track's spline
 	self.CatmullRom:AddPointAngle( 1, self:GetPos(), self:GetAngles(), 1.0 ) 
 	table.insert( self.Nodes, self )
+	self.NodeIndex = 1
 	local firstNode = self:GetNextNode()
 
 
@@ -553,6 +578,7 @@ function ENT:RefreshClientSpline()
 	
 	self.CatmullRom:AddPointAngle( 2, firstNode:GetPos(), firstNode:GetAngles(), 1.0 )
 	table.insert( self.Nodes, firstNode )
+	firstNode.NodeIndex = 1
 
 	local node = nil
 	if IsValid( firstNode ) && firstNode.GetNextNode then
@@ -570,6 +596,7 @@ function ENT:RefreshClientSpline()
 
 			self.CatmullRom:AddPointAngle( amt, node:GetPos(), node:GetAngles(), 1.0 )
 			table.insert( self.Nodes, node )
+			node.NodeIndex = amt 
 
 			if node.GetNextNode then
 				node = node:GetNextNode()
@@ -704,11 +731,11 @@ function ENT:AngleAt(i, perc )
 	return AngVec:GetNormal():Angle()
 end
 
-//Set invalid nodes to valid (for when the mesh is first built)
-function ENT:ValidateNodes()
+-- Reset outdated nodes to be up to date
+function ENT:ClearOutdatedNodes()
 	if self.Nodes != nil && #self.Nodes > 0 then
 		for _, v in pairs( self.Nodes ) do
-			if v.Invalidated then v.Invalidated = false end 
+			if v.IsOutdated then v.IsOutdated = false end 
 		end
 	end
 
@@ -750,18 +777,21 @@ function ENT:DrawTrack()
 		CTime = CurTime()
 
 		render.SetMaterial( mat_chain ) //mat_chain
+
 		for i = 2, (#self.CatmullRom.PointsList - 2) do
 			if IsValid( self.Nodes[i] ) then
 				nodeType = self.Nodes[i]:GetNodeType()
-				
+
 				-- if this type has specific wheel properties, do some wheel cool business
 				if self.TypeToWheelProp[ nodeType ] then
 					self:WheelModelThink( i, nodeType )
 				else
+
 					if nodeType == COASTER_NODE_CHAINS then
 						self:DrawSegment( i, CTime )
 					end
 					
+					-- This node doesn't have wheel properties, so it shouldn't have wheels
 					if SegmentHasWheels( self, i ) then
 						ClearSegmentWheels( self, i )
 					end
@@ -771,7 +801,7 @@ function ENT:DrawTrack()
 
 		-- Clear the segments of the first and last nodes, just in case
 		if SegmentHasWheels( self, 1 ) then
-			ClearSegmentWheels( self, i )
+			ClearSegmentWheels( self, 1 )
 		end
 		if SegmentHasWheels( self, #self.CatmullRom.PointsList-1 ) then
 			ClearSegmentWheels( self, #self.CatmullRom.PointsList-1 )
@@ -793,8 +823,13 @@ function ENT:DrawInvalidNodes()
 		if IsValid( v ) && v.TrackMesh then v.TrackMesh:Draw() end
 	end
 	
+	-- Draw the side yellow and black beams
 	for k, v in pairs( self.Nodes ) do
-		if v.Invalidated && k + 1 < #self.Nodes && v.WasBeingHeld then //Don't draw the last node
+		-- Don't draw up to date nodes/the last node
+		if not v.IsOutdated or k + 1 == #self.Nodes then continue end
+
+		-- If this node is being held or the one before it, draw the sidelines
+		if (v.WasBeingHeld or (self.Nodes[k+1] and self.Nodes[k+1].WasBeingHeld)) then 
 			DrawSideRail( self, k, -15 )
 			DrawSideRail( self, k, 15 )
 		end
@@ -919,6 +954,10 @@ function ENT:DrawSupport()
 	if math.abs( math.NormalizeAngle( self:GetRoll() ) ) > 90 then return false end //If a track is upside down, don't draw the supports
 	if controller:GetLooped() && controller.Nodes[ 2 ] == self then return false end //Don't draw the supports for the second node ONLY if the track is looped
 
+	-- If we don't have valid support models, recreate them someone probably fucked up
+	if not self:HasValidSupportModels() then self:CreateSupportBase() end
+
+
 	self.SupportModelStart:SetNoDraw( false )
 	self.SupportModel:SetNoDraw( false )
 	self.SupportModelBase:SetNoDraw( false )
@@ -938,8 +977,8 @@ function ENT:DrawSupport()
 
 	//Set their colors
 	local color = self:GetColor()
-	
-	if self.Invalidated then
+
+	if self.IsOutdated then
 		color.r = 255
 		color.g = 0
 		color.b = 0
@@ -977,51 +1016,135 @@ function ENT:DrawSupport()
 	return true
 end
 
-//Draw the node
+-- There's no callback for when a networkvar changes, so let's make one ourselves
+function ENT:NetworkVarCallbackThink()
+	for _, v in pairs( self.NWVarNotifyFuncs ) do
+		-- this just looks so strange
+		local val = self[v] and self[v](self)
+		local cacheName = "Cached" .. v
+
+		if self[cacheName] ~= val then
+			self:OnNetworkVarChanged( v, self[cacheName], val )
+			self[cacheName] = val 
+		end
+	end
+end
+
+-- Called when one of our specified network vars changes
+-- Used to automatically outdate nodes when stuff changes
+function ENT:OnNetworkVarChanged( name, oldval, newval )
+	-- May as well use this place to get a callback to when the color changes
+	if name == "GetColor" then
+		self:DrawSupport()
+		return 
+	end
+
+	if name == "GetRoll" then 
+		self:SetOutdated(OUTDATE_SMALL)
+	elseif name == "GetNextNode" then
+		local Controller = self:GetController()
+		if IsValid( Controller ) then Controller:RefreshClientSpline() end
+		self:SetOutdated( OUTDATE_LARGE)
+		self:SupportFullUpdate()
+	end
+
+	-- shh this is for grownups only go play outside
+	if not self:GetIsController() then return end
+	if name == "GetTrackColor" or name == "GetTrackType" then
+		self:RefreshClientSpline()
+		self:SetOutdated(OUTDATE_ALL)
+	elseif name == "GetLooped" then
+		--self:SetOutdated(OUTDATE_ONE)
+	end
+end
+
+-- Draw function for the node itself, not related to the track
 function ENT:Draw()
+	-- Prevent oversized balls
+	SetModelScale( self, Vector( 1, 1, 1 ) ) 
 
-	SetModelScale( self, Vector( 1, 1, 1 ) ) //I love addons that change the scale of other entities even when their tool isn't out! It's wonderful!
-	
-	// Don't draw if we're taking pictures
+	-- Only draw if we have the physgun or toolgun out 
 	local wep = LocalPlayer():GetActiveWeapon()
-	if wep:IsValid() && wep:GetClass() == "gmod_camera" && !self:GetIsController() then
+	if not IsValid( wep ) or ( wep:GetClass() ~= "weapon_physgun" and wep:GetClass() ~= "gmod_tool" ) then
+		return 
+	end
+
+	--If we're in a vehicle ( cart ), don't draw
+	if LocalPlayer():InVehicle() then
 		return
 	end
 
-	//If we're in a vehicle ( cart ), don't draw
-	if LocalPlayer():InVehicle() && !self:GetIsController() then
-		return
-	end
-
-
+	-- Also don't draw the first and last nodes
 	local controller = self:GetController()
 	if ( IsValid( controller ) && controller.Nodes && self == controller.Nodes[ #controller.Nodes ] && #controller.Nodes > 2 ) or self:GetIsController() then //Don't draw if we are the start/end nodes
 		return
 	end
 
+	-- boom
 	self:DrawModel()
-
-	//Usually for proper lighting to work we need to draw the mesh after we draw a proper model
-	//However, because I pretty much fake all of the lighting, that doesn't matter any more.
-	/*
-	if self:GetIsController() then
-		if #self.CatmullRom.PointsList > 3 then
-			//self:DrawRailMesh()
-		end
-	end
-	*/
 end
 
-//Update the node's spline if our velocity (and thus position) changes
-function ENT:Think()
 
-	//force-invalidate ourselves if we're being driven at all
-	if self:IsBeingDriven() && !self.Invalidated then
-		self:Invalidate( self:GetController(), false )
+function ENT:Think()
+	-- Before anything, let's check if any useful networkvars changed
+	self:NetworkVarCallbackThink()
+
+	--force-invalidate ourselves if we're being driven at all
+	if self:IsBeingDriven() && !self.IsOutdated then
+		self:SetOutdated( OUTDATE_LARGE )
 	end
 
+	-- Let's just have this around
+	local Controller = self:GetController() 
+
+	-- Keep track of if we were being held or moved in any way
+	if self:GetPos() ~= self.CachedPosition or self:GetVelocity():LengthSqr() > 0 then
+		-- Store that we were at this position
+		self.CachedPosition = self:GetPos()
+
+
+		if IsValid( Controller ) then 
+			-- So we can see the beams move while me move a node
+			Controller:UpdateClientSpline( self.NodeIndex ) 
+
+			-- If we were in the middle the build process, it's probably all bunked up
+			if Controller.BuildQueued || GetConVarNumber("coaster_mesh_autobuild") == 1 && self.ResetUpdateMesh then
+				Controller:ResetUpdateMesh()
+			end
+
+			-- Update wheel positions
+			local nodeType = self.GetNodeType and self:GetNodeType() or nil
+
+			UpdateWheelPositions( Controller, self.NodeIndex, nodeType )
+
+			-- Also update it for the one before us so they both update
+			local prevNode = Controller.Nodes[self.NodeIndex-1]
+			if IsValid( prevNode ) then
+				local nodeType = prevNode.GetNodeType and prevNode:GetNodeType() or nil
+				UpdateWheelPositions( Controller, prevNode.NodeIndex, nodeType )
+			end
+		end
+
+
+
+		if not self.WasBeingHeld then
+			self.WasBeingHeld = true
+			self:SetOutdated( OUTDATE_LARGE )
+
+			-- Update support positions
+			Controller:SupportFullUpdate() //Update all of the nodes when we let go of the node
+		end
+	else
+		if self.WasBeingHeld then
+			self.WasBeingHeld = false 
+			self:SetOutdated( OUTDATE_LARGE )
+		end
+	end
+
+	-- FROM HERE ON OUT ONLY THE CONTROLLER DOES THE THINKIN'
 	if !self:GetIsController() then return end
 
+	/*
 	for k, v in pairs( self.Nodes ) do	
 		if IsValid( v ) && v:GetVelocity():Length() > 0 && v != self then
 			if !self.WasBeingHeld then
@@ -1072,7 +1195,7 @@ function ENT:Think()
 			end
 		end
 	end
-
+	*/
 	-- Check if we are queued to update the mesh
 	if self.BuildQueued && CurTime() > self.BuildAt then
 		self.BuildQueued = false 
@@ -1209,35 +1332,3 @@ concommand.Add("coaster_update_nodes", function()
 		end
 	end
 end)
-
-
-
-
-
-
-//FUCKYOU DEBUG
-/*
-local pos,material,white = Vector(0,0,0), Material( "sprites/splodesprite" ),Color(255,255,255,255) --Define this sort of stuff outside of loops to make more efficient code.
-hook.Add( "HUDPaint", "paintsprites", function()
-	cam.Start3D(EyePos(),EyeAngles()) -- Start the 3D function so we can draw onto the screen.
-		render.SetMaterial( material ) -- Tell render what material we want, in this case the flash from the gravgun
-		for k, v in pairs( ents.FindByClass("coaster_node")) do
-			if v.Verts && #v.Verts > 0 then
-
-				if v.Verts.TimeChange == nil then v.Verts.TimeChange = CurTime() + 1 end
-				if v.Verts.CurVert == nil then v.Verts.CurVert = 1 end
-
-				if v.Verts.TimeChange < CurTime() then
-					v.Verts.CurVert = v.Verts.CurVert + 1
-					if v.Verts.CurVert > #v.Verts then
-						v.Verts.CurVert = 1
-					end
-					print( v.Verts.CurVert )
-					v.Verts.TimeChange = CurTime() + 1
-				end
-				render.DrawSprite(v.Verts[v.Verts.CurVert].pos, 16, 16, white) 
-			end
-		end
-	cam.End3D()
-end )
-*/

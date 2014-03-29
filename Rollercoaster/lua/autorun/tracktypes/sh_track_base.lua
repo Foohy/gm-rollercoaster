@@ -42,7 +42,7 @@ function TRACK:FinalizeTrack( Controller )
 			Controller.PreviousTrackClass:Remove()
 		end
 
-		Controller:ValidateNodes()
+		Controller:ClearOutdatedNodes()
 
 		-- One more update can't hurt
 		Controller:SupportFullUpdate()

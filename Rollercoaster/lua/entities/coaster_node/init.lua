@@ -209,14 +209,6 @@ function ENT:AddTrackNode( ent, ply )
 
 
 		self:UpdateServerSpline()
-
-		timer.Simple( 0.21, function() //Delay so the client can initialize too before we send the usermessage
-			umsg.Start("Coaster_AddNode")
-				umsg.Short( self:EntIndex() )
-				//umsg.Short( ent:EntIndex() )
-			umsg.End()
-		end )
-
 	end
 end
 
@@ -397,12 +389,6 @@ end
 //Invalidate the node on the client
 function ENT:Invalidate(minimal)
 	self:BuildSegmentMesh()
-
-	umsg.Start("Coaster_nodeinvalidate")
-		umsg.Entity( self:GetController() )
-		umsg.Entity( self )
-		umsg.Bool( minimal )
-	umsg.End()
 end
 
 //Invalidate everything

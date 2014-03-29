@@ -138,9 +138,9 @@ local function ReconstructCoaster(coasterID, owner, Controller )
 
 	timer.Simple( 0.65, function()
 
-		umsg.Start("Coaster_AddNode")
-			umsg.Short( Controller:EntIndex() )
-		umsg.End()
+		--umsg.Start("Coaster_AddNode")
+		--	umsg.Short( Controller:EntIndex() )
+		--umsg.End()
 
 		//Force the client to update the spline
 		if IsValid( Controller ) then

@@ -738,14 +738,6 @@ if SERVER then
 				undo.SetCustomUndoText("Undone \"" .. filename .. "\"")
 			undo.Finish()
 		end
-
-		//Force the client to update the spline
-		if IsValid( controllernode ) then
-
-			umsg.Start("Coaster_AddNode")
-				umsg.Short( controllernode:EntIndex() )
-			umsg.End()
-		end
 	end
 
 	concommand.Add("coaster_supertool_tab_saver_requesttracklist", function(ply, cmd, args)
