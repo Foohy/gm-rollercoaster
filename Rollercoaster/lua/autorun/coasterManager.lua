@@ -3,7 +3,7 @@ AddCSLuaFile()
 //I should probably make this a package and combine these two global tables into one.
 Rollercoasters = Rollercoasters or {} //Holds all the rollercoasters
 CoasterManager = CoasterManager or {} //Holds all the methods and variables for rollercoasters
-COASTER_VERSION = 24
+COASTER_VERSION = 28
 
 cleanup.Register("Rollercoaster")
 
@@ -351,7 +351,10 @@ if CLIENT then
 	end )
 
 	-- Track rendering. Renders meshes, wheels, chains, etc.
-	hook.Add( "PreDrawOpaqueRenderables", "CoasterDrawTrack", function()
+	hook.Add( "PreDrawOpaqueRenderables", "CoasterDrawTrack", function( isDepth, isSky )
+		-- Don't draw in the skybox
+		if isSky then return end
+
 		for k, v in pairs( CoasterTracks ) do
 			if IsValid( v ) then
 				v:DrawTrack()
