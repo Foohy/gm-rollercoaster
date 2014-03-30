@@ -1096,6 +1096,7 @@ function ENT:Think()
 
 	-- Let's just have this around
 	local Controller = self:GetController() 
+	if not IsValid( Controller ) then return end
 
 	-- Keep track of if we were being held or moved in any way
 	if self:GetPos() ~= self.CachedPosition or self:GetVelocity():LengthSqr() > 0 then
