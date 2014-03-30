@@ -160,7 +160,7 @@ duplicator.RegisterEntityClass("coaster_node", function( ply, data )
 		data.DT.NodeType = data.DT.Type
 	end
 
-	local node = duplicator.GenericDuplicatorFunction( ply, data )
+	local node = duplicator.GenericDuplicatorFunction( nil, data )
 	local ID = node:GetCoasterID()
 
 	-- Check if anyone has any objections
