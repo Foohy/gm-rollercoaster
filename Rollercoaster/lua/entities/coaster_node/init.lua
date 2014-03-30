@@ -307,6 +307,12 @@ function ENT:BuildSegmentMesh()
 		physmesh:SetController( controller )
 		physmesh:Activate()
 
+		-- Compatibility with prop protection
+		if physmesh.CPPISetOwner and self.CPPIGetOwner then 
+			local ownerEnt, ownerUID = self:CPPIGetOwner()
+			physmesh:CPPISetOwnerUID( ownerUID )
+		end
+
 		self.PhysMesh = physmesh
 	end
 

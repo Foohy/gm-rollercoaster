@@ -127,11 +127,18 @@ if SERVER then
 	end
 
 	hook.Add("Coaster_NewNode", "UpdateControllerSettings", function( node )
-		//Update the controller with how many nodes it has
+		
+		-- Update the controller with how many nodes it has
 		local controller = node:GetController()
 		if IsValid( controller ) then
 			controller:SetNumCoasterNodes( #controller.Nodes )
 			controller:UpdateNodeOrders()
+
+			-- Compatibility with prop protection
+			if node.CPPISetOwner and controller.CPPIGetOwner then 
+				local ownerEnt, ownerUID = controller:CPPIGetOwner()
+				node:CPPISetOwnerUID( ownerUID )
+			end
 		end
 
 	end )
