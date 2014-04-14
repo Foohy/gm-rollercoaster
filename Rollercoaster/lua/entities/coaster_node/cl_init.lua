@@ -691,7 +691,7 @@ function ENT:UpdateWheelPositions( forceRefresh )
 	local Controller = self:GetController()
 	local segment = self.NodeIndex 
 
-	if not IsValid( Controller ) then return end
+	if not IsValid( Controller ) or not segment then return end
 	if not Controller.CatmullRom then return end
 
 	local type = self.GetNodeType and self:GetNodeType() or nil
@@ -1020,6 +1020,12 @@ end
 
 
 function ENT:Think()
+	-- If we don't have an assigned node index by now call the police
+	if not self.NodeIndex then 
+		if self:GetIsController() then self:RefreshClientSpline() end
+		return 
+	end
+
 	-- Before anything, let's check if any useful networkvars changed
 	self:NetworkVarCallbackThink()
 
