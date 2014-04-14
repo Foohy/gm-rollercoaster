@@ -368,7 +368,7 @@ if CLIENT then
 				v:GetController():UpdateClientMesh()
 			end
 			if IsValid( v ) && IsValid( v:GetController() ) then
-				if v:HasInvalidNodes() then
+				if v:HasOutdatedNodes() then
 					btn:SetColor( Color( 255, 0, 0 ))
 					HasUnbuiltCoasters = true
 				end
