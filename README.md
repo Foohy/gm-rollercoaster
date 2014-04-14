@@ -23,9 +23,9 @@ Serverside/admin commands and convars.
 * coaster_cart_cooldown 1/0 Toggle the cooldown of vomitting and screaming in carts.
 * coaster_physmesh_resolution (default: 10) The resolution of the serverside physics mesh of the tracks. Higher resolution is more precise, but laggier.
 * coaster_downloadtoclients 0/1/2. (default: 1) Control how rollercoaster resources are downloaded to clients
-	0 = Don't download any resources to clients
-    1 = Download via workshop
-    2 = Download via the traditional way (resource.AddFile)
+	--* 0 = Don't download any resources to clients
+    --* 1 = Download via workshop
+    --* 2 = Download via the traditional way (resource.AddFile)
 
 All of the following settings can be changed in the 'Settings' tab of the SuperTool.
 * coaster_supports 1/0 Toggle the drawing of support beams
