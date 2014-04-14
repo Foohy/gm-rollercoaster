@@ -3,7 +3,7 @@ AddCSLuaFile()
 //I should probably make this a package and combine these two global tables into one.
 Rollercoasters = Rollercoasters or {} //Holds all the rollercoasters
 CoasterManager = CoasterManager or {} //Holds all the methods and variables for rollercoasters
-COASTER_VERSION = 28
+COASTER_VERSION = 29
 
 cleanup.Register("Rollercoaster")
 
