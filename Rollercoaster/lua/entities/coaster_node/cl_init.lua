@@ -15,10 +15,32 @@ ENT.NWVarNotifyFuncs = -- Get notified whenever any of these functions changes v
 	"GetLooped", 
 	"GetNextNode", 
 	"GetTrackType", 
+	"GetNodeType",
 	"GetRoll", 
 	"GetTrackColor",
 	"GetColor",
 }
+
+-- Create a list of wheel properties. 
+-- Makes it easy to change how wheels look for speedups/brakes/etc
+ENT.TypeToWheelProp = {}
+ENT.TypeToWheelProp[COASTER_NODE_SPEEDUP] = 
+{ 
+	Model = Model("models/props_phx/wheels/trucktire.mdl"),
+	DownOffset = -14.5,
+	SideOffset = -8.5,
+	RotationOffset = 90,
+	RotationSpeed = 1000,
+}
+ENT.TypeToWheelProp[COASTER_NODE_BRAKES] = 
+{ 
+	Model = Model("models/props_phx/wheels/trucktire2.mdl"),
+	DownOffset = -14.5,
+	SideOffset = -17,
+	RotationOffset = 90,
+	RotationSpeed = -120,
+}
+
 
 ENT.TrackMeshes = {} //Store generated track meshes to render
 ENT.Wheels = {} //Store the positions of where break and speedup wheels will be placed
@@ -45,19 +67,6 @@ local function AddNotify( text, type, time )
 	end
 end
 
--- Quickly remove all wheels from a specific segment
-local function ClearSegmentWheels( self, segment )
-	if IsValid( self ) && self.Wheels && self.Wheels[segment] then
-		for _, v in pairs( self.Wheels[segment]) do
-			if IsValid(v) then v:Remove() end
-		end
-		self.Wheels[segment] = nil
-	end
-end
-
-local function SegmentHasWheels( self, segment )
-	return self.Wheels && self.Wheels[segment] && #self.Wheels[segment] > 0
-end
 
 //Re-add the old scaling functionality
 local scalefix = Matrix()
@@ -135,122 +144,18 @@ local function DrawSideRail( self, segment, offset)
 end
 
 
-local WheelOffset = 1
-local WheelNode = nil
-local ThisSegment = nil
-local NextSegment = nil
-local WheelPercent = 0
-local WheelAngle = Angle( 0, 0, 0)
-local WheelPosition = Vector( 0, 0, 0 )
-local Roll = 0
-
--- Let's try this
-local function UpdateWheelPositions( self, segment, type, forceRefresh )
-	if not IsValid( self ) then return end
-	if not (segment > 1 && (#self.CatmullRom.PointsList > segment )) then return end
-	if not self.CatmullRom || !self.CatmullRom.Spline then return end
-
-	-- Make sure this is valid
-	type = self.TypeToWheelProp[type] and type
-
-	if not type then return end
-
-	ThisSegment = self.Nodes[ segment ]
-	NextSegment = self.Nodes[ segment + 1 ]
-
-	-- Check if the segments are valid
-	if !IsValid( ThisSegment ) || !IsValid( NextSegment ) then return end 
-	if !ThisSegment.GetRoll || !NextSegment.GetRoll then return end
-
-	-- Force ourselves to recreate all the models
-	if (forceRefresh && self.Wheels && self.Wheels[segment]) then
-		-- Delete any existing wheels
-		ClearSegmentWheels( self, segment )
-
-		self.Wheels[segment] = {}
-	end
-
-	-- Create the table, if neccessary
-	if !self.Wheels then self.Wheels = {} end
-
-	WheelPercent = 0
-	WheelAngle = Angle( 0, 0, 0)
-	WheelPosition = Vector( 0, 0, 0 )
-	Roll = 0
-	local currentWheel = 1
-	
-	Multiplier = self:GetMultiplier(segment, WheelPercent)
-
-	//Move ourselves forward along the track
-	WheelPercent = Multiplier / 2
-
-	while WheelPercent < 1 do
-		-- Create the table if neccessary
-		if !self.Wheels[segment] then self.Wheels[segment] = {} end
-
-		WheelAngle = self:AngleAt( segment, WheelPercent)
-
-		-- Change the roll depending on the track
-		Roll = -Lerp( WheelPercent, math.NormalizeAngle( ThisSegment:GetRoll() ), NextSegment:GetRoll())	
-		
-		-- Set the roll for the current track peice
-		WheelAngle.r = Roll
-		WheelPosition = self.CatmullRom:Point(segment, WheelPercent)
-
-		-- Now... manage moving throughout the track evenly
-		-- Each spline has a certain multiplier so things can be placed at a consistent distance
-		Multiplier = self:GetMultiplier(segment, WheelPercent)
-
-		local wheel = IsValid(self.Wheels[segment][currentWheel]) and self.Wheels[segment][currentWheel] or ClientsideModel( self.TypeToWheelProp[type].Model )
-
-		if IsValid( wheel ) then
-			-- Move it down a bit
-			WheelPosition = WheelPosition + WheelAngle:Up() * self.TypeToWheelProp[type].DownOffset
-			WheelPosition = WheelPosition + WheelAngle:Right() * self.TypeToWheelProp[type].SideOffset
-
-			WheelAngle:RotateAroundAxis( WheelAngle:Forward(), self.TypeToWheelProp[type].RotationOffset ) 
-
-			wheel:SetPos( WheelPosition )
-			wheel:SetAngles( WheelAngle )
-		end
-
-		self.Wheels[segment][currentWheel] = wheel 
-		currentWheel = currentWheel + 1
-
-		-- Move ourselves forward along the track
-		WheelPercent = WheelPercent + ( Multiplier * WheelOffset )
-
-		-- Check if we've hit the max wheel limit
-
-		if currentWheel > GetConVarNumber("coaster_maxwheels", 30 ) then break end
-	end
-
-	-- If there's any extra wheels, tell em to frick off
-	if self.Wheels != nil then
-		for i=currentWheel, #self.Wheels[segment] do
-			if IsValid( self.Wheels[segment][i] ) then
-				self.Wheels[segment][i]:Remove()
-				self.Wheels[segment][i] = nil
-			end
-		end
-	end
-
-end
-
 usermessage.Hook("Coaster_RefreshTrack", function( um )
 	self = um:ReadEntity()
 	if !IsValid( self ) || !self.GetIsController then return end
 
 	if self:GetIsController() then
+
 		self:RefreshClientSpline()
 		self:SupportFullUpdate()
 
 		//Update the positions of the wheels
-		for num, node in pairs( self.Nodes ) do 
-			local nodeType = node:GetNodeType()
-			if self.TypeToWheelProp[nodeType] then
-				UpdateWheelPositions( self, num, nodeType, true )
-			end
+		for _, node in pairs( self.Nodes ) do 
+			if IsValid( node ) then node:UpdateWheelPositions( true ) end
 		end
 	end	
 
@@ -328,23 +233,6 @@ function ENT:Initialize()
 
 	self.ShouldDrawUnfinishedMesh = bool
 
-	//Create a table of wheel models to their correspondent node type
-	self.TypeToWheelProp = {}
-	self.TypeToWheelProp[COASTER_NODE_SPEEDUP] = { 
-		Model = Model("models/props_phx/wheels/trucktire.mdl"),
-		DownOffset = -14.5,
-		SideOffset = -8.5,
-		RotationOffset = 90,
-		RotationSpeed = 1000,
-	}
-	self.TypeToWheelProp[COASTER_NODE_BRAKES] = { 
-		Model = Model("models/props_phx/wheels/trucktire2.mdl"),
-		DownOffset = -14.5,
-		SideOffset = -17,
-		RotationOffset = 90,
-		RotationSpeed = -120,
-	}
-
 end
 
 //Function to get if we are being driven with garry's new drive system
@@ -398,6 +286,7 @@ function ENT:SetOutdated( outdate_type )
 	-- If they only want to update this single node, don't bother looping through
 	if outdate_type == OUTDATE_ONE then
 		self.IsOutdated = true 
+		self:UpdateWheelPositions()
 		Controller:InvalidatePhysmesh(self.NodeIndex)
 	else
 		for k, v in pairs( Controller.Nodes ) do
@@ -406,17 +295,20 @@ function ENT:SetOutdated( outdate_type )
 
 			if outdate_type == OUTDATE_ALL then
 				v.IsOutdated = true 
+				v:UpdateWheelPositions()
 				Controller:InvalidatePhysmesh(k)
 			elseif outdate_type == OUTDATE_LARGE then
 				if indexDiff < 3 and indexDiff > -2 or 
 				(Controller:GetLooped() and IsWithinLoopedRegion(Controller, self.NodeIndex, k, 3, 2)) then
 					v.IsOutdated = true 
+					v:UpdateWheelPositions()
 					Controller:InvalidatePhysmesh(k)
 				end
 			elseif outdate_type == OUTDATE_SMALL then
 				if indexDiff < 2 and indexDiff > -1 or
 					(Controller:GetLooped() and IsWithinLoopedRegion(Controller, self.NodeIndex, k, 2, 1)) then
 					v.IsOutdated = true 
+					v:UpdateWheelPositions()
 					Controller:InvalidatePhysmesh(k)
 				end
 			end
@@ -432,98 +324,6 @@ function ENT:SetOutdated( outdate_type )
 
 	-- Tell the track panel to update itself
 	UpdateTrackPanel( controlpanel.Get("coaster_supertool").CoasterList )
-end
-
-//Invalid ourselves and nearby affected node
-function ENT:Invalidate( controller, minimal_invalidation )
-	if !IsValid( controller ) then return end
-	if #controller.Nodes < 1 then return end
-	print("invalidated something at " .. CurTime())
-	for k, v in pairs( controller.Nodes ) do
-		if v == self then
-			if minimal_invalidation then
-				v.Invalidated = true
-				controller:InvalidatePhysmesh(k)
-
-				if IsValid( controller.Nodes[ k - 1 ] ) then
-					controller.Nodes[ k - 1 ].Invalidated = true
-					controller:InvalidatePhysmesh(k-1)
-					//table.insert(controller.InvalidNodes, controller:FindPhysmeshBySegment(k - 1))
-				end
-			else
-				//Close your eyes, move down your scroll wheel 15 times and open them again
-				local lastnode = controller.Nodes[#controller.Nodes-1]
-				local secondlastnode = controller.Nodes[#controller.Nodes-2]
-				local thirdlastnode = controller.Nodes[#controller.Nodes-2]
-				local fourthlastnode = controller.Nodes[#controller.Nodes-3]
-				local firstnode = controller.Nodes[2]
-				local secondnode = controller.Nodes[3]
-
-				v.Invalidated = true
-				controller:InvalidatePhysmesh(k)
-
-				if IsValid( controller.Nodes[ k - 1 ] ) && k != 2 then
-					controller.Nodes[ k - 1 ].Invalidated = true
-					//table.insert(controller.InvalidNodes, controller:FindPhysmeshBySegment(k - 1))
-					controller:InvalidatePhysmesh(k-1)
-				elseif controller:GetLooped() then
-					fourthlastnode.Invalidated = true
-					//table.insert(controller.InvalidNodes, controller:FindPhysmeshBySegment(#controller.Nodes-3))
-					controller:InvalidatePhysmesh(#controller.Nodes-3)
-				end
-
-				if IsValid( controller.Nodes[ k - 2 ] ) && k != 3 then
-					controller.Nodes[ k - 2 ].Invalidated = true
-					//table.insert(controller.InvalidNodes, controller:FindPhysmeshBySegment(k - 2))
-					controller:InvalidatePhysmesh(k-2)
-				elseif controller:GetLooped() then
-					thirdlastnode.Invalidated = true
-					//table.insert(controller.InvalidNodes, controller:FindPhysmeshBySegment(#controller.Nodes-2))
-					controller:InvalidatePhysmesh(#controller.Nodes-2)
-				end
-
-				if IsValid( controller.Nodes[ k + 1 ] ) && k != #controller.Nodes-2 then
-					controller.Nodes[ k + 1 ].Invalidated = true
-					//table.insert(controller.InvalidNodes, controller:FindPhysmeshBySegment(k + 1))
-					controller:InvalidatePhysmesh(k+1)
-				elseif controller:GetLooped() then
-					firstnode.Invalidated = true
-					//table.insert(controller.InvalidNodes, controller:FindPhysmeshBySegment(2))
-					controller:InvalidatePhysmesh(2)
-				end
-
-				if controller:GetLooped() && k == #controller.Nodes - 1 then
-					firstnode.Invalidated = true
-					secondnode.Invalidated = true
-					//table.insert(controller.InvalidNodes, controller:FindPhysmeshBySegment(2))
-					//table.insert(controller.InvalidNodes, controller:FindPhysmeshBySegment(3))
-					controller:InvalidatePhysmesh(2)
-					controller:InvalidatePhysmesh(3)
-				end
-
-			end
-
-			return
-		end
-	end
-
-	controller:UpdateClientsidePhysics()
-
-	//Tell the track panel to update itself
-	UpdateTrackPanel( controlpanel.Get("coaster_supertool").CoasterList )
-end
-
-//Return if the track has any unbuilt nodes
-function ENT:HasInvalidNodes()
-	local controller = self
-	if !controller:GetIsController() then controller = self:GetController() end
-	if !IsValid( controller ) then return end
-
-	for k, v in pairs( controller.Nodes ) do
-		if v.Invalidated then return true end
-	end
-
-	return false
 end
 
 -- Return whether the track has any outdated/unbuilt nodes
@@ -561,7 +361,10 @@ function ENT:HasValidSupportModels()
 end
 
 //Refresh the client spline for track previews and mesh generation
+local lastRefresh = 0 -- Emergency quick fix so it doesn't update multiple times per frame (lag)
 function ENT:RefreshClientSpline()
+	if RealTime() <= lastRefresh then return end
+	lastRefresh = RealTime()
 
 	--Empty all current splines and nodes
 	self.CatmullRom:Reset()
@@ -578,7 +381,7 @@ function ENT:RefreshClientSpline()
 	
 	self.CatmullRom:AddPointAngle( 2, firstNode:GetPos(), firstNode:GetAngles(), 1.0 )
 	table.insert( self.Nodes, firstNode )
-	firstNode.NodeIndex = 1
+	firstNode.NodeIndex = 2
 
 	local node = nil
 	if IsValid( firstNode ) && firstNode.GetNextNode then
@@ -625,7 +428,7 @@ end
 //Use only when nodes have moved position.
 function ENT:UpdateClientSpline( point ) //The point is the node that is moving
 	if #self.CatmullRom.PointsList < 4 then return end
-	
+
 	//Loop through the points in the catmull controller object, updating the position of each one per entity
 	for i = 1, #self.CatmullRom.PointsList do
 		if IsValid( self.Nodes[ i ] ) then //Each node corresponds to the points index
@@ -638,10 +441,8 @@ function ENT:UpdateClientSpline( point ) //The point is the node that is moving
 		end
 	end
 	
-	//self.CatmullRom:CalcEntireSpline()
 	if point then
 		self.CatmullRom:CalcSection( math.Clamp( point - 2, 2, #self.Nodes - 2), math.Clamp( point + 2, 2, #self.Nodes - 2))
-		//self.CatmullRom:CalcSection( 2, #self.CatmullRom.PointsList)
 	else self.CatmullRom:CalcEntireSpline() end
 
 end
@@ -784,7 +585,7 @@ function ENT:DrawTrack()
 
 				-- if this type has specific wheel properties, do some wheel cool business
 				if self.TypeToWheelProp[ nodeType ] then
-					self:WheelModelThink( i, nodeType )
+					-- self:WheelModelThink( i, nodeType )
 				else
 
 					if nodeType == COASTER_NODE_CHAINS then
@@ -792,19 +593,11 @@ function ENT:DrawTrack()
 					end
 					
 					-- This node doesn't have wheel properties, so it shouldn't have wheels
-					if SegmentHasWheels( self, i ) then
-						ClearSegmentWheels( self, i )
-					end
+					--if SegmentHasWheels( self, i ) then
+						//ClearSegmentWheels( self, i )
+					--end
 				end
 			end 
-		end
-
-		-- Clear the segments of the first and last nodes, just in case
-		if SegmentHasWheels( self, 1 ) then
-			ClearSegmentWheels( self, 1 )
-		end
-		if SegmentHasWheels( self, #self.CatmullRom.PointsList-1 ) then
-			ClearSegmentWheels( self, #self.CatmullRom.PointsList-1 )
 		end
 
 		render.SetMaterial( mat_debug )
@@ -863,29 +656,162 @@ function ENT:DrawSegment(segment)
 
 end
 
-function ENT:WheelModelThink( segment, type )
-	if !self.Wheels[segment] then UpdateWheelPositions( self, segment, type ) return end
-	if #self.Wheels[segment] < 1 then return end
+-- Clears the wheels on this specific node
+function ENT:ClearWheels()
+	local Controller = self:GetController()
+	if IsValid( Controller ) then 
+		for _, v in pairs( Controller.Wheels[self.NodeIndex]) do
+			if IsValid( v ) then v:Remove() end
+		end
+	end
+end
 
-	-- Make sure this is valid
-	type = self.TypeToWheelProp[type] and type or COASTER_NODE_SPEEDUP
+-- Check if the current node has wheels on it
+function ENT:HasWheels()
+	local Controller = self:GetController()
+
+	return IsValid( Controller ) and 
+		Controller.Wheels and 
+		Controller.Wheels[self.NodeIndex] and
+		#Controller.Wheels[self.NodeIndex] > 0
+end
+
+
+local WheelOffset = 1
+local WheelNode = nil
+local ThisSegment = nil
+local NextSegment = nil
+local WheelPercent = 0
+local WheelAngle = Angle( 0, 0, 0)
+local WheelPosition = Vector( 0, 0, 0 )
+local Roll = 0
+
+-- Update the positions/angles/number of wheels on this specific node
+function ENT:UpdateWheelPositions( forceRefresh )
+	local Controller = self:GetController()
+	local segment = self.NodeIndex 
+
+	if not IsValid( Controller ) then return end
+	if not Controller.CatmullRom then return end
+
+	local type = self.GetNodeType and self:GetNodeType() or nil
+
+	-- If there's no wheel type, it's the first node, or it's the last node
+	if not self.TypeToWheelProp[type] or self.NodeIndex <= 1 or self.NodeIndex >= #Controller.Nodes - 1 then
+		-- If they have wheels, which they shouldn't, remove them
+		if self:HasWheels() then 
+			self:ClearWheels() 
+		end
+
+		return 
+	end
+
+	-- Force ourselves to recreate all the models
+	if (forceRefresh and self:HasWheels()) then
+		-- Delete any existing wheels
+		self:ClearWheels()
+		Controller.Wheels[segment] = {}
+	end
+
+	NextSegment = Controller.Nodes[ segment + 1 ]
+
+	-- Check if the segments are valid
+	if not IsValid( NextSegment ) then return end 
+
+	-- Create the table, if neccessary
+	if !Controller.Wheels then Controller.Wheels = {} end
+
+	-- We're on a for realz segment, let's segmenticate
+	WheelPercent = 0
+	WheelAngle = Angle( 0, 0, 0)
+	WheelPosition = Vector( 0, 0, 0 )
+	Roll = 0
+	local currentWheel = 1
+	
+	Multiplier = Controller:GetMultiplier(segment, WheelPercent)
+
+	//Move ourselves forward along the track
+	WheelPercent = Multiplier / 2
+
+	while WheelPercent < 1 do
+		-- Create the table if neccessary
+		if !Controller.Wheels[segment] then Controller.Wheels[segment] = {} end
+
+		WheelAngle = Controller:AngleAt( segment, WheelPercent)
+
+		-- Change the roll depending on the track
+		Roll = -Lerp( WheelPercent, math.NormalizeAngle( self:GetRoll() ), NextSegment:GetRoll())	
+		
+		-- Set the roll for the current track peice
+		WheelAngle.r = Roll
+		WheelPosition = Controller.CatmullRom:Point(segment, WheelPercent)
+
+		-- Now... manage moving throughout the track evenly
+		-- Each spline has a certain multiplier so things can be placed at a consistent distance
+		Multiplier = Controller:GetMultiplier(segment, WheelPercent)
+		local wheel = Controller.Wheels[segment][currentWheel]
+
+		wheel = IsValid( wheel ) and wheel or ClientsideModel( self.TypeToWheelProp[type].Model )
+
+		if IsValid( wheel ) then
+			-- Move it down a bit
+			WheelPosition = WheelPosition + WheelAngle:Up() * self.TypeToWheelProp[type].DownOffset
+			WheelPosition = WheelPosition + WheelAngle:Right() * self.TypeToWheelProp[type].SideOffset
+
+			WheelAngle:RotateAroundAxis( WheelAngle:Forward(), self.TypeToWheelProp[type].RotationOffset ) 
+
+			wheel:SetPos( WheelPosition )
+			wheel:SetAngles( WheelAngle )
+		end
+
+		Controller.Wheels[segment][currentWheel] = wheel 
+		currentWheel = currentWheel + 1
+
+		-- Move ourselves forward along the track
+		WheelPercent = WheelPercent + ( Multiplier * WheelOffset )
+
+		-- Check if we've hit the max wheel limit
+
+		if currentWheel > GetConVarNumber("coaster_maxwheels", 30 ) then break end
+	end
+
+	-- If there's any extra wheels, tell em to frick off
+	if Controller.Wheels != nil then
+		for i=currentWheel, #Controller.Wheels[segment] do
+			local wheel = Controller.Wheels[segment][i]
+			if IsValid( wheel ) then
+				wheel:Remove()
+			end
+		end
+	end
+end
+
+function ENT:WheelModelThink()
+	local Controller = self:GetController()
+	local type = self:GetNodeType()
+
+	if not IsValid( Controller ) then return end 
+	if not self:HasWheels() then return end
+	if not self.TypeToWheelProp[type] and self:HasWheels() then
+		self:ClearWheels()
+		return
+	end 
 
 	local ang = Angle( 0,0,0)
 	local needsUpdate = false
-	for _, wheel in pairs( self.Wheels[segment] ) do
+	for _, wheel in pairs( Controller.Wheels[self.NodeIndex] ) do
 		if !IsValid( wheel ) then continue end
-		if wheel:GetModel() != self.TypeToWheelProp[type].Model then
+		if wheel:GetModel() != Controller.TypeToWheelProp[type].Model then
 			needsUpdate = true
 		end
 
 		ang = wheel:GetAngles()
-		ang:RotateAroundAxis( ang:Up(), FrameTime() * self.TypeToWheelProp[type].RotationSpeed ) //Rotate the wheel
+		ang:RotateAroundAxis( ang:Up(), FrameTime() * Controller.TypeToWheelProp[type].RotationSpeed ) //Rotate the wheel
 
 		wheel:SetAngles(ang )
 	end
 
-	if needsUpdate then UpdateWheelPositions( self, segment, type, true ) end
-
+	if needsUpdate then self:UpdateWheelPositions( true ) end
 end
 
 --Draw the pre-generated rail mesh
@@ -1030,14 +956,20 @@ function ENT:NetworkVarCallbackThink()
 	end
 end
 
+-- quick fix because == for colors only checks if they're the same instance, not value
+local function ColorIsEqual(col1, col2)
+	return col1 and col2 and col1.r == col2.r and col1.g == col2.g and col1.b == col2.b
+end
 -- Called when one of our specified network vars changes
 -- Used to automatically outdate nodes when stuff changes
 function ENT:OnNetworkVarChanged( name, oldval, newval )
+
 	-- May as well use this place to get a callback to when the color changes
 	if name == "GetColor" then
-		self:DrawSupport()
+		if not ColorIsEqual(oldval, newval) then self:DrawSupport() end
 		return 
 	end
+
 
 	if name == "GetRoll" then 
 		self:SetOutdated(OUTDATE_SMALL)
@@ -1046,6 +978,8 @@ function ENT:OnNetworkVarChanged( name, oldval, newval )
 		if IsValid( Controller ) then Controller:RefreshClientSpline() end
 		self:SetOutdated( OUTDATE_LARGE)
 		self:SupportFullUpdate()
+	elseif name == "GetNodeType" then
+		self:UpdateWheelPositions()
 	end
 
 	-- shh this is for grownups only go play outside
@@ -1094,6 +1028,10 @@ function ENT:Think()
 		self:SetOutdated( OUTDATE_LARGE )
 	end
 
+	-- Spin our wheels
+	self:WheelModelThink()
+
+
 	-- Let's just have this around
 	local Controller = self:GetController() 
 	if not IsValid( Controller ) then return end
@@ -1113,16 +1051,14 @@ function ENT:Think()
 				Controller:ResetUpdateMesh()
 			end
 
-			-- Update wheel positions
-			local nodeType = self.GetNodeType and self:GetNodeType() or nil
 
-			UpdateWheelPositions( Controller, self.NodeIndex, nodeType )
+			-- Update wheel positions
+			self:UpdateWheelPositions()
 
 			-- Also update it for the one before us so they both update
 			local prevNode = Controller.Nodes[self.NodeIndex-1]
 			if IsValid( prevNode ) then
-				local nodeType = prevNode.GetNodeType and prevNode:GetNodeType() or nil
-				UpdateWheelPositions( Controller, prevNode.NodeIndex, nodeType )
+				prevNode:UpdateWheelPositions()
 			end
 		end
 
@@ -1145,58 +1081,6 @@ function ENT:Think()
 	-- FROM HERE ON OUT ONLY THE CONTROLLER DOES THE THINKIN'
 	if !self:GetIsController() then return end
 
-	/*
-	for k, v in pairs( self.Nodes ) do	
-		if IsValid( v ) && v:GetVelocity():Length() > 0 && v != self then
-			if !self.WasBeingHeld then
-				self.WasBeingHeld = true
-				v.WasBeingHeld = true
-				if IsValid( self.Nodes[k-1] ) then self.Nodes[k-1].WasBeingHeld = true end
-				self:SupportFullUpdate() //Update all of the nodes when we let go of the node
-			end
-
-			//So we can see the beams move while me move a node
-			self:UpdateClientSpline( k ) 
-
-			//Update the positions of the wheels
-			for num, node in pairs( self.Nodes ) do 
-				local nodeType = ( IsValid( node) && node.GetNodeType && node:GetNodeType() ) or nil
-				if self.TypeToWheelProp[nodeType] then			
-					UpdateWheelPositions( self, num, nodeType )
-				end
-			end
-
-			v:UpdateSupportDrawBounds()
-
-			//Set the positions of the clientside support models
-			if IsValid(v.SupportModel) && IsValid(v.SupportModelStart) && IsValid(v.SupportModelBase) then
-
-				if !v:DrawSupport() then
-					v.SupportModelStart:SetNoDraw( true )
-					v.SupportModel:SetNoDraw( true )
-					v.SupportModelBase:SetNoDraw( true )
-				end
-			else //If they are no longer valid, recreate them
-				if !IsValid( v.SupportModel ) then v.SupportModel = ClientsideModel( "models/sunabouzu/coaster_pole.mdl" ) end
-				if !IsValid( v.SupportModelStart ) then v.SupportModelStart = ClientsideModel( "models/sunabouzu/coaster_pole_start.mdl" ) end
-				if !IsValid( v.SupportModelBase ) then v.SupportModelBase = ClientsideModel( "models/sunabouzu/coaster_base.mdl" ) end
-			end
-
-			-- If we were in the middle the build process, it's probably all bunked up
-			if self.BuildQueued || GetConVarNumber("coaster_mesh_autobuild") == 1 && self.ResetUpdateMesh then
-				self:ResetUpdateMesh()
-			end
-
-			break //We really only need to do this once, not on a per segment basis.
-		elseif (k == #self.Nodes ) then
-			if self.WasBeingHeld then
-				self.WasBeingHeld = false
-				for _, node in pairs( self.Nodes ) do node.WasBeingHeld = false end
-				self:SupportFullUpdate() //Update all of the nodes when we let go of the node
-			end
-		end
-	end
-	*/
 	-- Check if we are queued to update the mesh
 	if self.BuildQueued && CurTime() > self.BuildAt then
 		self.BuildQueued = false 
@@ -1207,48 +1091,34 @@ function ENT:Think()
 end
 
 function ENT:OnRemove()
-	if !IsValid( self ) then return end
-
 	//Remove models
 	if IsValid( self.SupportModel  ) then 
-		self.SupportModel:SetNoDraw( true )
 		self.SupportModel:Remove() 
-		self.SupportModel = nil
 	end
 	if IsValid( self.SupportModelStart ) then 
-		self.SupportModelStart:SetNoDraw( true )
 		self.SupportModelStart:Remove() 
-		self.SupportModelStart = nil
 	end
 	if IsValid( self.SupportModelBase ) then 
-		self.SupportModelBase:SetNoDraw( true )
 		self.SupportModelBase:Remove() 
-		self.SupportModelBase = nil
 	end
 
+	-- If we're a controller, remove ALL wheels
 	if self:GetIsController() then
-		for _, seg in pairs( self.Wheels ) do
-			for _, model in pairs( seg ) do
-				if IsValid( model ) then
-					model:Remove()
-					model = nil
+		if self.Wheels then
+			for _, seg in pairs(self.Wheels) do
+				if not seg then continue end 
+				for __, wheel in pairs(seg) do
+					if IsValid( wheel ) then wheel:Remove() end 
 				end
 			end
 		end
-	else
-		local Controller = self:GetController()
-		if !IsValid( Controller ) then return end
-
-		for k, v in pairs( Controller.Nodes ) do
-			if v == self then 			
-				table.remove( Controller.Nodes, k ) 
-				Controller:RefreshClientSpline()
-
-				break
-			end
-		end
-
 	end
+
+	-- Remove our wheels
+	if self:HasWheels() then
+		self:ClearWheels()
+	end
+
 end
 
 
@@ -1295,11 +1165,8 @@ cvars.AddChangeCallback( "coaster_maxwheels", function()
 	//Go through all of the nodes and tell them to update their shit
 	for k, v in pairs( ents.FindByClass("coaster_node") ) do
 		if IsValid( v ) && v:GetIsController() then
-			for segment, node in pairs( v.Nodes ) do 
-				local nodeType = node:GetNodeType()
-				if v.TypeToWheelProp[nodeType] then
-					UpdateWheelPositions( v, segment, nodeType, true )
-				end
+			for segment, node in pairs( v.Nodes ) do
+				if IsValid( node ) then node:UpdateWheelPositions() end 
 			end
 		end
 	end
