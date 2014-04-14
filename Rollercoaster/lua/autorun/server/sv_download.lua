@@ -1,6 +1,20 @@
-local convar = CreateConVar("coaster_downloadtoclients", 1, { FCVAR_ARCHIVE }, "Tell clients to download rollercoaster-related models and materials (requires changelevel to take effect)")
+-- MANAGE DOWNLOADING TO CLIENTS
+-- 0 = Don't download
+-- 1 = Download via workshop
+-- 2 = Dwnload via resource.AddFile
 
-if convar && convar:GetBool() then
+COASTER_DOWNLOAD_NONE 		= 0
+COASTER_DOWNLOAD_WORKSHOP 	= 1
+COASTER_DOWNLOAD_CLASSIC 	= 2
+
+COASTER_WORKSHOPID = "104508032"
+local convar = CreateConVar("coaster_downloadtoclients", 1, { FCVAR_ARCHIVE }, "Tell clients to download rollercoaster-related models and materials (requires changelevel to take effect)\n\t0 = Don't download\n\t1 = Download via workshop\n\t2 = Download via the traditional way (resource.AddFile)")
+
+if not convar then return end 
+local enum = convar:GetInt()
+if enum == COASTER_DOWNLOAD_WORKSHOP then
+	resource.AddWorkshop(COASTER_WORKSHOPID)
+elseif enum == COASTER_DOWNLOAD_CLASSIC then
 	//SOUNDS
 	resource.AddFile("sound/coaster_ride.wav")
 	resource.AddFile("sound/coaster_chain.wav")
