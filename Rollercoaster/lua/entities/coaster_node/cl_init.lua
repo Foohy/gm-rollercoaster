@@ -776,7 +776,7 @@ function ENT:UpdateWheelPositions( forceRefresh )
 	end
 
 	-- If there's any extra wheels, tell em to frick off
-	if Controller.Wheels != nil then
+	if Controller.Wheels[segment] != nil then
 		for i=currentWheel, #Controller.Wheels[segment] do
 			local wheel = Controller.Wheels[segment][i]
 			if IsValid( wheel ) then
