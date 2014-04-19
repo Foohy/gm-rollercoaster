@@ -3,7 +3,7 @@ AddCSLuaFile()
 //I should probably make this a package and combine these two global tables into one.
 Rollercoasters = Rollercoasters or {} //Holds all the rollercoasters
 CoasterManager = CoasterManager or {} //Holds all the methods and variables for rollercoasters
-COASTER_VERSION = 31
+COASTER_VERSION = 32
 
 cleanup.Register("Rollercoaster")
 
@@ -313,8 +313,17 @@ if CLIENT then
 	CoasterBlur = 0.00003 //Blur multiplier
 	CoasterTracks = {}
 
+	-- The functions to disable drawing in the sky only work for some maps
+	-- Only do that in these maps here until it's fully fixed
+	local CoasterDisabledSkydrawMaps =
+	{
+		"gm_flatgrass",
+		"gm_construct",
+		"gm_bigcity"
+	}
+	local EnableSkyDraw = not table.HasValue( CoasterDisabledSkydrawMaps, game.GetMap())
+
 	//Perfomance settings
-	
 	CreateClientConVar("coaster_supports", 1, false, false )
 	CreateClientConVar("coaster_mesh_previews", 1, true, false )
 	CreateClientConVar("coaster_motionblur", 1, false, false )
@@ -360,7 +369,7 @@ if CLIENT then
 	-- Track rendering. Renders meshes, wheels, chains, etc.
 	hook.Add( "PreDrawOpaqueRenderables", "CoasterDrawTrack", function( isDepth, isSky )
 		-- Don't draw in the skybox
-		if isSky then return end
+		if isSky and not EnableSkyDraw then return end
 
 		for k, v in pairs( CoasterTracks ) do
 			if IsValid( v ) then
